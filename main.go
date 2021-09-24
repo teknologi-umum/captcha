@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"teknologi-umum-bot/handlers"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
+	sentry "github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/qiniu/qmgo"
@@ -15,10 +17,12 @@ import (
 )
 
 func main() {
-	// Setup cache
-	// TODO: Need to specify more config options for handling maximum cache stored and all that
-	// Documentation for that: https://pkg.go.dev/github.com/allegro/bigcache?utm_source=godoc#Config
-	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(24 * time.Hour))
+	// Setup in memory cache
+	cache, err := bigcache.NewBigCache(bigcache.Config{
+		CleanWindow:      0,
+		MaxEntrySize:     2048,
+		HardMaxCacheSize: 1024 * 16,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,6 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	mongoDB := mongo.Database(os.Getenv("MONGO_DB_NAME"))
 
 	// Setup redis
 	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
@@ -35,6 +40,17 @@ func main() {
 		log.Fatal(err)
 	}
 	rds := redis.NewClient(parsedRedisURL)
+
+	// Setup sentry
+	logger, err := sentry.NewClient(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DSN"),
+		AttachStacktrace: true,
+		Environment:      strings.Join(os.Environ(), " "),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logger.Flush(5 * time.Second)
 
 	// Setup bot
 	b, err := tb.NewBot(tb.Settings{
@@ -46,11 +62,16 @@ func main() {
 		return
 	}
 
+	timers := make(chan handlers.CaptchaTimer, 100)
+
 	deps := &handlers.Dependencies{
-		Cache: cache,
-		Mongo: mongo,
-		Redis: rds,
-		Bot:   b,
+		Cache:   cache,
+		Mongo:   mongoDB,
+		Redis:   rds,
+		Bot:     b,
+		Context: context.Background(),
+		Logger:  logger,
+		Timers:  timers,
 	}
 
 	b.Handle("/start", func(m *tb.Message) {
@@ -60,4 +81,14 @@ func main() {
 	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
 
 	b.Start()
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Recover(r, nil, nil)
+			rds.Close()
+			mongo.Close(deps.Context)
+			b.Stop()
+			cache.Close()
+		}
+	}()
 }
