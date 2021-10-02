@@ -69,7 +69,7 @@ func main() {
 
 	b.Handle("/start", func(m *tb.Message) {
 		if m.FromGroup() {
-			b.Send(m.Chat, "Hello jnck!")
+			b.Send(m.Chat, "ok")
 		}
 	})
 
