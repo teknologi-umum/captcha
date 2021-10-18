@@ -63,7 +63,7 @@ func deleteMessage(bot *tb.Bot, message tb.Editable) {
 func (d *Dependencies) WelcomeMessage(m *tb.Message) {
 	msg, err := d.Bot.Send(
 		m.Chat,
-		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.Sender.FirstName+" "+m.Sender.LastName, 1),
+		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.UserJoined.FirstName+" "+m.UserJoined.LastName, 1),
 		&tb.SendOptions{
 			ReplyTo:               m,
 			ParseMode:             tb.ModeHTML,
@@ -81,5 +81,5 @@ func (d *Dependencies) WelcomeMessage(m *tb.Message) {
 
 func randomNum() int {
 	rand.Seed(time.Now().Unix())
-	return rand.Intn(6)
+	return rand.Intn(4)
 }
