@@ -8,6 +8,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/joho/godotenv v1.3.0
 	github.com/qiniu/qmgo v1.0.3
+	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.7.2
 	gopkg.in/tucnak/telebot.v2 v2.4.0
 )
@@ -23,6 +24,7 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
+	github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect

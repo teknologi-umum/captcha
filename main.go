@@ -13,6 +13,7 @@ import (
 	_ "github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/qiniu/qmgo"
+	"github.com/ztrue/tracerr"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -58,6 +59,20 @@ func main() {
 		return
 	}
 
+	defer func() {
+		if r := recover().(tracerr.Error); r != nil {
+			logger.CaptureException(r.Unwrap(), &sentry.EventHint{
+				Data:              r.StackTrace(),
+				OriginalException: r.Unwrap(),
+			},
+				nil)
+			// rds.Close()
+			// mongo.Close(deps.Context)
+			b.Stop()
+			cache.Close()
+		}
+	}()
+
 	deps := &handlers.Dependencies{
 		Cache: cache,
 		// Mongo:   mongoDB,
@@ -75,15 +90,7 @@ func main() {
 
 	b.Handle(tb.OnUserJoined, deps.WelcomeMessage)
 
-	b.Start()
+	b.Handle("/setir", deps.SetirManual)
 
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Recover(r, nil, nil)
-			// rds.Close()
-			// mongo.Close(deps.Context)
-			b.Stop()
-			cache.Close()
-		}
-	}()
+	b.Start()
 }
