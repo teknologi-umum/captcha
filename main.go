@@ -8,12 +8,12 @@ import (
 	"teknologi-umum-bot/handlers"
 	"time"
 
+	"github.com/aldy505/decrr"
 	"github.com/allegro/bigcache/v3"
 	sentry "github.com/getsentry/sentry-go"
 	_ "github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/qiniu/qmgo"
-	"github.com/ztrue/tracerr"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 6))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(decrr.Wrap(err))
 	}
 
 	// Setup mongo
@@ -45,7 +45,7 @@ func main() {
 		Environment:      strings.Join(os.Environ(), " "),
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(decrr.Wrap(err))
 	}
 	defer logger.Flush(5 * time.Second)
 
@@ -60,10 +60,9 @@ func main() {
 	}
 
 	defer func() {
-		if r := recover().(tracerr.Error); r != nil {
-			logger.CaptureException(r.Unwrap(), &sentry.EventHint{
-				Data:              r.StackTrace(),
-				OriginalException: r.Unwrap(),
+		if r := recover().(error); r != nil {
+			logger.CaptureException(r, &sentry.EventHint{
+				OriginalException: r,
 			},
 				nil)
 			// rds.Close()
@@ -91,6 +90,7 @@ func main() {
 	b.Handle(tb.OnUserJoined, deps.WelcomeMessage)
 
 	b.Handle("/setir", deps.SetirManual)
+	b.Handle("/ascii", deps.Ascii)
 
 	b.Start()
 }

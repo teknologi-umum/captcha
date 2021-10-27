@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ztrue/tracerr"
+	"github.com/aldy505/decrr"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -74,7 +74,7 @@ func (d *Dependencies) WelcomeMessage(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		panic(tracerr.Wrap(err))
+		panic(decrr.Wrap(err))
 	}
 
 	go deleteMessage(d.Bot, msg)
