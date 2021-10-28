@@ -11,9 +11,8 @@ import (
 	"github.com/aldy505/decrr"
 	"github.com/allegro/bigcache/v3"
 	sentry "github.com/getsentry/sentry-go"
-	_ "github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/qiniu/qmgo"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -24,19 +23,12 @@ func main() {
 		log.Fatal(decrr.Wrap(err))
 	}
 
-	// Setup mongo
-	// mongo, err := qmgo.NewClient(context.Background(), &qmgo.Config{Uri: os.Getenv("MONGO_URL")})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// mongoDB := mongo.Database(os.Getenv("MONGO_DB_NAME"))
-
-	// // Setup redis
-	// parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// rds := redis.NewClient(parsedRedisURL)
+	// Setup redis
+	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	rds := redis.NewClient(parsedRedisURL)
 
 	// Setup sentry
 	logger, err := sentry.NewClient(sentry.ClientOptions{
@@ -65,17 +57,20 @@ func main() {
 				OriginalException: r,
 			},
 				nil)
-			// rds.Close()
-			// mongo.Close(deps.Context)
+			rds.Close()
 			b.Stop()
 			cache.Close()
 		}
 	}()
 
+	// Kalo mau di rename di file handlers/dependencies.go juga gapapa.
+	// Cache -> In memory cache (https://github.com/allegro/bigcache)
+	//   Si BigCache ini dia punya function namanya Append(), nanti kedepannya bisa dimanfaatkan
+	//   buat berurusan sama slice/list of string.
+	// Redis -> Ya redis (https://pkg.go.dev/github.com/go-redis/redis/v8@v8.11.3)
 	deps := &handlers.Dependencies{
-		Cache: cache,
-		// Mongo:   mongoDB,
-		// Redis:   rds,
+		Cache:   cache,
+		Redis:   rds,
 		Bot:     b,
 		Context: context.Background(),
 		Logger:  logger,
@@ -87,10 +82,32 @@ func main() {
 		}
 	})
 
+	// (aldy505): Jadi ini deps.WelcomeMessage diganti sama deps.CaptchaUserJoin
+	// Setelah itu, nggak tau ya, kayaknya bakal listen to the whole chat.
+	// If (message.Sender.ID is in array of ongoing captchas) {
+	//   check if the message contains the captcha answer, while still keeping the timer running
+	//   if (message is the captcha answer) {
+	//      - cancel the timer
+	//      - remove the user ID from redis and in memory cache
+	//      - send congratulations message
+	//   } else {
+	//      do nothing, keep the timer running
+	//   }
+	// } else {
+	//   do nothing, keep the timer running
+	// }
+	//
+	// Documentation soal package telebot ada disini: https://pkg.go.dev/gopkg.in/tucnak/telebot.v2
+	//
+	// Dari sini kamu ke handlers/captcha.go
 	b.Handle(tb.OnUserJoined, deps.WelcomeMessage)
 
 	b.Handle("/setir", deps.SetirManual)
 	b.Handle("/ascii", deps.Ascii)
+
+	b.SetCommands([]tb.Command{
+		{Text: "ascii", Description: "Sends ASCII generated text."},
+	})
 
 	b.Start()
 }

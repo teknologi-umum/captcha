@@ -1,15 +1,19 @@
 package utils
 
 import (
-	"crypto/rand"
-	"math/big"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
 )
 
-func GenerateRandomNumber(limit int) (int, error) {
-	randInt, err := rand.Int(rand.Reader, big.NewInt(int64(limit)))
-	if err != nil {
-		return 0, err
+// Generates a random number from 0000 to 9999
+func GenerateRandomNumber() string {
+	rand.Seed(time.Now().UnixMilli())
+	var out strings.Builder
+	for i := 0; i < 4; i++ {
+		out.WriteString(strconv.Itoa(rand.Intn(9)))
 	}
 
-	return int(randInt.Int64()), nil
+	return out.String()
 }

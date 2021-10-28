@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"github.com/aldy505/asciitxt"
+	"teknologi-umum-bot/utils"
+
 	"github.com/aldy505/decrr"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -11,7 +12,7 @@ func (d *Dependencies) Ascii(m *tb.Message) {
 		return
 	}
 
-	gen := asciitxt.New(m.Payload)
+	gen := utils.GenerateAscii(m.Payload)
 
 	_, err := d.Bot.Send(m.Chat, "<pre>"+gen+"</pre>", &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 	if err != nil {

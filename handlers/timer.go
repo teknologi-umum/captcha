@@ -6,6 +6,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// Ga penting, udah ga relevan dengan logic yang baru.
+// Kalo mau hapus, ya hapus aja gaperlu izin.
 type CaptchaTimer map[string]CaptchaTimerConfig
 
 type CaptchaTimerConfig struct {
