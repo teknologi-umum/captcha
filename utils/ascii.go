@@ -1,8 +1,16 @@
 package utils
 
-import "github.com/aldy505/asciitxt"
+import (
+	"strings"
+
+	"github.com/aldy505/asciitxt"
+)
 
 // Generate ASCII art text from a given string.
 func GenerateAscii(s string) string {
-	return asciitxt.New(s)
+	text := asciitxt.New(s)
+	// then we need to sanitize it
+	text = strings.ReplaceAll(text, "<", "&lt;")
+	text = strings.ReplaceAll(text, ">", "&gt;")
+	return text
 }

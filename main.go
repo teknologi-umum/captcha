@@ -11,7 +11,6 @@ import (
 	"github.com/aldy505/decrr"
 	"github.com/allegro/bigcache/v3"
 	sentry "github.com/getsentry/sentry-go"
-	"github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -22,13 +21,15 @@ func main() {
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
+    defer cache.Close()
 
 	// Setup redis
-	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	rds := redis.NewClient(parsedRedisURL)
+	// parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// rds := redis.NewClient(parsedRedisURL)
+    // defer rds.Close()
 
 	// Setup sentry
 	logger, err := sentry.NewClient(sentry.ClientOptions{
@@ -57,7 +58,7 @@ func main() {
 				OriginalException: r,
 			},
 				nil)
-			rds.Close()
+			// rds.Close()
 			b.Stop()
 			cache.Close()
 		}
@@ -70,7 +71,7 @@ func main() {
 	// Redis -> Ya redis (https://pkg.go.dev/github.com/go-redis/redis/v8@v8.11.3)
 	deps := &handlers.Dependencies{
 		Cache:   cache,
-		Redis:   rds,
+		// Redis:   rds,
 		Bot:     b,
 		Context: context.Background(),
 		Logger:  logger,
