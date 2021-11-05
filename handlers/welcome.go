@@ -16,18 +16,14 @@ Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung
 
 Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok.
 
-Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.
-
-Repository public kita lagi open buat <a href="https://hacktoberfest.digitalocean.com/">Hacktoberfest</a> juga nih. Daftar repository nya bisa dilihat di message ini: https://t.me/teknologi_umum/93094`,
+Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.`,
 	`Eh haloo {user}!
 
 Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya.
 
 Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT.
 
-Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.
-
-Repository public kita lagi open buat <a href="https://hacktoberfest.digitalocean.com/">Hacktoberfest</a> juga nih. Daftar repository nya bisa dilihat di message ini: https://t.me/teknologi_umum/93094`,
+Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.`,
 	`Welcome {user}!
 
 Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.
@@ -37,18 +33,14 @@ Harusnya saya promosi soal Hacktoberfest yang lagi diselenggarain di beberapa re
 
 Selamat datang di grup Teknologi Umum, yuk langsung matiin notification biar hidup kamu ngga sengsara.
 
-Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!
-
-Kalo kamu mau ngumpulin point <a href="https://hacktoberfest.digitalocean.com/">Hacktoberfest</a> yang cuma modal nulis artikel doang, bisa ambil issue ini: https://github.com/teknologi-umum/blog/issues/39`,
+Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!`,
 	`Hai, {user}!
 
 Selamat datang di grup Teknologi Umum!
 
 Coba ketik (dan kirim) /quiz deh, nanti grup ini tiba-tiba hidup.
 
-Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang bakso bawa HT.
-
-Repository public kita lagi open buat <a href="https://hacktoberfest.digitalocean.com/">Hacktoberfest</a> juga nih. Daftar repository nya bisa dilihat di message ini: https://t.me/teknologi_umum/93094`,
+Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang bakso bawa HT.`,
 }
 
 func deleteMessage(bot *tb.Bot, message tb.Editable) {
