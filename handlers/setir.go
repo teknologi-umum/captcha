@@ -1,14 +1,18 @@
 package handlers
 
 import (
-	"github.com/aldy505/decrr"
-	tb "gopkg.in/tucnak/telebot.v2"
 	"os"
 	"strconv"
+	"strings"
+	"teknologi-umum-bot/utils"
+
+	"github.com/aldy505/decrr"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 func (d *Dependencies) SetirManual(m *tb.Message) {
-	if strconv.Itoa(m.Sender.ID) != os.Getenv("ADMIN_ID") || m.Chat.Type != tb.ChatPrivate {
+	admin := strings.Split(os.Getenv("ADMIN_ID"), ",")
+	if !utils.IsIn(admin, strconv.Itoa(m.Sender.ID)) || m.Chat.Type != tb.ChatPrivate {
 		return
 	}
 
@@ -18,10 +22,20 @@ func (d *Dependencies) SetirManual(m *tb.Message) {
 	}
 
 	if m.IsReply() {
-		replyToID, err := strconv.Atoi(m.Payload)
-		if err != nil {
-			panic(decrr.Wrap(err))
+		var replyToID int
+
+		if strings.HasPrefix(m.Payload, "https://t.me/") {
+			replyToID, err = strconv.Atoi(strings.Split(m.Payload, "/")[4])
+			if err != nil {
+				panic(decrr.Wrap(err))
+			}
+		} else {
+			replyToID, err = strconv.Atoi(m.Payload)
+			if err != nil {
+				panic(decrr.Wrap(err))
+			}
 		}
+
 		_, err = d.Bot.Send(tb.ChatID(home), m.ReplyTo.Text, &tb.SendOptions{
 			ParseMode:         tb.ModeHTML,
 			AllowWithoutReply: true,

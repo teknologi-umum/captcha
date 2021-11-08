@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
-    defer cache.Close()
+	defer cache.Close()
 
 	// Setup redis
 	// parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
@@ -29,7 +29,7 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// rds := redis.NewClient(parsedRedisURL)
-    // defer rds.Close()
+	// defer rds.Close()
 
 	// Setup sentry
 	logger, err := sentry.NewClient(sentry.ClientOptions{
@@ -70,7 +70,7 @@ func main() {
 	//   buat berurusan sama slice/list of string.
 	// Redis -> Ya redis (https://pkg.go.dev/github.com/go-redis/redis/v8@v8.11.3)
 	deps := &handlers.Dependencies{
-		Cache:   cache,
+		Cache: cache,
 		// Redis:   rds,
 		Bot:     b,
 		Context: context.Background(),
