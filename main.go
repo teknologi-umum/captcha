@@ -18,7 +18,9 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"teknologi-umum-bot/logic"
 	"time"
 
@@ -72,9 +74,10 @@ func main() {
 
 	// This is for recovering from panic.
 	defer func() {
-		if r := recover().(error); r != nil {
-			_ = logger.CaptureException(r, &sentry.EventHint{
-				OriginalException: r,
+		r := recover()
+		if r != nil {
+			_ = logger.CaptureException(r.(error), &sentry.EventHint{
+				OriginalException: r.(error),
 			},
 				nil)
 		}
@@ -103,5 +106,13 @@ func main() {
 		{Text: "ascii", Description: "Sends ASCII generated text."},
 	})
 
-	b.Start()
+	log.Println("Bot started!")
+	go func() {
+		b.Start()
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan
+	log.Println("Shutdown signal received, exiting...")
 }
