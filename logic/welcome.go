@@ -1,11 +1,11 @@
-package handlers
+package logic
 
 import (
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/aldy505/decrr"
+	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -51,8 +51,8 @@ func deleteMessage(bot *tb.Bot, message tb.Editable) {
 	<-c
 }
 
-func (d *Dependencies) WelcomeMessage(m *tb.Message) {
-	msg, err := d.Bot.Send(
+func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error {
+	msg, err := bot.Send(
 		m.Chat,
 		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.UserJoined.FirstName+" "+m.UserJoined.LastName, 1),
 		&tb.SendOptions{
@@ -64,10 +64,11 @@ func (d *Dependencies) WelcomeMessage(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		panic(decrr.Wrap(err))
+		return err
 	}
 
-	go deleteMessage(d.Bot, msg)
+	go deleteMessage(bot, msg)
+	return nil
 }
 
 func randomNum() int {

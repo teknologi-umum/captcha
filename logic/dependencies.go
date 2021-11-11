@@ -1,4 +1,4 @@
-package handlers
+package logic
 
 import (
 	"context"
@@ -15,5 +15,4 @@ type Dependencies struct {
 	Bot     *tb.Bot
 	Context context.Context
 	Logger  *sentry.Client
-	Timers  chan CaptchaTimer
 }
