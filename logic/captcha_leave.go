@@ -17,11 +17,6 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	}
 
 	if m.Sender.IsBot || m.Private() || isAdmin(admins, m.Sender) {
-		_, err = d.Bot.Send(m.Chat, "Kamu admin, nggak bisa")
-		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
-			return
-		}
 		return
 	}
 
