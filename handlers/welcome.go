@@ -17,7 +17,7 @@ Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung
 Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok.
 
 Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.`,
-	`Eh haloo {user}!
+	`Hai {user}!
 
 Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya.
 
@@ -26,9 +26,7 @@ Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin ki
 Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.`,
 	`Welcome {user}!
 
-Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.
-
-Harusnya saya promosi soal Hacktoberfest yang lagi diselenggarain di beberapa repository grup ini, cuma ngga ah, malas hahaha.`,
+Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.`,
 	`Haloo {user}!
 
 Selamat datang di grup Teknologi Umum, yuk langsung matiin notification biar hidup kamu ngga sengsara.

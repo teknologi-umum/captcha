@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// Setup in memory cache
-	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 6))
+	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
@@ -60,7 +60,7 @@ func main() {
 				nil)
 			// rds.Close()
 			b.Stop()
-			cache.Close()
+			// cache.Flush()
 		}
 	}()
 
@@ -101,10 +101,11 @@ func main() {
 	// Documentation soal package telebot ada disini: https://pkg.go.dev/gopkg.in/tucnak/telebot.v2
 	//
 	// Dari sini kamu ke handlers/captcha.go
-	b.Handle(tb.OnUserJoined, deps.WelcomeMessage)
-
+	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
+	b.Handle(tb.OnText, deps.WaitForAnswer)
 	b.Handle("/setir", deps.SetirManual)
 	b.Handle("/ascii", deps.Ascii)
+	b.Handle("/captcha", deps.CaptchaUserJoin)
 
 	b.SetCommands([]tb.Command{
 		{Text: "ascii", Description: "Sends ASCII generated text."},
