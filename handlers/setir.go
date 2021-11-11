@@ -60,6 +60,33 @@ func (d *Dependencies) SetirManual(m *tb.Message) {
 		return
 	}
 
+	if strings.HasPrefix(m.Payload, "https://") {
+		var toBeSent interface{}
+		if strings.HasSuffix(m.Payload, ".jpg") || strings.HasSuffix(m.Payload, ".png") || strings.HasSuffix(m.Payload, ".jpeg") {
+			toBeSent = &tb.Photo{File: tb.FromURL(m.Payload)}
+		} else if strings.HasSuffix(m.Payload, ".gif") {
+			toBeSent = &tb.Animation{File: tb.FromURL(m.Payload)}
+		} else {
+			return
+		}
+
+		_, err = d.Bot.Send(tb.ChatID(home), toBeSent, &tb.SendOptions{AllowWithoutReply: true})
+		if err != nil {
+			_, err = d.Bot.Send(m.Chat, "Failed sending that photo: "+err.Error())
+			if err != nil {
+				panic(decrr.Wrap(err))
+			}
+			return
+		}
+
+		_, err = d.Bot.Send(m.Chat, "Photo sent")
+		if err != nil {
+			panic(decrr.Wrap(err))
+		}
+		return
+
+	}
+
 	_, err = d.Bot.Send(tb.ChatID(home), m.Payload, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 	if err != nil {
 		_, err = d.Bot.Send(m.Chat, "Failed sending that message: "+err.Error())
