@@ -103,7 +103,6 @@ func main() {
 	// Dari sini kamu ke handlers/captcha.go
 	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
 	b.Handle(tb.OnText, deps.WaitForAnswer)
-	b.Handle("/setir", deps.SetirManual)
 	b.Handle("/ascii", deps.Ascii)
 	b.Handle("/captcha", deps.CaptchaUserJoin)
 
