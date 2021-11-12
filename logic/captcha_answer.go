@@ -66,7 +66,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		go deleteMessage(d.Bot, tb.StoredMessage{ChatID: m.Chat.ID, MessageID: strconv.Itoa(m.ID)})
+		err = d.Bot.Delete(m)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
 
 		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
