@@ -52,18 +52,21 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
+			"Hai, <a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+
+				"\">"+m.Sender.FirstName+"</a>. "+
+				"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
 				strconv.Itoa(int(remainingTime.Seconds()))+
 				" detik lagi, kalau nggak, saya kick!",
 			&tb.SendOptions{
 				ParseMode: tb.ModeHTML,
-				ReplyTo:   m,
 			},
 		)
 		if err != nil {
 			handleError(err, d.Logger, d.Bot, m)
 			return
 		}
+
+		go deleteMessage(d.Bot, tb.StoredMessage{ChatID: m.Chat.ID, MessageID: strconv.Itoa(m.ID)})
 
 		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
