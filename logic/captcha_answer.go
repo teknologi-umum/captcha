@@ -47,14 +47,37 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
+	// Check if the answer is a media
+	if isMedia(m) {
+		remainingTime := time.Until(captcha.Expiry)
+		wrongMsg, err := d.Bot.Send(
+			m.Chat,
+			"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" detik lagi, kalau nggak, saya kick!",
+			&tb.SendOptions{
+				ParseMode: tb.ModeHTML,
+				ReplyTo:   m,
+			},
+		)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
+
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
+
+		return
+	}
+
 	// Check if the answer is not a number
 	if _, err := strconv.Atoi(m.Text); errors.Is(err, strconv.ErrSyntax) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Wrong answer, it's only consist of numbers. You have "+
+			"Jawaban captcha salah, hanya terdiri dari angka kok. Kamu punya "+
 				strconv.Itoa(int(remainingTime.Seconds()))+
-				" more second to solve the captcha.",
+				" detik lagi untuk menyelesaikan captcha.",
 			&tb.SendOptions{
 				ParseMode: tb.ModeHTML,
 				ReplyTo:   m,
@@ -75,9 +98,9 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Wrong answer, please try again. You have "+
+			"Jawaban captcha salah, harap coba lagi. Kamu punya"+
 				strconv.Itoa(int(remainingTime.Seconds()))+
-				" more second to solve the captcha.",
+				" detik lagi untuk menyelesaikan captcha.",
 			&tb.SendOptions{
 				ParseMode: tb.ModeHTML,
 				ReplyTo:   m,
@@ -152,6 +175,11 @@ func removeUserFromCache(cache *bigcache.BigCache, key string) error {
 	return nil
 }
 
+// Collect AdditionalMsg that was sent because the user did something
+// and put it on cache.
+//
+// It is not recommended to use it with a goroutine.
+// This should be a normal blocking function.
 func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *sentry.Client, captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
 	// Because the wrongMsg is another message sent by us, which correlates to the
 	// captcha message, we need to put the message ID into the cache.
@@ -170,4 +198,9 @@ func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *se
 		handleError(err, logger, bot, m)
 		return
 	}
+}
+
+// Check if the message contains any media.
+func isMedia(m *tb.Message) bool {
+	return m.Text == ""
 }
