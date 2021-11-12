@@ -31,6 +31,25 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// This init function checks if there's any configuration
+// missing from the .env file.
+func init() {
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		log.Fatal("Please provide the ENVIRONMENT value on the .env file")
+	}
+
+	token := os.Getenv("BOT_TOKEN")
+	if token == "" {
+		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
+	}
+
+	sentry := os.Getenv("SENTRY_DSN")
+	if env == "production" && sentry == "" {
+		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
+	}
+}
+
 func main() {
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
