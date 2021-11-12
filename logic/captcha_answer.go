@@ -16,13 +16,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	check, err := userExists(d.Cache, strconv.Itoa(m.Sender.ID))
+	exists, err := userExists(d.Cache, strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	if !check {
+	if !exists {
 		return
 	}
 
