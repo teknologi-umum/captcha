@@ -1,11 +1,27 @@
+// Hello!
+//
+// This is the source code for @TeknumCaptchaBot where you can find
+// the ugly code behind @TeknumCaptchaBot's captcha feature and more.
+//
+// If you are learning Go for the first time and about to browse this
+// repository as one of your first steps, you might want to read the
+// other repository on the organization. It's far easier.
+// Here: https://github.com/teknologi-umum/polarite
+//
+// Unless, you're stubborn and want to learn the hard way, all I can
+// say is just.. good luck.
+//
+// This source code is very ugly. Let me tell you that up front.
 package main
 
 import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
-	"teknologi-umum-bot/handlers"
+	"syscall"
+	"teknologi-umum-bot/logic"
 	"time"
 
 	"github.com/aldy505/decrr"
@@ -15,14 +31,37 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// This init function checks if there's any configuration
+// missing from the .env file.
+func init() {
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		log.Fatal("Please provide the ENVIRONMENT value on the .env file")
+	}
+
+	token := os.Getenv("BOT_TOKEN")
+	if token == "" {
+		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
+	}
+
+	sentry := os.Getenv("SENTRY_DSN")
+	if env == "production" && sentry == "" {
+		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
+	}
+}
+
 func main() {
 	// Setup in memory cache
-	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 6))
+	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
 	defer cache.Close()
 
+	// This Redis line below is commented out because it's not needed
+	// for now. Yet, while I'm a shaman, I'm not sure if I'll need it
+	// or not. So, I'll just leave it here.
+	//
 	// Setup redis
 	// parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	// if err != nil {
@@ -31,7 +70,7 @@ func main() {
 	// rds := redis.NewClient(parsedRedisURL)
 	// defer rds.Close()
 
-	// Setup sentry
+	// Setup Sentry for error handling.
 	logger, err := sentry.NewClient(sentry.ClientOptions{
 		Dsn:              os.Getenv("SENTRY_DSN"),
 		AttachStacktrace: true,
@@ -42,73 +81,56 @@ func main() {
 	}
 	defer logger.Flush(5 * time.Second)
 
-	// Setup bot
+	// Setup Telegram Bot
 	b, err := tb.NewBot(tb.Settings{
 		Token:  os.Getenv("BOT_TOKEN"),
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 	})
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
+	defer b.Stop()
 
+	// This is for recovering from panic.
 	defer func() {
-		if r := recover().(error); r != nil {
-			logger.CaptureException(r, &sentry.EventHint{
-				OriginalException: r,
-			},
-				nil)
-			// rds.Close()
-			b.Stop()
-			cache.Close()
+		r := recover()
+		if r != nil {
+			_ = logger.CaptureException(r.(error), &sentry.EventHint{
+				OriginalException: r.(error),
+			}, nil)
 		}
 	}()
 
-	// Kalo mau di rename di file handlers/dependencies.go juga gapapa.
-	// Cache -> In memory cache (https://github.com/allegro/bigcache)
-	//   Si BigCache ini dia punya function namanya Append(), nanti kedepannya bisa dimanfaatkan
-	//   buat berurusan sama slice/list of string.
-	// Redis -> Ya redis (https://pkg.go.dev/github.com/go-redis/redis/v8@v8.11.3)
-	deps := &handlers.Dependencies{
-		Cache: cache,
-		// Redis:   rds,
+	deps := &logic.Dependencies{
+		Cache:   cache,
 		Bot:     b,
 		Context: context.Background(),
 		Logger:  logger,
 	}
 
+	// This is basically just for health check.
 	b.Handle("/start", func(m *tb.Message) {
 		if m.FromGroup() {
 			b.Send(m.Chat, "ok")
 		}
 	})
 
-	// (aldy505): Jadi ini deps.WelcomeMessage diganti sama deps.CaptchaUserJoin
-	// Setelah itu, nggak tau ya, kayaknya bakal listen to the whole chat.
-	// If (message.Sender.ID is in array of ongoing captchas) {
-	//   check if the message contains the captcha answer, while still keeping the timer running
-	//   if (message is the captcha answer) {
-	//      - cancel the timer
-	//      - remove the user ID from redis and in memory cache
-	//      - send congratulations message
-	//   } else {
-	//      do nothing, keep the timer running
-	//   }
-	// } else {
-	//   do nothing, keep the timer running
-	// }
-	//
-	// Documentation soal package telebot ada disini: https://pkg.go.dev/gopkg.in/tucnak/telebot.v2
-	//
-	// Dari sini kamu ke handlers/captcha.go
-	b.Handle(tb.OnUserJoined, deps.WelcomeMessage)
-
-	b.Handle("/setir", deps.SetirManual)
+	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
+	b.Handle(tb.OnText, deps.WaitForAnswer)
+	b.Handle(tb.OnUserLeft, deps.CaptchaUserLeave)
 	b.Handle("/ascii", deps.Ascii)
 
 	b.SetCommands([]tb.Command{
 		{Text: "ascii", Description: "Sends ASCII generated text."},
 	})
 
-	b.Start()
+	log.Println("Bot started!")
+	go func() {
+		b.Start()
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan
+	log.Println("Shutdown signal received, exiting...")
 }

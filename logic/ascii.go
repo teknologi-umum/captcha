@@ -1,4 +1,4 @@
-package handlers
+package logic
 
 import (
 	"teknologi-umum-bot/utils"
@@ -7,6 +7,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// Send ASCII art message for fun.
 func (d *Dependencies) Ascii(m *tb.Message) {
 	if m.Payload == "" {
 		return
