@@ -41,6 +41,8 @@ var CaptchaQuestion = `Halo, {user}!
 
 Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!
 
+Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.
+
 <pre>{captcha}</pre>`
 
 // This is the most frustrating function that I've written at this point of time.
