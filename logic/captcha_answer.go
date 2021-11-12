@@ -2,11 +2,13 @@ package logic
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -45,12 +47,14 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	// Check if the answer is correct or not
-	if m.Text != captcha.Answer {
+	// Check if the answer is not a number
+	if _, err := strconv.Atoi(m.Text); errors.Is(err, strconv.ErrSyntax) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Wrong answer, please try again. You have "+strconv.Itoa(int(remainingTime.Seconds()))+" more second to solve the captcha.",
+			"Wrong answer, it's only consist of numbers. You have "+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" more second to solve the captcha.",
 			&tb.SendOptions{
 				ParseMode: tb.ModeHTML,
 				ReplyTo:   m,
@@ -61,23 +65,30 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		// Because the wrongMsg is another message sent by us, which correlates to the
-		// captcha message, we need to put the message ID into the cache.
-		// So that we can delete it later.
-		captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
-		// Update the cache with the added AdditionalMsgs
-		data, err = json.Marshal(captcha)
+		return
+	}
+
+	// Check if the answer is correct or not
+	if m.Text != captcha.Answer {
+		remainingTime := time.Until(captcha.Expiry)
+		wrongMsg, err := d.Bot.Send(
+			m.Chat,
+			"Wrong answer, please try again. You have "+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" more second to solve the captcha.",
+			&tb.SendOptions{
+				ParseMode: tb.ModeHTML,
+				ReplyTo:   m,
+			},
+		)
 		if err != nil {
 			handleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
-		err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
-		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
-			return
-		}
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
 		return
 	}
@@ -139,4 +150,24 @@ func removeUserFromCache(cache *bigcache.BigCache, key string) error {
 	}
 
 	return nil
+}
+
+func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *sentry.Client, captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
+	// Because the wrongMsg is another message sent by us, which correlates to the
+	// captcha message, we need to put the message ID into the cache.
+	// So that we can delete it later.
+	captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
+
+	// Update the cache with the added AdditionalMsgs
+	data, err := json.Marshal(captcha)
+	if err != nil {
+		handleError(err, logger, bot, m)
+		return
+	}
+
+	err = cache.Set(strconv.Itoa(m.Sender.ID), data)
+	if err != nil {
+		handleError(err, logger, bot, m)
+		return
+	}
 }
