@@ -97,8 +97,7 @@ func main() {
 		if r != nil {
 			_ = logger.CaptureException(r.(error), &sentry.EventHint{
 				OriginalException: r.(error),
-			},
-				nil)
+			}, nil)
 		}
 	}()
 
