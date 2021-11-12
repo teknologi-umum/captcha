@@ -18,7 +18,9 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"teknologi-umum-bot/logic"
 	"time"
 
@@ -28,6 +30,25 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
+
+// This init function checks if there's any configuration
+// missing from the .env file.
+func init() {
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		log.Fatal("Please provide the ENVIRONMENT value on the .env file")
+	}
+
+	token := os.Getenv("BOT_TOKEN")
+	if token == "" {
+		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
+	}
+
+	sentry := os.Getenv("SENTRY_DSN")
+	if env == "production" && sentry == "" {
+		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
+	}
+}
 
 func main() {
 	// Setup in memory cache
@@ -72,11 +93,11 @@ func main() {
 
 	// This is for recovering from panic.
 	defer func() {
-		if r := recover().(error); r != nil {
-			_ = logger.CaptureException(r, &sentry.EventHint{
-				OriginalException: r,
-			},
-				nil)
+		r := recover()
+		if r != nil {
+			_ = logger.CaptureException(r.(error), &sentry.EventHint{
+				OriginalException: r.(error),
+			}, nil)
 		}
 	}()
 
@@ -103,5 +124,13 @@ func main() {
 		{Text: "ascii", Description: "Sends ASCII generated text."},
 	})
 
-	b.Start()
+	log.Println("Bot started!")
+	go func() {
+		b.Start()
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan
+	log.Println("Shutdown signal received, exiting...")
 }
