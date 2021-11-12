@@ -89,7 +89,7 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 					}
 				}
 
-				go deleteMessage(bot, kickMsg)
+				go deleteMessage(bot, tb.StoredMessage{MessageID: strconv.Itoa(kickMsg.ID), ChatID: kickMsg.Chat.ID})
 
 				err = cache.Delete(strconv.Itoa(msgUser.Sender.ID))
 				if err != nil {

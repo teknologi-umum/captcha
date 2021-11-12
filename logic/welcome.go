@@ -2,6 +2,7 @@ package logic
 
 import (
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,7 +42,7 @@ Coba ketik (dan kirim) /quiz deh, nanti grup ini tiba-tiba hidup.
 Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang bakso bawa HT.`,
 }
 
-func deleteMessage(bot *tb.Bot, message tb.Editable) {
+func deleteMessage(bot *tb.Bot, message tb.StoredMessage) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		bot.Delete(message)
@@ -54,7 +55,7 @@ func deleteMessage(bot *tb.Bot, message tb.Editable) {
 func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error {
 	msg, err := bot.Send(
 		m.Chat,
-		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.UserJoined.FirstName+" "+m.UserJoined.LastName, 1),
+		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.Sender.FirstName+" "+m.Sender.LastName, 1),
 		&tb.SendOptions{
 			ReplyTo:               m,
 			ParseMode:             tb.ModeHTML,
@@ -67,7 +68,7 @@ func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error
 		return err
 	}
 
-	go deleteMessage(bot, msg)
+	go deleteMessage(bot, tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID})
 	return nil
 }
 
