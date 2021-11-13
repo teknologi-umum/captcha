@@ -75,12 +75,22 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	question := strings.Replace(
 		strings.Replace(CaptchaQuestion, "{captcha}", captcha, 1),
 		"{user}",
-		"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+m.Sender.FirstName+"</a>",
+		"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
+			sanitizeInput(m.Sender.FirstName)+shouldAddSpace(m)+sanitizeInput(m.Sender.LastName)+
+			"</a>",
 		1,
 	)
 
 	// Send the question first.
-	msgQuestion, err := d.Bot.Send(m.Chat, question, &tb.SendOptions{ParseMode: tb.ModeHTML, ReplyTo: m})
+	msgQuestion, err := d.Bot.Send(
+		m.Chat,
+		question,
+		&tb.SendOptions{
+			ParseMode:             tb.ModeHTML,
+			ReplyTo:               m,
+			DisableWebPagePreview: true,
+		},
+	)
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
@@ -128,4 +138,19 @@ func isAdmin(admins []tb.ChatMember, user *tb.User) bool {
 		}
 	}
 	return false
+}
+
+func sanitizeInput(inp string) string {
+	var str string
+	str = strings.ReplaceAll(inp, ">", "&gt;")
+	str = strings.ReplaceAll(str, "<", "&lt;")
+	return str
+}
+
+func shouldAddSpace(m *tb.Message) string {
+	if m.Sender.LastName != "" {
+		return " "
+	}
+
+	return ""
 }

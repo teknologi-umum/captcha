@@ -55,7 +55,14 @@ func deleteMessage(bot *tb.Bot, message tb.StoredMessage) {
 func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error {
 	msg, err := bot.Send(
 		m.Chat,
-		strings.Replace(currentWelcomeMessages[randomNum()], "{user}", m.Sender.FirstName+" "+m.Sender.LastName, 1),
+		strings.Replace(
+			currentWelcomeMessages[randomNum()],
+			"{user}",
+			"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
+				sanitizeInput(m.Sender.FirstName)+shouldAddSpace(m)+sanitizeInput(m.Sender.LastName)+
+				"</a>",
+			1,
+		),
 		&tb.SendOptions{
 			ReplyTo:               m,
 			ParseMode:             tb.ModeHTML,

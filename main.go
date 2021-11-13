@@ -115,9 +115,18 @@ func main() {
 		}
 	})
 
+	// Captcha handlers
 	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
 	b.Handle(tb.OnText, deps.WaitForAnswer)
+	b.Handle(tb.OnPhoto, deps.NonTextListener)
+	b.Handle(tb.OnAnimation, deps.NonTextListener)
+	b.Handle(tb.OnVideo, deps.NonTextListener)
+	b.Handle(tb.OnDocument, deps.NonTextListener)
+	b.Handle(tb.OnSticker, deps.NonTextListener)
+	b.Handle(tb.OnVoice, deps.NonTextListener)
+	b.Handle(tb.OnVideoNote, deps.NonTextListener)
 	b.Handle(tb.OnUserLeft, deps.CaptchaUserLeave)
+
 	b.Handle("/ascii", deps.Ascii)
 
 	b.SetCommands([]tb.Command{
