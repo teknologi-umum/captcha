@@ -77,8 +77,14 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
+	// If the user submitted something that's a number but contains spaces,
+	// we will trim the spaces down. This is because I'm lazy to not let
+	// the user pass if they're actually answering the right answer
+	// but got spaces on their answer. You get the idea.
+	answer := removeSpaces(m.Text)
+
 	// Check if the answer is not a number
-	if _, err := strconv.Atoi(m.Text); errors.Is(err, strconv.ErrSyntax) {
+	if _, err := strconv.Atoi(answer); errors.Is(err, strconv.ErrSyntax) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
@@ -101,7 +107,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	}
 
 	// Check if the answer is correct or not
-	if m.Text != captcha.Answer {
+	if answer != captcha.Answer {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
@@ -210,4 +216,10 @@ func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *se
 // Check if the message contains any media.
 func isMedia(m *tb.Message) bool {
 	return m.Text == ""
+}
+
+// Uh.. You should understand what this function does.
+// It's pretty self explanatory.
+func removeSpaces(text string) string {
+	return strings.ReplaceAll(text, " ", "")
 }
