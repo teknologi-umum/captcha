@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"encoding/json"
 	"strconv"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -32,8 +33,46 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	// If the user is in the cache, we need to remove their data.
-	err = d.Cache.Delete(strconv.Itoa(m.Sender.ID))
+	// OK, they exists in the cache. Now we've got to delete
+	// all the message that we've sent before.
+	data, err := d.Cache.Get(strconv.Itoa(m.Sender.ID))
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
+
+	var captcha Captcha
+	err = json.Unmarshal(data, &captcha)
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
+
+	// Delete the question message.
+	msgToBeDeleted := tb.StoredMessage{
+		ChatID:    m.Chat.ID,
+		MessageID: captcha.QuestionID,
+	}
+	err = d.Bot.Delete(&msgToBeDeleted)
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
+
+	// Delete any additional message.
+	for _, msgID := range captcha.AdditionalMsgs {
+		msgToBeDeleted = tb.StoredMessage{
+			ChatID:    m.Chat.ID,
+			MessageID: msgID,
+		}
+		err = d.Bot.Delete(&msgToBeDeleted)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
+	}
+
+	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return

@@ -2,11 +2,13 @@ package logic
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -45,12 +47,50 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	// Check if the answer is correct or not
-	if m.Text != captcha.Answer {
+	// Check if the answer is a media
+	if isMedia(m) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Wrong answer, please try again. You have "+strconv.Itoa(int(remainingTime.Seconds()))+" more second to solve the captcha.",
+			"Hai, <a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+
+				"\">"+m.Sender.FirstName+"</a>. "+
+				"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" detik lagi, kalau nggak, saya kick!",
+			&tb.SendOptions{
+				ParseMode: tb.ModeHTML,
+			},
+		)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
+
+		err = d.Bot.Delete(m)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
+
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
+
+		return
+	}
+
+	// If the user submitted something that's a number but contains spaces,
+	// we will trim the spaces down. This is because I'm lazy to not let
+	// the user pass if they're actually answering the right answer
+	// but got spaces on their answer. You get the idea.
+	answer := removeSpaces(m.Text)
+
+	// Check if the answer is not a number
+	if _, err := strconv.Atoi(answer); errors.Is(err, strconv.ErrSyntax) {
+		remainingTime := time.Until(captcha.Expiry)
+		wrongMsg, err := d.Bot.Send(
+			m.Chat,
+			"Jawaban captcha salah, hanya terdiri dari angka kok. Kamu punya "+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" detik lagi untuk menyelesaikan captcha.",
 			&tb.SendOptions{
 				ParseMode: tb.ModeHTML,
 				ReplyTo:   m,
@@ -61,23 +101,30 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		// Because the wrongMsg is another message sent by us, which correlates to the
-		// captcha message, we need to put the message ID into the cache.
-		// So that we can delete it later.
-		captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
-		// Update the cache with the added AdditionalMsgs
-		data, err = json.Marshal(captcha)
+		return
+	}
+
+	// Check if the answer is correct or not
+	if answer != captcha.Answer {
+		remainingTime := time.Until(captcha.Expiry)
+		wrongMsg, err := d.Bot.Send(
+			m.Chat,
+			"Jawaban captcha salah, harap coba lagi. Kamu punya"+
+				strconv.Itoa(int(remainingTime.Seconds()))+
+				" detik lagi untuk menyelesaikan captcha.",
+			&tb.SendOptions{
+				ParseMode: tb.ModeHTML,
+				ReplyTo:   m,
+			},
+		)
 		if err != nil {
 			handleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
-		err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
-		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
-			return
-		}
+		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
 
 		return
 	}
@@ -139,4 +186,40 @@ func removeUserFromCache(cache *bigcache.BigCache, key string) error {
 	}
 
 	return nil
+}
+
+// Collect AdditionalMsg that was sent because the user did something
+// and put it on cache.
+//
+// It is not recommended to use it with a goroutine.
+// This should be a normal blocking function.
+func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *sentry.Client, captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
+	// Because the wrongMsg is another message sent by us, which correlates to the
+	// captcha message, we need to put the message ID into the cache.
+	// So that we can delete it later.
+	captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
+
+	// Update the cache with the added AdditionalMsgs
+	data, err := json.Marshal(captcha)
+	if err != nil {
+		handleError(err, logger, bot, m)
+		return
+	}
+
+	err = cache.Set(strconv.Itoa(m.Sender.ID), data)
+	if err != nil {
+		handleError(err, logger, bot, m)
+		return
+	}
+}
+
+// Check if the message contains any media.
+func isMedia(m *tb.Message) bool {
+	return m.Text == ""
+}
+
+// Uh.. You should understand what this function does.
+// It's pretty self explanatory.
+func removeSpaces(text string) string {
+	return strings.ReplaceAll(text, " ", "")
 }
