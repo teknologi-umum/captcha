@@ -6,6 +6,7 @@ import (
 
 	tb "gopkg.in/tucnak/telebot.v2"
 
+	"github.com/aldy505/decrr"
 	"github.com/getsentry/sentry-go"
 )
 
@@ -16,19 +17,32 @@ func handleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
 		&tb.SendOptions{ParseMode: tb.ModeHTML},
 	)
+
+	scope := sentry.NewScope()
+	scope.SetContext("tg:sender", map[string]interface{}{
+		"id":       m.Sender.ID,
+		"name":     m.Sender.FirstName + " " + m.Sender.LastName,
+		"username": m.Sender.Username,
+	})
+	scope.SetContext("tg:message", map[string]interface{}{
+		"id":   m.ID,
+		"text": m.Text,
+		"unix": m.Unixtime,
+	})
+
 	if err != nil {
 		// Come on? Another error?
 		_ = logger.CaptureException(
-			err,
+			decrr.Wrap(err),
 			&sentry.EventHint{OriginalException: err},
-			nil,
+			scope,
 		)
 	}
 
 	_ = logger.CaptureException(
-		e,
-		&sentry.EventHint{OriginalException: err},
-		nil,
+		decrr.Wrap(e),
+		&sentry.EventHint{OriginalException: e},
+		scope,
 	)
 
 	if os.Getenv("ENVIRONMENT") == "development" {

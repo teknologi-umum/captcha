@@ -45,7 +45,11 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 
 				// Goodbye, user!
 				kickMsg, err := bot.Send(msgUser.Chat,
-					"<a href=\"tg://user?id="+strconv.Itoa(msgUser.Sender.ID)+"\">"+msgUser.Sender.FirstName+" "+msgUser.Sender.LastName+"</a> didn't solve the captcha. Alright, time to kick them.",
+					"<a href=\"tg://user?id="+strconv.Itoa(msgUser.Sender.ID)+"\">"+
+						sanitizeInput(msgUser.Sender.FirstName)+
+						shouldAddSpace(msgUser)+
+						sanitizeInput(msgUser.Sender.LastName)+
+						"</a> nggak nyelesain captcha, mari kita kick!",
 					&tb.SendOptions{
 						ParseMode: tb.ModeHTML,
 					})

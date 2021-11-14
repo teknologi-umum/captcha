@@ -1,9 +1,9 @@
 package logic
 
 import (
+	"errors"
 	"teknologi-umum-bot/utils"
 
-	"github.com/aldy505/decrr"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -17,7 +17,7 @@ func (d *Dependencies) Ascii(m *tb.Message) {
 
 	_, err := d.Bot.Send(m.Chat, "<pre>"+gen+"</pre>", &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 	if err != nil {
-		if err.Error() == "telegram: message must be non-empty (400)" {
+		if errors.Is(err, tb.ErrEmptyMessage) {
 			_, err := d.Bot.Send(
 				m.Chat,
 				"That text is not supported yet",
@@ -28,10 +28,12 @@ func (d *Dependencies) Ascii(m *tb.Message) {
 				},
 			)
 			if err != nil {
-				panic(decrr.Wrap(err))
+				handleError(err, d.Logger, d.Bot, m)
+				return
 			}
 		} else {
-			panic(decrr.Wrap(err))
+			handleError(err, d.Logger, d.Bot, m)
+			return
 		}
 	}
 }

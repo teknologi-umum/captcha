@@ -47,36 +47,6 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	// Check if the answer is a media
-	if isMedia(m) {
-		remainingTime := time.Until(captcha.Expiry)
-		wrongMsg, err := d.Bot.Send(
-			m.Chat,
-			"Hai, <a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+
-				"\">"+m.Sender.FirstName+"</a>. "+
-				"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
-				strconv.Itoa(int(remainingTime.Seconds()))+
-				" detik lagi, kalau nggak, saya kick!",
-			&tb.SendOptions{
-				ParseMode: tb.ModeHTML,
-			},
-		)
-		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
-			return
-		}
-
-		err = d.Bot.Delete(m)
-		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
-			return
-		}
-
-		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
-
-		return
-	}
-
 	// If the user submitted something that's a number but contains spaces,
 	// we will trim the spaces down. This is because I'm lazy to not let
 	// the user pass if they're actually answering the right answer
@@ -115,8 +85,9 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 				strconv.Itoa(int(remainingTime.Seconds()))+
 				" detik lagi untuk menyelesaikan captcha.",
 			&tb.SendOptions{
-				ParseMode: tb.ModeHTML,
-				ReplyTo:   m,
+				ParseMode:             tb.ModeHTML,
+				ReplyTo:               m,
+				DisableWebPagePreview: true,
 			},
 		)
 		if err != nil {
@@ -132,6 +103,12 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Congratulate the user, delete the message, then delete user from captcha:users
 	// Send the welcome message to the user.
 	go sendWelcomeMessage(d.Bot, m, d.Logger)
+
+	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
 
 	// Delete the question message.
 	msgToBeDeleted := tb.StoredMessage{
@@ -159,12 +136,6 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	// TODO: Delete the user answers. But uhh, I don't really think
 	// that that's necessary. But, we'll see.
-
-	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
-	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
-		return
-	}
 }
 
 // It... remove the user from cache. What else do you expect?
@@ -211,11 +182,6 @@ func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *se
 		handleError(err, logger, bot, m)
 		return
 	}
-}
-
-// Check if the message contains any media.
-func isMedia(m *tb.Message) bool {
-	return m.Text == ""
 }
 
 // Uh.. You should understand what this function does.

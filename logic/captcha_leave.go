@@ -48,6 +48,12 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
+	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
+
 	// Delete the question message.
 	msgToBeDeleted := tb.StoredMessage{
 		ChatID:    m.Chat.ID,
@@ -70,11 +76,5 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 			handleError(err, d.Logger, d.Bot, m)
 			return
 		}
-	}
-
-	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
-	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
-		return
 	}
 }
