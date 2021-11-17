@@ -62,6 +62,10 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
+	if m.UserJoined.ID != 0 {
+		m.Sender = m.UserJoined
+	}
+
 	if m.Sender.IsBot || m.Private() || isAdmin(admins, m.Sender) {
 		return
 	}
@@ -126,8 +130,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	}
 
 	cond := sync.NewCond(&sync.Mutex{})
-	done := make(chan bool, 1)
-	go waitOrDelete(d.Cache, d.Logger, d.Bot, m, msgQuestion, cond, &done)
+	go waitOrDelete(d.Cache, d.Logger, d.Bot, m, msgQuestion, cond)
 }
 
 // Check whether or not a user is in the admin list
