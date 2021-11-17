@@ -3,6 +3,7 @@ package logic
 import (
 	"encoding/json"
 	"strconv"
+	"teknologi-umum-bot/utils"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -50,7 +51,7 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		m.Chat,
 		"Hai, <a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
 			sanitizeInput(m.Sender.FirstName)+
-			shouldAddSpace(m)+
+			utils.ShouldAddSpace(m.Sender)+
 			sanitizeInput(m.Sender.LastName)+
 			"</a>. "+
 			"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+

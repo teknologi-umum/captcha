@@ -62,7 +62,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
-	if m.Sender.IsBot || m.Private() || isAdmin(admins, m.Sender) {
+	if m.Sender.IsBot || m.Private() || utils.IsAdmin(admins, m.Sender) {
 		return
 	}
 
@@ -76,7 +76,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		strings.Replace(CaptchaQuestion, "{captcha}", captcha, 1),
 		"{user}",
 		"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
-			sanitizeInput(m.Sender.FirstName)+shouldAddSpace(m)+sanitizeInput(m.Sender.LastName)+
+			sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
 			"</a>",
 		1,
 	)
@@ -130,27 +130,9 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	go waitOrDelete(d.Cache, d.Logger, d.Bot, m, msgQuestion, cond, &done)
 }
 
-// Check whether or not a user is in the admin list
-func isAdmin(admins []tb.ChatMember, user *tb.User) bool {
-	for _, v := range admins {
-		if v.User.ID == user.ID {
-			return true
-		}
-	}
-	return false
-}
-
 func sanitizeInput(inp string) string {
 	var str string
 	str = strings.ReplaceAll(inp, ">", "&gt;")
 	str = strings.ReplaceAll(str, "<", "&lt;")
 	return str
-}
-
-func shouldAddSpace(m *tb.Message) string {
-	if m.Sender.LastName != "" {
-		return " "
-	}
-
-	return ""
 }

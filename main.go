@@ -27,6 +27,7 @@ import (
 	"github.com/allegro/bigcache/v3"
 	sentry "github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
+	_ "github.com/lib/pq"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 

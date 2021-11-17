@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"teknologi-umum-bot/utils"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -59,7 +60,7 @@ func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error
 			currentWelcomeMessages[randomNum()],
 			"{user}",
 			"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
-				sanitizeInput(m.Sender.FirstName)+shouldAddSpace(m)+sanitizeInput(m.Sender.LastName)+
+				sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
 				"</a>",
 			1,
 		),

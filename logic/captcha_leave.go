@@ -3,6 +3,7 @@ package logic
 import (
 	"encoding/json"
 	"strconv"
+	"teknologi-umum-bot/utils"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -17,7 +18,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	if m.Sender.IsBot || m.Private() || isAdmin(admins, m.Sender) {
+	if m.Sender.IsBot || m.Private() || utils.IsAdmin(admins, m.Sender) {
 		return
 	}
 
