@@ -12,6 +12,10 @@ import (
 
 // We handle error by apologizing to the user and then sending the error to Sentry.
 func handleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
+	if os.Getenv("ENVIRONMENT") == "development" {
+		log.Println(e)
+	}
+
 	_, err := bot.Send(
 		m.Chat,
 		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
@@ -44,8 +48,4 @@ func handleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 		&sentry.EventHint{OriginalException: e},
 		scope,
 	)
-
-	if os.Getenv("ENVIRONMENT") == "development" {
-		log.Println(e)
-	}
 }

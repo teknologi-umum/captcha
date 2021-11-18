@@ -48,30 +48,46 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
+	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Delete the question message.
-	msgToBeDeleted := tb.StoredMessage{
+	err = d.Bot.Delete(&tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
-	}
-	err = d.Bot.Delete(&msgToBeDeleted)
+	})
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	// Delete any additional message.
-	for _, msgID := range captcha.AdditionalMsgs {
-		msgToBeDeleted = tb.StoredMessage{
+	// Delete user's messages.
+	for _, msgID := range captcha.UserMsgs {
+		if msgID == "" {
+			continue
+		}
+		err = d.Bot.Delete(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
+		})
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
 		}
-		err = d.Bot.Delete(&msgToBeDeleted)
+	}
+
+	// Delete any additional message.
+	for _, msgID := range captcha.AdditionalMsgs {
+		if msgID == "" {
+			continue
+		}
+		err = d.Bot.Delete(&tb.StoredMessage{
+			ChatID:    m.Chat.ID,
+			MessageID: msgID,
+		})
 		if err != nil {
 			handleError(err, d.Logger, d.Bot, m)
 			return
