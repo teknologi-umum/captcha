@@ -72,5 +72,5 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		return
 	}
 
-	collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
+	d.collectAdditionalAndCache(captcha, m, wrongMsg)
 }

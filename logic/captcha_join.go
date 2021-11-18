@@ -25,6 +25,7 @@ type Captcha struct {
 	ChatID         int64     `json:"chat_id"`
 	QuestionID     string    `json:"question_id"`
 	AdditionalMsgs []string  `json:"additional_msgs"`
+	UserMsgs       []string  `json:"user_msgs"`
 }
 
 const (
@@ -130,7 +131,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	}
 
 	cond := sync.NewCond(&sync.Mutex{})
-	go waitOrDelete(d.Cache, d.Logger, d.Bot, m, msgQuestion, cond)
+	go d.waitOrDelete(m, msgQuestion, cond)
 }
 
 // Check whether or not a user is in the admin list

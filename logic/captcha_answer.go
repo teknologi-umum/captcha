@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -71,7 +69,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
+		d.collectAdditionalAndCache(captcha, m, wrongMsg)
 
 		return
 	}
@@ -95,7 +93,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		collectAdditionalAndCache(d.Cache, d.Bot, d.Logger, captcha, m, wrongMsg)
+		d.collectAdditionalAndCache(captcha, m, wrongMsg)
 
 		return
 	}
@@ -104,7 +102,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Send the welcome message to the user.
 	go sendWelcomeMessage(d.Bot, m, d.Logger)
 
-	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
+	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
@@ -139,19 +137,19 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 }
 
 // It... remove the user from cache. What else do you expect?
-func removeUserFromCache(cache *bigcache.BigCache, key string) error {
-	err := cache.Delete(key)
+func (d *Dependencies) removeUserFromCache(key string) error {
+	err := d.Cache.Delete(key)
 	if err != nil {
 		return err
 	}
 
-	users, err := cache.Get("captcha:users")
+	users, err := d.Cache.Get("captcha:users")
 	if err != nil {
 		return err
 	}
 
 	str := strings.Replace(string(users), key+",", "", 1)
-	err = cache.Set("captcha:users", []byte(str))
+	err = d.Cache.Set("captcha:users", []byte(str))
 	if err != nil {
 		return err
 	}
@@ -164,7 +162,7 @@ func removeUserFromCache(cache *bigcache.BigCache, key string) error {
 //
 // It is not recommended to use it with a goroutine.
 // This should be a normal blocking function.
-func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *sentry.Client, captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
+func (d *Dependencies) collectAdditionalAndCache(captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
 	// Because the wrongMsg is another message sent by us, which correlates to the
 	// captcha message, we need to put the message ID into the cache.
 	// So that we can delete it later.
@@ -173,13 +171,13 @@ func collectAdditionalAndCache(cache *bigcache.BigCache, bot *tb.Bot, logger *se
 	// Update the cache with the added AdditionalMsgs
 	data, err := json.Marshal(captcha)
 	if err != nil {
-		handleError(err, logger, bot, m)
+		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	err = cache.Set(strconv.Itoa(m.Sender.ID), data)
+	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
 	if err != nil {
-		handleError(err, logger, bot, m)
+		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 }

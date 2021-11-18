@@ -6,13 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 // It will start a timer. If the timer is expired, it will kick the user from the group.
-func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, msgUser *tb.Message, msgQst *tb.Message, cond *sync.Cond) {
+func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, cond *sync.Cond) {
 	// Let's start the timer, shall we?
 	t := time.NewTimer(CAPTCHA_TIMEOUT)
 
@@ -25,25 +23,25 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 		//
 		// If they're still in the cache, we will say goodbye and
 		// kick them from the group.
-		check := cacheExists(cache, strconv.Itoa(msgUser.Sender.ID))
+		check := cacheExists(d.Cache, strconv.Itoa(msgUser.Sender.ID))
 
 		if check {
 			// Fetch the captcha data first
 			var captcha Captcha
-			user, err := cache.Get(strconv.Itoa(msgUser.Sender.ID))
+			user, err := d.Cache.Get(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			err = json.Unmarshal(user, &captcha)
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			// Goodbye, user!
-			kickMsg, err := bot.Send(msgUser.Chat,
+			kickMsg, err := d.Bot.Send(msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.Itoa(msgUser.Sender.ID)+"\">"+
 					sanitizeInput(msgUser.Sender.FirstName)+
 					shouldAddSpace(msgUser)+
@@ -53,19 +51,19 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 					ParseMode: tb.ModeHTML,
 				})
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			// Even if the keyword is Ban, it's just kicking them.
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
-			err = bot.Ban(msgUser.Chat, &tb.ChatMember{
+			err = d.Bot.Ban(msgUser.Chat, &tb.ChatMember{
 				RestrictedUntil: time.Now().Unix() + int64(BAN_DURATION),
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -74,9 +72,9 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 				ChatID:    msgUser.Chat.ID,
 				MessageID: captcha.QuestionID,
 			}
-			err = bot.Delete(&msgToBeDeleted)
+			err = d.Bot.Delete(&msgToBeDeleted)
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -85,18 +83,18 @@ func waitOrDelete(cache *bigcache.BigCache, logger *sentry.Client, bot *tb.Bot, 
 					ChatID:    msgUser.Chat.ID,
 					MessageID: msgID,
 				}
-				err = bot.Delete(&msgToBeDeleted)
+				err = d.Bot.Delete(&msgToBeDeleted)
 				if err != nil {
-					handleError(err, logger, bot, msgUser)
+					handleError(err, d.Logger, d.Bot, msgUser)
 					return
 				}
 			}
 
-			go deleteMessage(bot, tb.StoredMessage{MessageID: strconv.Itoa(kickMsg.ID), ChatID: kickMsg.Chat.ID})
+			go deleteMessage(d.Bot, tb.StoredMessage{MessageID: strconv.Itoa(kickMsg.ID), ChatID: kickMsg.Chat.ID})
 
-			err = cache.Delete(strconv.Itoa(msgUser.Sender.ID))
+			err = d.Cache.Delete(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				handleError(err, logger, bot, msgUser)
+				handleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 

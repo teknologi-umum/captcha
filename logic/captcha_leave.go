@@ -48,7 +48,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	err = removeUserFromCache(d.Cache, strconv.Itoa(m.Sender.ID))
+	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
