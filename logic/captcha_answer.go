@@ -3,7 +3,6 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +45,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	d.collectUsrMsgsAndCache(captcha, m)
+	err = d.collectUserMsgAndCache(&captcha, m)
+	if err != nil {
+		handleError(err, d.Logger, d.Bot, m)
+		return
+	}
 
 	// If the user submitted something that's a number but contains spaces,
 	// we will trim the spaces down. This is because I'm lazy to not let
@@ -72,7 +75,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		d.collectAdditionalAndCache(captcha, m, wrongMsg)
+		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
 
 		return
 	}
@@ -96,7 +103,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		d.collectAdditionalAndCache(captcha, m, wrongMsg)
+		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
 
 		return
 	}
@@ -112,11 +123,10 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	go sendWelcomeMessage(d.Bot, m, d.Logger)
 
 	// Delete the question message.
-	msgToBeDeleted := tb.StoredMessage{
+	err = d.Bot.Delete(&tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
-	}
-	err = d.Bot.Delete(msgToBeDeleted)
+	})
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
@@ -155,13 +165,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 // It... remove the user from cache. What else do you expect?
 func (d *Dependencies) removeUserFromCache(key string) error {
-	log.Println("Func running: removeUserFromCache")
 	users, err := d.Cache.Get("captcha:users")
 	if err != nil {
 		return err
 	}
 
-	log.Println("Cache captcha:users:", string(users))
 	str := strings.Replace(string(users), ";"+key, "", 1)
 	err = d.Cache.Set("captcha:users", []byte(str))
 	if err != nil {
