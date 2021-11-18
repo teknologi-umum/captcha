@@ -3,6 +3,7 @@ package logic
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -45,6 +46,8 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
+	d.collectUsrMsgsAndCache(captcha, m)
+
 	// If the user submitted something that's a number but contains spaces,
 	// we will trim the spaces down. This is because I'm lazy to not let
 	// the user pass if they're actually answering the right answer
@@ -79,7 +82,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
 			m.Chat,
-			"Jawaban captcha salah, harap coba lagi. Kamu punya"+
+			"Jawaban captcha salah, harap coba lagi. Kamu punya "+
 				strconv.Itoa(int(remainingTime.Seconds()))+
 				" detik lagi untuk menyelesaikan captcha.",
 			&tb.SendOptions{
@@ -98,88 +101,79 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	// Congratulate the user, delete the message, then delete user from captcha:users
-	// Send the welcome message to the user.
-	go sendWelcomeMessage(d.Bot, m, d.Logger)
-
 	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
+	// Congratulate the user, delete the message, then delete user from captcha:users
+	// Send the welcome message to the user.
+	go sendWelcomeMessage(d.Bot, m, d.Logger)
+
 	// Delete the question message.
 	msgToBeDeleted := tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	}
-	err = d.Bot.Delete(&msgToBeDeleted)
+	err = d.Bot.Delete(msgToBeDeleted)
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	// Delete any additional message.
-	for _, msgID := range captcha.AdditionalMsgs {
-		msgToBeDeleted = tb.StoredMessage{
+	// Delete user's messages.
+	for _, msgID := range captcha.UserMsgs {
+		if msgID == "" {
+			continue
+		}
+		err = d.Bot.Delete(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
-		}
-		err = d.Bot.Delete(&msgToBeDeleted)
+		})
 		if err != nil {
 			handleError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
 
-	// TODO: Delete the user answers. But uhh, I don't really think
-	// that that's necessary. But, we'll see.
+	// Delete any additional message.
+	for _, msgID := range captcha.AdditionalMsgs {
+		if msgID == "" {
+			continue
+		}
+		err = d.Bot.Delete(&tb.StoredMessage{
+			ChatID:    m.Chat.ID,
+			MessageID: msgID,
+		})
+		if err != nil {
+			handleError(err, d.Logger, d.Bot, m)
+			return
+		}
+	}
 }
 
 // It... remove the user from cache. What else do you expect?
 func (d *Dependencies) removeUserFromCache(key string) error {
-	err := d.Cache.Delete(key)
-	if err != nil {
-		return err
-	}
-
+	log.Println("Func running: removeUserFromCache")
 	users, err := d.Cache.Get("captcha:users")
 	if err != nil {
 		return err
 	}
 
-	str := strings.Replace(string(users), key+",", "", 1)
+	log.Println("Cache captcha:users:", string(users))
+	str := strings.Replace(string(users), ";"+key, "", 1)
 	err = d.Cache.Set("captcha:users", []byte(str))
 	if err != nil {
 		return err
 	}
 
+	err = d.Cache.Delete(key)
+	if err != nil {
+		return err
+	}
+
 	return nil
-}
-
-// Collect AdditionalMsg that was sent because the user did something
-// and put it on cache.
-//
-// It is not recommended to use it with a goroutine.
-// This should be a normal blocking function.
-func (d *Dependencies) collectAdditionalAndCache(captcha Captcha, m *tb.Message, wrongMsg *tb.Message) {
-	// Because the wrongMsg is another message sent by us, which correlates to the
-	// captcha message, we need to put the message ID into the cache.
-	// So that we can delete it later.
-	captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
-
-	// Update the cache with the added AdditionalMsgs
-	data, err := json.Marshal(captcha)
-	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
-		return
-	}
-
-	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
-	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
-		return
-	}
 }
 
 // Uh.. You should understand what this function does.

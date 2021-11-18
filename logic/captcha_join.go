@@ -124,7 +124,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
-	err = d.Cache.Append("captcha:users", []byte(strconv.Itoa(m.Sender.ID)+","))
+	err = d.Cache.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return

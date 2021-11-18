@@ -121,6 +121,7 @@ func main() {
 			b.Send(m.Chat, "ok")
 		}
 	})
+	b.Handle("/del", deps.DoOrDel)
 
 	// Captcha handlers
 	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)

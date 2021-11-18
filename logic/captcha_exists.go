@@ -24,7 +24,7 @@ func userExists(cache *bigcache.BigCache, key string) (bool, error) {
 	// to []string first. Then we'll iterate through it.
 	// Also, we'd like to pop the last array, because it's
 	// just an empty string.
-	str := strings.Split(string(users), ",")[:len(strings.Split(string(users), ","))-1]
+	str := strings.Split(string(users), ";")
 	for _, v := range str {
 		if v == key {
 			return true, nil
