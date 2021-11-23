@@ -1,11 +1,18 @@
-package logic
+package ascii
 
 import (
 	"errors"
+	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 
+	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
+
+type Dependencies struct {
+	Bot    *tb.Bot
+	Logger *sentry.Client
+}
 
 // Send ASCII art message for fun.
 func (d *Dependencies) Ascii(m *tb.Message) {
@@ -28,11 +35,11 @@ func (d *Dependencies) Ascii(m *tb.Message) {
 				},
 			)
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, m)
+				shared.HandleError(err, d.Logger, d.Bot, m)
 				return
 			}
 		} else {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}

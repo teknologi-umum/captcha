@@ -10,6 +10,20 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    container: golang:1.17.3
+    services:
+      db:
+        image: postgres:14-alpine
+        ports:
+          - 5432:5432
+        emv:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: postgres
+          POSTGRES_DB: captcha
+      cache:
+        image: redis:6-alpine
+        ports:
+          - 6379:6379
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,6 +43,9 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
         env:
           ENVIRONMENT: development
+          DB_URL: postgres://postgres:password@db:5432/captcha
+          REDIS_URL: redis://@cache:6379/
+          TZ: UTC
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1

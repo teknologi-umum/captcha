@@ -15,17 +15,20 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"teknologi-umum-bot/logic"
+	"teknologi-umum-bot/cmd"
+
 	"time"
 
 	"github.com/aldy505/decrr"
 	"github.com/allegro/bigcache/v3"
+	"github.com/bsm/redislock"
 	sentry "github.com/getsentry/sentry-go"
+	"github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -51,24 +54,29 @@ func init() {
 }
 
 func main() {
+	db, err := sqlx.Open("postgres", os.Getenv("DB_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Setup Redis
+	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	rds := redis.NewClient(parsedRedisURL)
+	defer rds.Close()
+
+	// Setup Redis locker
+	redisLocker := redislock.New(rds)
+
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
 	defer cache.Close()
-
-	// This Redis line below is commented out because it's not needed
-	// for now. Yet, while I'm a shaman, I'm not sure if I'll need it
-	// or not. So, I'll just leave it here.
-	//
-	// Setup redis
-	// parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// rds := redis.NewClient(parsedRedisURL)
-	// defer rds.Close()
 
 	// Setup Sentry for error handling.
 	logger, err := sentry.NewClient(sentry.ClientOptions{
@@ -109,12 +117,14 @@ func main() {
 		}
 	}()
 
-	deps := &logic.Dependencies{
-		Cache:   cache,
-		Bot:     b,
-		Context: context.Background(),
-		Logger:  logger,
-	}
+	deps := cmd.New(cmd.Dependency{
+		Memory: cache,
+		Redis:  rds,
+		Locker: redisLocker,
+		Bot:    b,
+		Logger: logger,
+		DB:     db,
+	})
 
 	// This is basically just for health check.
 	b.Handle("/start", func(m *tb.Message) {
@@ -124,18 +134,18 @@ func main() {
 	})
 
 	// Captcha handlers
-	b.Handle(tb.OnUserJoined, deps.CaptchaUserJoin)
-	b.Handle(tb.OnText, deps.WaitForAnswer)
-	b.Handle(tb.OnPhoto, deps.NonTextListener)
-	b.Handle(tb.OnAnimation, deps.NonTextListener)
-	b.Handle(tb.OnVideo, deps.NonTextListener)
-	b.Handle(tb.OnDocument, deps.NonTextListener)
-	b.Handle(tb.OnSticker, deps.NonTextListener)
-	b.Handle(tb.OnVoice, deps.NonTextListener)
-	b.Handle(tb.OnVideoNote, deps.NonTextListener)
-	b.Handle(tb.OnUserLeft, deps.CaptchaUserLeave)
+	b.Handle(tb.OnUserJoined, deps.OnUserJoinHandler)
+	b.Handle(tb.OnText, deps.OnTextHandler)
+	b.Handle(tb.OnPhoto, deps.OnNonTextHandler)
+	b.Handle(tb.OnAnimation, deps.OnNonTextHandler)
+	b.Handle(tb.OnVideo, deps.OnNonTextHandler)
+	b.Handle(tb.OnDocument, deps.OnNonTextHandler)
+	b.Handle(tb.OnSticker, deps.OnNonTextHandler)
+	b.Handle(tb.OnVoice, deps.OnNonTextHandler)
+	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
+	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
 
-	b.Handle("/ascii", deps.Ascii)
+	b.Handle("/ascii", deps.AsciiCmdHandler)
 
 	log.Println("Bot started!")
 	go func() {

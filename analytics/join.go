@@ -6,16 +6,14 @@ import (
 	"teknologi-umum-bot/utils"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func NewUser(db *sqlx.DB, redis *redis.Client, user *tb.User) error {
+func (d *Dependency) NewUser(user *tb.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	c, err := db.Connx(ctx)
+	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err
 	}

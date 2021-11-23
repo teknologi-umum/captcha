@@ -6,6 +6,7 @@ require (
 	github.com/aldy505/asciitxt v0.0.2
 	github.com/aldy505/decrr v0.0.1
 	github.com/allegro/bigcache/v3 v3.0.1
+	github.com/bsm/redislock v0.7.1
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/jmoiron/sqlx v1.3.4

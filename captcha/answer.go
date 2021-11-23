@@ -1,10 +1,11 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
+	"teknologi-umum-bot/shared"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -16,9 +17,9 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := userExists(d.Cache, strconv.Itoa(m.Sender.ID))
+	exists, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -32,22 +33,22 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	//
 	// Get the answer and all of the data surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Cache.Get(strconv.Itoa(m.Sender.ID))
+	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.collectUserMsgAndCache(&captcha, m)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -71,13 +72,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
 		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
@@ -99,13 +100,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
 		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 
@@ -114,7 +115,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -128,7 +129,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		MessageID: captcha.QuestionID,
 	})
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -142,7 +143,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
@@ -157,7 +158,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			handleError(err, d.Logger, d.Bot, m)
+			shared.HandleError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
@@ -165,18 +166,18 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 // It... remove the user from cache. What else do you expect?
 func (d *Dependencies) removeUserFromCache(key string) error {
-	users, err := d.Cache.Get("captcha:users")
+	users, err := d.Memory.Get("captcha:users")
 	if err != nil {
 		return err
 	}
 
 	str := strings.Replace(string(users), ";"+key, "", 1)
-	err = d.Cache.Set("captcha:users", []byte(str))
+	err = d.Memory.Set("captcha:users", []byte(str))
 	if err != nil {
 		return err
 	}
 
-	err = d.Cache.Delete(key)
+	err = d.Memory.Delete(key)
 	if err != nil {
 		return err
 	}

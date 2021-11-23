@@ -5,20 +5,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func NewMsg(db *sqlx.DB, redis *redis.Client, user *tb.User) error {
+func (d *Dependency) NewMsg(user *tb.User) error {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
-	// Check latest hour
-	p := redis.TxPipeline()
-	defer p.Close()
+	usr := ParseToUser(user)
 
-	hour, err := p.Get(ctx, "analytics:hour").Result()
+	// Check latest hour
+	hour, err := d.Redis.Get(ctx, "analytics:hour").Result()
 	if err != nil {
 		return err
 	}
@@ -26,29 +23,33 @@ func NewMsg(db *sqlx.DB, redis *redis.Client, user *tb.User) error {
 	now := time.Now().Hour()
 
 	// Create new hour
-	if hour == "" && now > time.Now().Hour() {
-		counter, err := p.Get(ctx, "analytics:counter").Result()
+	if hour == "" || now > time.Now().Hour() {
+		counter, err := d.Redis.Get(ctx, "analytics:counter").Result()
 		if err != nil {
 			return err
 		}
 
 		// Insert a new counter to Redis, do nothing on the DB
 		if counter == "" {
-
+			err = d.IncrementUsrRedis(ctx, usr)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 
-		err = p.Set(ctx, "analytics:hour", strconv.Itoa(now), 0).Err()
+		err = d.Redis.Set(ctx, "analytics:hour", strconv.Itoa(now), 0).Err()
 		if err != nil {
 			return err
 		}
 
+		return nil
 	}
 
-	c, err := db.Connx(ctx)
+	// If current hour = hour on redis
+	err = d.IncrementUsrRedis(ctx, usr)
 	if err != nil {
 		return err
 	}
-	defer c.Close()
-
 	return nil
 }

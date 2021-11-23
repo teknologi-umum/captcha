@@ -8,11 +8,19 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func Migrate(db *sqlx.DB) error {
+func MustMigrate(db *sqlx.DB) error {
+	d := &Dependency{
+		DB: db,
+	}
+
+	return d.Migrate()
+}
+
+func (d *Dependency) Migrate() error {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*10))
 	defer cancel()
 
-	c, err := db.Connx(ctx)
+	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err
 	}

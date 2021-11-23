@@ -1,8 +1,9 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
 	"strconv"
+	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
 
@@ -16,9 +17,9 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := userExists(d.Cache, strconv.Itoa(m.Sender.ID))
+	exists, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -32,16 +33,16 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	//
 	// Get the answer and all of the data surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Cache.Get(strconv.Itoa(m.Sender.ID))
+	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -63,19 +64,19 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.Bot.Delete(m)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 }

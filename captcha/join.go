@@ -1,10 +1,11 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
+	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
 
@@ -59,7 +60,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// If they're not, continue execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -113,20 +114,20 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		QuestionID: strconv.Itoa(msgQuestion.ID),
 	})
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Yes, the cache key is their User ID in string format.
-	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), captchaData)
+	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), captchaData)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	err = d.Cache.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
+	err = d.Memory.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 

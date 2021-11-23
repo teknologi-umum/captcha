@@ -1,4 +1,4 @@
-package logic
+package captcha
 
 import (
 	"math/rand"

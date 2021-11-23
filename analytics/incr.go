@@ -5,13 +5,10 @@ import (
 	"database/sql"
 	"strconv"
 	"time"
-
-	"github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
 )
 
-func IncrementUsrDB(db *sqlx.DB, ctx context.Context, users []UserMap) error {
-	c, err := db.Connx(ctx)
+func (d *Dependency) IncrementUsrDB(ctx context.Context, users []UserMap) error {
+	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err
 	}
@@ -75,10 +72,12 @@ func IncrementUsrDB(db *sqlx.DB, ctx context.Context, users []UserMap) error {
 	return nil
 }
 
-func IncrementUsrRedis(cache *redis.Client, ctx context.Context, user UserMap) error {
-	p := cache.TxPipeline()
+func (d *Dependency) IncrementUsrRedis(ctx context.Context, user UserMap) error {
+	p := d.Redis.TxPipeline()
 	defer p.Close()
 
+	// Per Redis' documentation, INCR will create a new key
+	// if the named key does not exists in the first place.
 	err := p.Incr(ctx, "analytics:"+strconv.FormatInt(user.UserID, 10)).Err()
 	if err != nil {
 		return err
