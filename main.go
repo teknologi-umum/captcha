@@ -137,13 +137,6 @@ func main() {
 
 	b.Handle("/ascii", deps.Ascii)
 
-	err = b.SetCommands([]tb.Command{
-		{Text: "ascii", Description: "Sends ASCII generated text."},
-	})
-	if err != nil {
-		log.Fatal(decrr.Wrap(err))
-	}
-
 	log.Println("Bot started!")
 	go func() {
 		b.Start()

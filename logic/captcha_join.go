@@ -25,6 +25,7 @@ type Captcha struct {
 	ChatID         int64     `json:"chat_id"`
 	QuestionID     string    `json:"question_id"`
 	AdditionalMsgs []string  `json:"additional_msgs"`
+	UserMsgs       []string  `json:"user_msgs"`
 }
 
 const (
@@ -60,6 +61,10 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
+	}
+
+	if m.UserJoined.ID != 0 {
+		m.Sender = m.UserJoined
 	}
 
 	if m.Sender.IsBot || m.Private() || utils.IsAdmin(admins, m.Sender) {
@@ -119,15 +124,14 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
-	err = d.Cache.Append("captcha:users", []byte(strconv.Itoa(m.Sender.ID)+","))
+	err = d.Cache.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
 	if err != nil {
 		handleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	cond := sync.NewCond(&sync.Mutex{})
-	done := make(chan bool, 1)
-	go waitOrDelete(d.Cache, d.Logger, d.Bot, m, msgQuestion, cond, &done)
+	go d.waitOrDelete(m, msgQuestion, cond)
 }
 
 func sanitizeInput(inp string) string {

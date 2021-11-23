@@ -24,4 +24,3 @@ func ParseToUser(user *tb.User) UserMap {
 		Username:    user.Username,
 	}
 }
- 
