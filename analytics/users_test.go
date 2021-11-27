@@ -8,7 +8,9 @@ import (
 )
 
 func TestGetAllUserID(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer Cleanup(DB, Redis)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	err := Redis.SAdd(ctx, "analytics:users", "Adam", "Bobby", "Clifford").Err()
@@ -31,7 +33,9 @@ func TestGetAllUserID(t *testing.T) {
 }
 
 func TestGetAllUserMap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer Cleanup(DB, Redis)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	tx := Redis.TxPipeline()

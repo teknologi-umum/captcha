@@ -1,10 +1,12 @@
 package analytics_test
 
 import (
+	"context"
 	"log"
 	"os"
 	"teknologi-umum-bot/analytics"
 	"testing"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
@@ -40,4 +42,25 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func Cleanup(db *sqlx.DB, redis *redis.Client) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	c, err := db.Connx(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	_, err = c.ExecContext(ctx, "TRUNCATE TABLE analytics")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = redis.FlushAll(ctx).Err()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

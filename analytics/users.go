@@ -26,7 +26,7 @@ func (d *Dependency) GetAllUserMap(ctx context.Context) ([]UserMap, error) {
 	tx := d.Redis.TxPipeline()
 	defer tx.Close()
 
-	var userCmd = make(map[string]*redis.StringStringMapCmd)
+	var userCmd = make(map[string]*redis.StringStringMapCmd, len(ids))
 
 	for _, v := range ids {
 		userCmd["analytics:"+v] = tx.HGetAll(ctx, "analytics:"+v)
