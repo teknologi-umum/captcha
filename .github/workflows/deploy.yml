@@ -38,7 +38,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
         env:
           ENVIRONMENT: development
-          DATABASE_URL: postgres://postgres:password@db:5432/captcha
+          DATABASE_URL: postgres://postgres:password@db:5432/captcha?sslmode=disable
           REDIS_URL: redis://@cache:6379/
           TZ: UTC
 
