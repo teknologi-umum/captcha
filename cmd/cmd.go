@@ -53,7 +53,7 @@ func New(deps Dependency) *Dependency {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(m *tb.Message) {
-	err := d.analytics.NewMsg(m.Sender)
+	err := d.analytics.NewMsg(m)
 	if err != nil {
 		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
@@ -74,11 +74,7 @@ func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 		tempSender = m.Sender
 	}
 
-	err := d.analytics.NewUser(tempSender)
-	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
-		return
-	}
+	go d.analytics.NewUser(m, tempSender)
 
 	d.captcha.CaptchaUserJoin(m)
 }
@@ -86,7 +82,7 @@ func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 // OnNonTextHandler meant to handle anything else
 // than an incoming text message.
 func (d *Dependency) OnNonTextHandler(m *tb.Message) {
-	err := d.analytics.NewMsg(m.Sender)
+	err := d.analytics.NewMsg(m)
 	if err != nil {
 		shared.HandleError(err, d.Logger, d.Bot, m)
 		return

@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/cmd"
 
 	"time"
@@ -30,7 +31,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -54,7 +55,13 @@ func init() {
 }
 
 func main() {
-	db, err := sqlx.Open("postgres", os.Getenv("DB_URL"))
+	// Setup PostgreSQL
+	dbURL, err := pq.ParseURL(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := sqlx.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,6 +96,12 @@ func main() {
 		log.Fatal(decrr.Wrap(err))
 	}
 	defer logger.Flush(5 * time.Second)
+
+	// Running migration on database first.
+	err = analytics.MustMigrate(db)
+	if err != nil {
+		log.Fatal(decrr.Wrap(err))
+	}
 
 	// Setup Telegram Bot
 	b, err := tb.NewBot(tb.Settings{

@@ -2,18 +2,48 @@ package analytics
 
 import (
 	"context"
-	"strings"
 
 	"github.com/go-redis/redis/v8"
 )
 
 func (d *Dependency) GetAllUserID(ctx context.Context) ([]string, error) {
-	r, err := d.Redis.Get(ctx, "analytics:users").Result()
+	r, err := d.Redis.SMembers(ctx, "analytics:users").Result()
 	if err != nil {
 		return []string{}, err
 	}
 
-	return strings.Split(r, " "), nil
+	return r, nil
+}
+
+func (d *Dependency) GetAllUserMap(ctx context.Context) ([]UserMap, error) {
+	ids, err := d.GetAllUserID(ctx)
+	if err != nil {
+		return []UserMap{}, err
+	}
+
+	var users []UserMap
+
+	tx := d.Redis.TxPipeline()
+	defer tx.Close()
+
+	var userCmd = make(map[string]*redis.StringStringMapCmd, len(ids))
+
+	for _, v := range ids {
+		userCmd["analytics:"+v] = tx.HGetAll(ctx, "analytics:"+v)
+	}
+
+	_, err = tx.Exec(ctx)
+	if err != nil {
+		return []UserMap{}, err
+	}
+
+	for _, v := range userCmd {
+		var user UserMap
+		err = v.Scan(&user)
+		users = append(users, user)
+	}
+
+	return users, err
 }
 
 func (d *Dependency) FlushAllUserID(ctx context.Context) error {
@@ -26,18 +56,12 @@ func (d *Dependency) FlushAllUserID(ctx context.Context) error {
 	defer tx.Close()
 
 	for _, v := range ids {
-		err = tx.Del(ctx, "analytics"+v).Err()
-		if err != nil {
-			return err
-		}
+		tx.Del(ctx, "analytics:"+v)
 	}
 
-	err = tx.Set(ctx, "analytics:user", "", redis.KeepTTL).Err()
-	if err != nil {
-		return err
-	}
+	tx.Del(ctx, "analytics:users")
 
-	err = tx.Do(ctx).Err()
+	_, err = tx.Exec(ctx)
 	if err != nil {
 		return err
 	}

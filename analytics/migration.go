@@ -17,7 +17,7 @@ func MustMigrate(db *sqlx.DB) error {
 }
 
 func (d *Dependency) Migrate() error {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*10))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	c, err := d.DB.Connx(ctx)
@@ -33,14 +33,14 @@ func (d *Dependency) Migrate() error {
 
 	_, err = t.ExecContext(
 		ctx,
-		`CREATE TABLE analytics (
-			user_id INTEGER PRIMARY KEY,
-			username VARCHAR(255),
-			display_name VARCHAR(255),
-			counter INTEGER DEFAULT 0,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			joined_at TIMESTAMP,
-			updated_at TIMESTAMP
+		`CREATE TABLE IF NOT EXISTS analytics (
+			user_id 		INTEGER 		PRIMARY KEY,
+			username 		VARCHAR(255),
+			display_name 	VARCHAR(255),
+			counter 		INTEGER 		DEFAULT 0,
+			created_at 		TIMESTAMP 		DEFAULT CURRENT_TIMESTAMP,
+			joined_at 		TIMESTAMP,
+			updated_at 		TIMESTAMP
 		)`,
 	)
 	if err != nil {
@@ -50,7 +50,7 @@ func (d *Dependency) Migrate() error {
 
 	_, err = t.ExecContext(
 		ctx,
-		`CREATE INDEX ON analytics (counter)`,
+		`CREATE INDEX IF NOT EXISTS idx_counter ON analytics (counter)`,
 	)
 	if err != nil {
 		t.Rollback()

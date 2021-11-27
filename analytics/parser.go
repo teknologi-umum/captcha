@@ -9,9 +9,9 @@ import (
 
 type UserMap struct {
 	UserID      int64     `db:"user_id"`
-	Username    string    `db:"username"`
-	DisplayName string    `db:"display_name"`
-	Counter     int       `db:"counter"`
+	Username    string    `db:"username" redis:"username"`
+	DisplayName string    `db:"display_name" redis:"display_name"`
+	Counter     int       `db:"counter" redis:"counter"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 	JoinedAt    time.Time `db:"joined_at"`
