@@ -26,6 +26,9 @@ type Dependency struct {
 	analytics *analytics.Dependency
 }
 
+// New returns a pointer struct of Dependency
+// which map the incoming dependencies provided
+// into what's needed by each domain.
 func New(deps Dependency) *Dependency {
 	return &Dependency{
 		captcha: &captcha.Dependencies{
@@ -48,6 +51,7 @@ func New(deps Dependency) *Dependency {
 	}
 }
 
+// OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(m *tb.Message) {
 	err := d.analytics.NewMsg(m.Sender)
 	if err != nil {
@@ -58,6 +62,10 @@ func (d *Dependency) OnTextHandler(m *tb.Message) {
 	d.captcha.WaitForAnswer(m)
 }
 
+// OnUserJoinHandler handle any incoming user join,
+// whether they was invited by someone (meaning they are
+// added by someone else into the group), or they join
+// the group all by themself.
 func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 	var tempSender *tb.User
 	if m.UserJoined.ID != 0 {
@@ -75,6 +83,8 @@ func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 	d.captcha.CaptchaUserJoin(m)
 }
 
+// OnNonTextHandler meant to handle anything else
+// than an incoming text message.
 func (d *Dependency) OnNonTextHandler(m *tb.Message) {
 	err := d.analytics.NewMsg(m.Sender)
 	if err != nil {
@@ -84,9 +94,14 @@ func (d *Dependency) OnNonTextHandler(m *tb.Message) {
 
 	d.captcha.NonTextListener(m)
 }
+
+// OnUserLeftHandle handles during an event in which
+// a user left the group.
 func (d *Dependency) OnUserLeftHandler(m *tb.Message) {
 	d.captcha.CaptchaUserLeave(m)
 }
+
+// AsciiCmdHandler handle the /ascii command.
 func (d *Dependency) AsciiCmdHandler(m *tb.Message) {
 	d.ascii.Ascii(m)
 }
