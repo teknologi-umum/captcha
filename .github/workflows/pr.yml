@@ -28,11 +28,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17.x
-
       - name: Installling dependencies
         run: go mod download
 
@@ -43,7 +38,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
         env:
           ENVIRONMENT: development
-          DB_URL: postgres://postgres:password@db:5432/captcha
+          DATABASE_URL: postgres://postgres:password@db:5432/captcha
           REDIS_URL: redis://@cache:6379/
           TZ: UTC
 
