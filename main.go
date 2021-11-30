@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/cmd"
@@ -51,6 +52,18 @@ func init() {
 	sentry := os.Getenv("SENTRY_DSN")
 	if env == "production" && sentry == "" {
 		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
+	}
+
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgres://") {
+		log.Fatal("Please provide the correct DATABASE_URL value on the .env file")
+	}
+
+	if redisURL := os.Getenv("REDIS_URL"); redisURL == "" || !strings.HasPrefix(redisURL, "redis://") {
+		log.Fatal("Please provide the correct REDIS_URL value on the .env file")
+	}
+
+	if tz := os.Getenv("TZ"); tz == "" {
+		log.Println("You are encouraged to provide the TZ value to UTC, but eh..")
 	}
 }
 
