@@ -1,5 +1,7 @@
 FROM golang:1.17.1-buster
 
+RUN curl --create-dirs -o $HOME/.postgresql/root.crt -O ${CERT_URL}
+
 WORKDIR /usr/app
 
 COPY . .
