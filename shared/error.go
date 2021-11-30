@@ -1,4 +1,4 @@
-package logic
+package shared
 
 import (
 	"log"
@@ -11,7 +11,7 @@ import (
 )
 
 // We handle error by apologizing to the user and then sending the error to Sentry.
-func handleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
+func HandleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}

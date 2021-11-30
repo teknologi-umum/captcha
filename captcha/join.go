@@ -1,10 +1,11 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
+	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
 
@@ -59,7 +60,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// If they're not, continue execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -67,7 +68,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		m.Sender = m.UserJoined
 	}
 
-	if m.Sender.IsBot || m.Private() || isAdmin(admins, m.Sender) {
+	if m.Sender.IsBot || m.Private() || utils.IsAdmin(admins, m.Sender) {
 		return
 	}
 
@@ -81,7 +82,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		strings.Replace(CaptchaQuestion, "{captcha}", captcha, 1),
 		"{user}",
 		"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
-			sanitizeInput(m.Sender.FirstName)+shouldAddSpace(m)+sanitizeInput(m.Sender.LastName)+
+			sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
 			"</a>",
 		1,
 	)
@@ -97,7 +98,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -113,20 +114,20 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		QuestionID: strconv.Itoa(msgQuestion.ID),
 	})
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Yes, the cache key is their User ID in string format.
-	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), captchaData)
+	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), captchaData)
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	err = d.Cache.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
+	err = d.Memory.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
 	if err != nil {
-		handleError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -134,27 +135,9 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	go d.waitOrDelete(m, msgQuestion, cond)
 }
 
-// Check whether or not a user is in the admin list
-func isAdmin(admins []tb.ChatMember, user *tb.User) bool {
-	for _, v := range admins {
-		if v.User.ID == user.ID {
-			return true
-		}
-	}
-	return false
-}
-
 func sanitizeInput(inp string) string {
 	var str string
 	str = strings.ReplaceAll(inp, ">", "&gt;")
 	str = strings.ReplaceAll(str, "<", "&lt;")
 	return str
-}
-
-func shouldAddSpace(m *tb.Message) string {
-	if m.Sender.LastName != "" {
-		return " "
-	}
-
-	return ""
 }

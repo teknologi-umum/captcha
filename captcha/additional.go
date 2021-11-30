@@ -1,4 +1,4 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 		return err
 	}
 
-	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
+	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), data)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (d *Dependencies) collectUserMsgAndCache(captcha *Captcha, m *tb.Message) e
 		return err
 	}
 
-	err = d.Cache.Set(strconv.Itoa(m.Sender.ID), data)
+	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), data)
 	if err != nil {
 		return err
 	}

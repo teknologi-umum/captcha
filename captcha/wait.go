@@ -1,9 +1,11 @@
-package logic
+package captcha
 
 import (
 	"encoding/json"
 	"strconv"
 	"sync"
+	"teknologi-umum-bot/shared"
+	"teknologi-umum-bot/utils"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -23,20 +25,20 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 		//
 		// If they're still in the cache, we will say goodbye and
 		// kick them from the group.
-		check := cacheExists(d.Cache, strconv.Itoa(msgUser.Sender.ID))
+		check := cacheExists(d.Memory, strconv.Itoa(msgUser.Sender.ID))
 
 		if check {
 			// Fetch the captcha data first
 			var captcha Captcha
-			user, err := d.Cache.Get(strconv.Itoa(msgUser.Sender.ID))
+			user, err := d.Memory.Get(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			err = json.Unmarshal(user, &captcha)
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -44,14 +46,14 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 			kickMsg, err := d.Bot.Send(msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.Itoa(msgUser.Sender.ID)+"\">"+
 					sanitizeInput(msgUser.Sender.FirstName)+
-					shouldAddSpace(msgUser)+
+					utils.ShouldAddSpace(msgUser.Sender)+
 					sanitizeInput(msgUser.Sender.LastName)+
 					"</a> nggak nyelesain captcha, mari kita kick!",
 				&tb.SendOptions{
 					ParseMode: tb.ModeHTML,
 				})
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -63,7 +65,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -74,7 +76,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 			}
 			err = d.Bot.Delete(&msgToBeDeleted)
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -85,16 +87,16 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 				}
 				err = d.Bot.Delete(&msgToBeDeleted)
 				if err != nil {
-					handleError(err, d.Logger, d.Bot, msgUser)
+					shared.HandleError(err, d.Logger, d.Bot, msgUser)
 					return
 				}
 			}
 
 			go deleteMessage(d.Bot, tb.StoredMessage{MessageID: strconv.Itoa(kickMsg.ID), ChatID: kickMsg.Chat.ID})
 
-			err = d.Cache.Delete(strconv.Itoa(msgUser.Sender.ID))
+			err = d.Memory.Delete(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				handleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
