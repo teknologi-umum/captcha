@@ -8,18 +8,20 @@ import (
 )
 
 func TestGetAllUserID(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	err := Redis.SAdd(ctx, "analytics:users", "Adam", "Bobby", "Clifford").Err()
+	err := cache.SAdd(ctx, "analytics:users", "Adam", "Bobby", "Clifford").Err()
 	if err != nil {
 		t.Error(err)
 	}
 
 	deps := &analytics.Dependency{
-		Redis: Redis,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	users, err := deps.GetAllUserID(ctx)
@@ -33,12 +35,12 @@ func TestGetAllUserID(t *testing.T) {
 }
 
 func TestGetAllUserMap(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	tx := Redis.TxPipeline()
+	tx := cache.TxPipeline()
 	defer tx.Close()
 	tx.SAdd(ctx, "analytics:users", "1", "2", "3")
 	tx.HSet(ctx, "analytics:1", "username", "adam", "display_name", "Adam", "counter", 1)
@@ -51,7 +53,9 @@ func TestGetAllUserMap(t *testing.T) {
 	}
 
 	deps := &analytics.Dependency{
-		Redis: Redis,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	users, err := deps.GetAllUserMap(ctx)

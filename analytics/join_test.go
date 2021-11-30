@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewUser(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	user := &tb.User{
 		ID:        1,
@@ -18,8 +18,9 @@ func TestNewUser(t *testing.T) {
 	}
 
 	d := &analytics.Dependency{
-		DB:    DB,
-		Redis: Redis,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	defer func() {

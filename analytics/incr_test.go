@@ -8,7 +8,7 @@ import (
 )
 
 func TestIncrementUsrDB(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -44,7 +44,9 @@ func TestIncrementUsrDB(t *testing.T) {
 	}
 
 	d := &analytics.Dependency{
-		DB: DB,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	err := d.IncrementUsrDB(ctx, users)
@@ -54,7 +56,7 @@ func TestIncrementUsrDB(t *testing.T) {
 }
 
 func TestIncrementUsrRedis(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
@@ -70,7 +72,9 @@ func TestIncrementUsrRedis(t *testing.T) {
 	}
 
 	d := &analytics.Dependency{
-		DB: DB,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	err := d.IncrementUsrRedis(ctx, users)

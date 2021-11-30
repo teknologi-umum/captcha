@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewMsg(t *testing.T) {
-	defer Cleanup(DB, Redis)
+	defer Cleanup()
 
 	m := &tb.Message{
 		Sender: &tb.User{
@@ -20,8 +20,9 @@ func TestNewMsg(t *testing.T) {
 	}
 
 	d := &analytics.Dependency{
-		DB:    DB,
-		Redis: Redis,
+		DB:     db,
+		Redis:  cache,
+		Memory: memory,
 	}
 
 	defer func() {
