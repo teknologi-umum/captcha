@@ -54,7 +54,7 @@ func init() {
 		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
 	}
 
-	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgresql://") || !strings.HasPrefix(dbURL, "postgres://") {
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgresql://") {
 		log.Fatal("Please provide the correct DATABASE_URL value on the .env file")
 	}
 
