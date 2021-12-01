@@ -54,7 +54,7 @@ func (d *Dependency) NewMsg(m *tb.Message) error {
 	if hourInt < now {
 		go func() {
 			// Create new context
-			ctx, cancel = context.WithTimeout(context.Background(), time.Minute*1)
+			ctx, cancel = context.WithTimeout(context.Background(), time.Minute*3)
 			defer cancel()
 
 			userMaps, err := d.GetAllUserMap(ctx)

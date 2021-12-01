@@ -70,14 +70,14 @@ func init() {
 func main() {
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(decrr.Wrap(err))
 	}
 	defer db.Close()
 
 	// Setup Redis
 	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(decrr.Wrap(err))
 	}
 	rds := redis.NewClient(parsedRedisURL)
 	defer rds.Close()
@@ -123,7 +123,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(decrr.Wrap(err))
 	}
 	defer b.Stop()
 
