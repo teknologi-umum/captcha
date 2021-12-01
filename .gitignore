@@ -19,3 +19,4 @@ vendor/
 /Godeps/
 
 .env
+.postgresql/
