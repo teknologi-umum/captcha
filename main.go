@@ -32,7 +32,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -68,13 +68,7 @@ func init() {
 }
 
 func main() {
-	// Setup PostgreSQL
-	dbURL, err := pq.ParseURL(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db, err := sqlx.Open("postgres", dbURL)
+	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
