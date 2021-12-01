@@ -82,13 +82,13 @@ func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 // OnNonTextHandler meant to handle anything else
 // than an incoming text message.
 func (d *Dependency) OnNonTextHandler(m *tb.Message) {
+	d.captcha.NonTextListener(m)
+
 	err := d.analytics.NewMsg(m)
 	if err != nil {
 		shared.HandleError(err, d.Logger, d.Bot, m)
 		return
 	}
-
-	d.captcha.NonTextListener(m)
 }
 
 // OnUserLeftHandle handles during an event in which

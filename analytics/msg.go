@@ -52,31 +52,29 @@ func (d *Dependency) NewMsg(m *tb.Message) error {
 
 	// If hourInt < now, insert the data to the database
 	if hourInt < now {
-		go func() {
-			// Create new context
-			ctx, cancel = context.WithTimeout(context.Background(), time.Minute*3)
-			defer cancel()
+		// Create new context
+		ctx, cancel = context.WithTimeout(context.Background(), time.Minute*3)
+		defer cancel()
 
-			userMaps, err := d.GetAllUserMap(ctx)
-			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, m)
-			}
+		userMaps, err := d.GetAllUserMap(ctx)
+		if err != nil {
+			shared.HandleError(err, d.Logger, d.Bot, m)
+		}
 
-			err = d.IncrementUsrDB(ctx, userMaps)
-			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, m)
-			}
+		err = d.IncrementUsrDB(ctx, userMaps)
+		if err != nil {
+			shared.HandleError(err, d.Logger, d.Bot, m)
+		}
 
-			err = d.FlushAllUserID(ctx)
-			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, m)
-			}
+		err = d.FlushAllUserID(ctx)
+		if err != nil {
+			shared.HandleError(err, d.Logger, d.Bot, m)
+		}
 
-			err = d.Redis.Set(ctx, "analytics:hour", strconv.Itoa(now), 0).Err()
-			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, m)
-			}
-		}()
+		err = d.Redis.Set(ctx, "analytics:hour", strconv.Itoa(now), 0).Err()
+		if err != nil {
+			shared.HandleError(err, d.Logger, d.Bot, m)
+		}
 
 		return nil
 	}
