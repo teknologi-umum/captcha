@@ -121,7 +121,11 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	// Congratulate the user, delete the message, then delete user from captcha:users
 	// Send the welcome message to the user.
-	go sendWelcomeMessage(d.Bot, m, d.Logger)
+	err = sendWelcomeMessage(d.Bot, m, d.Logger)
+	if err != nil {
+		shared.HandleError(err, d.Logger, d.Bot, m)
+		return
+	}
 
 	// Delete the question message.
 	err = d.Bot.Delete(&tb.StoredMessage{
