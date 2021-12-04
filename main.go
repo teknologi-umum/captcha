@@ -21,6 +21,7 @@ import (
 	"strings"
 	"syscall"
 	"teknologi-umum-bot/analytics"
+	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/cmd"
 
 	"time"
@@ -155,6 +156,10 @@ func main() {
 	log.Println("Bot started!")
 	go func() {
 		b.Start()
+	}()
+
+	go func() {
+		server.Server(db, cache)
 	}()
 
 	signalChan := make(chan os.Signal, 1)
