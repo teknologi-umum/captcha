@@ -7,9 +7,12 @@ require (
 	github.com/aldy505/decrr v0.0.1
 	github.com/allegro/bigcache/v3 v3.0.1
 	github.com/getsentry/sentry-go v0.11.0
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
 	github.com/lib/pq v1.10.4
+	github.com/rs/cors v1.8.0
+	github.com/unrolled/secure v1.0.9
 	gopkg.in/tucnak/telebot.v2 v2.4.1
 )
 

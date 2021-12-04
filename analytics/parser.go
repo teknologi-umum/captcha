@@ -8,13 +8,13 @@ import (
 )
 
 type UserMap struct {
-	UserID      int64     `db:"user_id"`
-	Username    string    `db:"username" redis:"username"`
-	DisplayName string    `db:"display_name" redis:"display_name"`
-	Counter     int       `db:"counter" redis:"counter"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
-	JoinedAt    time.Time `db:"joined_at"`
+	UserID      int64     `json:"user_id" db:"user_id"`
+	Username    string    `json:"username,omitempty" db:"username" redis:"username"`
+	DisplayName string    `json:"display_name,omitempty" db:"display_name" redis:"display_name"`
+	Counter     int       `json:"counter" db:"counter" redis:"counter"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	JoinedAt    time.Time `json:"joined_at" db:"joined_at"`
 }
 
 func ParseToUser(user *tb.User) UserMap {
