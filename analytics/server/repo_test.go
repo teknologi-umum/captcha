@@ -9,6 +9,8 @@ import (
 )
 
 func TestGetAll(t *testing.T) {
+	defer Cleanup()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
@@ -95,6 +97,8 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGetTotal(t *testing.T) {
+	defer Cleanup()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
