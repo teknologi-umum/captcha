@@ -11,6 +11,8 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
 	github.com/lib/pq v1.10.4
+	github.com/rs/cors v1.8.0
+	github.com/unrolled/secure v1.0.9
 	gopkg.in/tucnak/telebot.v2 v2.4.1
 )
 
