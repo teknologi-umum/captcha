@@ -11,14 +11,14 @@ import (
 )
 
 type Dependency struct {
-	DB *sqlx.DB
+	DB     *sqlx.DB
 	Memory *bigcache.BigCache
 }
 
 type User = analytics.UserMap
 
 func Server(db *sqlx.DB, memory *bigcache.BigCache) {
-	deps := &Dependency{DB:db}
+	deps := &Dependency{DB: db}
 
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +28,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache) {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 	})
@@ -39,6 +40,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache) {
 			return
 		}
 
+		rw.Header().Set("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(data)
 	})

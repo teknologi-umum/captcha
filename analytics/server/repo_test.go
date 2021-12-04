@@ -48,7 +48,7 @@ func TestGetAll(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		DB: db,
+		DB:     db,
 		Memory: memory,
 	}
 
@@ -100,9 +100,9 @@ func TestGetTotal(t *testing.T) {
 
 	// create a dummy user struct slice
 	users := []server.User{
-		{ UserID: 1, Username: "user1", DisplayName: "User 1", Counter: 1 },
-		{ UserID: 2, Username: "user2", DisplayName: "User 2", Counter: 2 },
-		{ UserID: 3, Username: "user3", DisplayName: "User 3", Counter: 3 },
+		{UserID: 1, Username: "user1", DisplayName: "User 1", Counter: 1},
+		{UserID: 2, Username: "user2", DisplayName: "User 2", Counter: 2},
+		{UserID: 3, Username: "user3", DisplayName: "User 3", Counter: 3},
 	}
 
 	// convert users slice to single slice with no keys, just values.
@@ -149,7 +149,7 @@ func TestGetTotal(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		DB: db,
+		DB:     db,
 		Memory: memory,
 	}
 
