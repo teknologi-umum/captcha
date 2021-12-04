@@ -2,6 +2,7 @@ package shared
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -42,6 +43,24 @@ func HandleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 			scope,
 		)
 	}
+
+	_ = logger.CaptureException(
+		decrr.Wrap(e),
+		&sentry.EventHint{OriginalException: e},
+		scope,
+	)
+}
+
+func HandleHttpError(e error, r *http.Request, logger *sentry.Client) {
+	if os.Getenv("ENVIRONMENT") == "development" {
+		log.Println(e)
+	}
+
+	scope := sentry.NewScope()
+	scope.SetContext("http:request", map[string]interface{}{
+		"method": r.Method,
+		"url":    r.URL.String(),
+	})
 
 	_ = logger.CaptureException(
 		decrr.Wrap(e),

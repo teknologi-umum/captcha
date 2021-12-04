@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 	"teknologi-umum-bot/analytics"
+	"teknologi-umum-bot/shared"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
@@ -16,12 +18,16 @@ import (
 type Dependency struct {
 	DB     *sqlx.DB
 	Memory *bigcache.BigCache
+	Logger *sentry.Client
 }
 
 type User = analytics.UserMap
 
-func Server(db *sqlx.DB, memory *bigcache.BigCache) {
-	deps := &Dependency{DB: db}
+func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
+	deps := &Dependency{
+		DB:     db,
+		Memory: memory,
+	}
 
 	secureMiddleware := secure.New(secure.Options{
 		BrowserXssFilter:   true,
@@ -42,6 +48,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache) {
 		data, err := deps.GetAll(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
 			return
 		}
 
@@ -54,6 +61,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache) {
 		data, err := deps.GetTotal(r.Context())
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
 			return
 		}
 

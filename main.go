@@ -159,7 +159,7 @@ func main() {
 	}()
 
 	go func() {
-		server.Server(db, cache)
+		server.Server(db, cache, logger)
 	}()
 
 	signalChan := make(chan os.Signal, 1)
