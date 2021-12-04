@@ -165,4 +165,15 @@ func TestGetTotal(t *testing.T) {
 	if string(data) != "3" {
 		t.Errorf("Expected 3, got %s", data)
 	}
+
+	// test it again from memory
+
+	data2, err := deps.GetTotal(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data2) != "3" {
+		t.Errorf("Expected 3, got %s", data)
+	}
 }
