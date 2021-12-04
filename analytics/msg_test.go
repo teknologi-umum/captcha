@@ -21,7 +21,6 @@ func TestNewMsg(t *testing.T) {
 
 	d := &analytics.Dependency{
 		DB:     db,
-		Redis:  cache,
 		Memory: memory,
 	}
 
