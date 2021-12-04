@@ -27,9 +27,7 @@ import (
 
 	"github.com/aldy505/decrr"
 	"github.com/allegro/bigcache/v3"
-	"github.com/bsm/redislock"
 	sentry "github.com/getsentry/sentry-go"
-	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
@@ -73,17 +71,6 @@ func main() {
 		log.Fatal(decrr.Wrap(err))
 	}
 	defer db.Close()
-
-	// Setup Redis
-	parsedRedisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	if err != nil {
-		log.Fatal(decrr.Wrap(err))
-	}
-	rds := redis.NewClient(parsedRedisURL)
-	defer rds.Close()
-
-	// Setup Redis locker
-	redisLocker := redislock.New(rds)
 
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
@@ -139,8 +126,6 @@ func main() {
 
 	deps := cmd.New(cmd.Dependency{
 		Memory: cache,
-		Redis:  rds,
-		Locker: redisLocker,
 		Bot:    b,
 		Logger: logger,
 		DB:     db,

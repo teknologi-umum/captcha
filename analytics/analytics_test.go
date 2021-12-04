@@ -10,13 +10,11 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
-	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
 
 var db *sqlx.DB
-var cache *redis.Client
 var memory *bigcache.BigCache
 
 func TestMain(m *testing.M) {
@@ -54,11 +52,6 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	err = cache.FlushAll(ctx).Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = memory.Reset()
 	if err != nil {
 		log.Fatal(err)
@@ -76,13 +69,6 @@ func Setup() {
 		log.Fatal(err)
 	}
 
-	redisURL, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cache = redis.NewClient(redisURL)
-
 	memory, err = bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
 	if err != nil {
 		log.Fatal(err)
@@ -96,6 +82,5 @@ func Setup() {
 
 func Teardown() {
 	memory.Close()
-	cache.Close()
 	db.Close()
 }
