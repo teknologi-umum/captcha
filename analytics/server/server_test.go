@@ -46,6 +46,12 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
+	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly")
+	if err != nil {
+		tx.Rollback()
+		log.Fatal(err)
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
