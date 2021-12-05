@@ -4,8 +4,6 @@ package analytics
 // analytics:hour and analytics:counter
 
 import (
-	"time"
-
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
@@ -29,29 +27,29 @@ var HourMapper []string = []string{
 }
 
 type HourlyMap struct {
-	TodaysDate      time.Time `json:"todays_date" db:"todays_date"`
-	ZeroHour        int       `json:"zero_hour" db:"zero_hour"`
-	OneHour         int       `json:"one_hour" db:"one_hour"`
-	TwoHour         int       `json:"two_hour" db:"two_hour"`
-	ThreeHour       int       `json:"three_hour" db:"three_hour"`
-	FourHour        int       `json:"four_hour" db:"four_hour"`
-	FiveHour        int       `json:"five_hour" db:"five_hour"`
-	SixHour         int       `json:"six_hour" db:"six_hour"`
-	SevenHour       int       `json:"seven_hour" db:"seven_hour"`
-	EightHour       int       `json:"eight_hour" db:"eight_hour"`
-	NineHour        int       `json:"nine_hour" db:"nine_hour"`
-	TenHour         int       `json:"ten_hour" db:"ten_hour"`
-	ElevenHour      int       `json:"eleven_hour" db:"eleven_hour"`
-	TwelveHour      int       `json:"twelve_hour" db:"twelve_hour"`
-	ThirteenHour    int       `json:"thirteen_hour" db:"thirteen_hour"`
-	FourteenHour    int       `json:"fourteen_hour" db:"fourteen_hour"`
-	FifteenHour     int       `json:"fifteen_hour" db:"fifteen_hour"`
-	SixteenHour     int       `json:"sixteen_hour" db:"sixteen_hour"`
-	SeventeenHour   int       `json:"seventeen_hour" db:"seventeen_hour"`
-	EighteenHour    int       `json:"eighteen_hour" db:"eighteen_hour"`
-	NineteenHour    int       `json:"nineteen_hour" db:"nineteen_hour"`
-	TwentyHour      int       `json:"twenty_hour" db:"twenty_hour"`
-	TwentyOneHour   int       `json:"twentyone_hour" db:"twentyone_hour"`
-	TwentyTwoHour   int       `json:"twentytwo_hour" db:"twentytwo_hour"`
-	TwentyThreeHour int       `json:"twentythree_hour" db:"twentythree_hour"`
+	TodaysDate      string `json:"todays_date" db:"todays_date"`
+	ZeroHour        int    `json:"zero_hour" db:"zero_hour"`
+	OneHour         int    `json:"one_hour" db:"one_hour"`
+	TwoHour         int    `json:"two_hour" db:"two_hour"`
+	ThreeHour       int    `json:"three_hour" db:"three_hour"`
+	FourHour        int    `json:"four_hour" db:"four_hour"`
+	FiveHour        int    `json:"five_hour" db:"five_hour"`
+	SixHour         int    `json:"six_hour" db:"six_hour"`
+	SevenHour       int    `json:"seven_hour" db:"seven_hour"`
+	EightHour       int    `json:"eight_hour" db:"eight_hour"`
+	NineHour        int    `json:"nine_hour" db:"nine_hour"`
+	TenHour         int    `json:"ten_hour" db:"ten_hour"`
+	ElevenHour      int    `json:"eleven_hour" db:"eleven_hour"`
+	TwelveHour      int    `json:"twelve_hour" db:"twelve_hour"`
+	ThirteenHour    int    `json:"thirteen_hour" db:"thirteen_hour"`
+	FourteenHour    int    `json:"fourteen_hour" db:"fourteen_hour"`
+	FifteenHour     int    `json:"fifteen_hour" db:"fifteen_hour"`
+	SixteenHour     int    `json:"sixteen_hour" db:"sixteen_hour"`
+	SeventeenHour   int    `json:"seventeen_hour" db:"seventeen_hour"`
+	EighteenHour    int    `json:"eighteen_hour" db:"eighteen_hour"`
+	NineteenHour    int    `json:"nineteen_hour" db:"nineteen_hour"`
+	TwentyHour      int    `json:"twenty_hour" db:"twenty_hour"`
+	TwentyOneHour   int    `json:"twentyone_hour" db:"twentyone_hour"`
+	TwentyTwoHour   int    `json:"twentytwo_hour" db:"twentytwo_hour"`
+	TwentyThreeHour int    `json:"twentythree_hour" db:"twentythree_hour"`
 }

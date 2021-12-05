@@ -63,7 +63,7 @@ func (d *Dependency) IncrementUsrDB(ctx context.Context, user UserMap) error {
 	_, err = t.ExecContext(
 		ctx,
 		hourlyQuery,
-		now,
+		fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day()),
 	)
 	if err != nil {
 		t.Rollback()

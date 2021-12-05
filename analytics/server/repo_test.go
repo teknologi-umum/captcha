@@ -190,19 +190,19 @@ func TestGetHourly(t *testing.T) {
 	// create a dummy hourly type
 	hourly := []server.Hourly{
 		{
-			TodaysDate: time.Now().Add(-time.Hour * 24),
+			TodaysDate: "2021-01-01",
 			ZeroHour:   14,
 			OneHour:    15,
 			TwoHour:    16,
 		},
 		{
-			TodaysDate: time.Now().Add(-time.Hour * 24 * 2),
+			TodaysDate: "2021-01-02",
 			ZeroHour:   3,
 			OneHour:    4,
 			TwoHour:    5,
 		},
 		{
-			TodaysDate: time.Now().Add(-time.Hour * 24 * 3),
+			TodaysDate: "2021-01-03",
 			ZeroHour:   6,
 			OneHour:    7,
 			TwoHour:    8,
