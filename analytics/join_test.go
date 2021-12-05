@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewUser(t *testing.T) {
-	defer Cleanup()
+	t.Cleanup(Cleanup)
 
 	user := &tb.User{
 		ID:        1,

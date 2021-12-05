@@ -22,6 +22,7 @@ type Dependency struct {
 }
 
 type User = analytics.UserMap
+type Hourly = analytics.HourlyMap
 
 func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	deps := &Dependency{
@@ -44,7 +45,14 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	r := chi.NewRouter()
 	r.Use(secureMiddleware.Handler)
 	r.Use(corsMiddleware.Handler)
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Available routes:\n\n- GET /users\n-GET /hourly\n-GET /total"))
+	})
+
+	r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
 		data, err := deps.GetAll(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -57,17 +65,30 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 		w.Write(data)
 	})
 
-	r.Get("/total", func(rw http.ResponseWriter, r *http.Request) {
-		data, err := deps.GetTotal(r.Context())
+	r.Get("/hourly", func(w http.ResponseWriter, r *http.Request) {
+		data, err := deps.GetHourly(r.Context())
 		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(err, r, deps.Logger)
 			return
 		}
 
-		rw.Header().Set("Content-Type", "text/plain")
-		rw.WriteHeader(http.StatusOK)
-		rw.Write(data)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+	})
+
+	r.Get("/total", func(w http.ResponseWriter, r *http.Request) {
+		data, err := deps.GetTotal(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 	})
 
 	log.Println("Starting server on port 8080")

@@ -7,8 +7,8 @@ import (
 
 	tb "gopkg.in/tucnak/telebot.v2"
 
-	"github.com/aldy505/decrr"
 	"github.com/getsentry/sentry-go"
+	"github.com/pkg/errors"
 )
 
 // We handle error by apologizing to the user and then sending the error to Sentry.
@@ -38,14 +38,14 @@ func HandleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 	if err != nil {
 		// Come on? Another error?
 		_ = logger.CaptureException(
-			decrr.Wrap(err),
+			errors.WithStack(err),
 			&sentry.EventHint{OriginalException: err},
 			scope,
 		)
 	}
 
 	_ = logger.CaptureException(
-		decrr.Wrap(e),
+		errors.WithStack(e),
 		&sentry.EventHint{OriginalException: e},
 		scope,
 	)
@@ -63,7 +63,7 @@ func HandleHttpError(e error, r *http.Request, logger *sentry.Client) {
 	})
 
 	_ = logger.CaptureException(
-		decrr.Wrap(e),
+		errors.WithStack(e),
 		&sentry.EventHint{OriginalException: e},
 		scope,
 	)

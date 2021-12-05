@@ -9,12 +9,13 @@
 // Here: https://github.com/teknologi-umum/polarite
 //
 // Unless, you're stubborn and want to learn the hard way, all I can
-// say is just.. good luck.
+// say is just... good luck.
 //
 // This source code is very ugly. Let me tell you that up front.
 package main
 
 import (
+	"github.com/allegro/bigcache/v3"
 	"log"
 	"os"
 	"os/signal"
@@ -26,12 +27,11 @@ import (
 
 	"time"
 
-	"github.com/aldy505/decrr"
-	"github.com/allegro/bigcache/v3"
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -48,8 +48,8 @@ func init() {
 		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
 	}
 
-	sentry := os.Getenv("SENTRY_DSN")
-	if env == "production" && sentry == "" {
+	sentryDSN := os.Getenv("SENTRY_DSN")
+	if env == "production" && sentryDSN == "" {
 		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
 	}
 
@@ -69,7 +69,7 @@ func init() {
 func main() {
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal(decrr.Wrap(err))
+		log.Fatal(errors.WithStack(err))
 	}
 	defer db.Close()
 
@@ -84,7 +84,7 @@ func main() {
 		MaxEntriesInWindow: 50,
 	})
 	if err != nil {
-		log.Fatal(decrr.Wrap(err))
+		log.Fatal(errors.WithStack(err))
 	}
 	defer cache.Close()
 
@@ -96,14 +96,14 @@ func main() {
 		Environment:      os.Getenv("ENVIRONMENT"),
 	})
 	if err != nil {
-		log.Fatal(decrr.Wrap(err))
+		log.Fatal(errors.WithStack(err))
 	}
 	defer logger.Flush(5 * time.Second)
 
 	// Running migration on database first.
 	err = analytics.MustMigrate(db)
 	if err != nil {
-		log.Fatal(decrr.Wrap(err))
+		log.Fatal(errors.WithStack(err))
 	}
 
 	// Setup Telegram Bot
@@ -119,7 +119,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatal(decrr.Wrap(err))
+		log.Fatal(errors.WithStack(err))
 	}
 	defer b.Stop()
 

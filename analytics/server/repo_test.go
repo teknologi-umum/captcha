@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"teknologi-umum-bot/analytics/server"
 	"testing"
@@ -9,9 +10,9 @@ import (
 )
 
 func TestGetAll(t *testing.T) {
-	defer Cleanup()
+	t.Cleanup(Cleanup)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	c, err := db.Connx(ctx)
@@ -31,7 +32,7 @@ func TestGetAll(t *testing.T) {
 			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
 			VALUES
 			($1, $2, $3, $4, $5, $6, $7)`,
-		1,
+		90,
 		"user1",
 		"User 1",
 		1,
@@ -69,8 +70,8 @@ func TestGetAll(t *testing.T) {
 		t.Errorf("Expected 1 user, got %d", len(user))
 	}
 
-	if user[0].UserID != 1 {
-		t.Error("user id should be 1, got:", user[0].UserID)
+	if user[0].UserID != 90 {
+		t.Error("user id should be 90, got:", user[0].UserID)
 	}
 
 	if user[0].Username != "user1" {
@@ -97,28 +98,31 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGetTotal(t *testing.T) {
-	defer Cleanup()
+	t.Cleanup(Cleanup)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	// create a dummy user struct slice
 	users := []server.User{
-		{UserID: 1, Username: "user1", DisplayName: "User 1", Counter: 1},
-		{UserID: 2, Username: "user2", DisplayName: "User 2", Counter: 2},
-		{UserID: 3, Username: "user3", DisplayName: "User 3", Counter: 3},
+		{UserID: 100, Username: "user1", DisplayName: "User 1", Counter: 1},
+		{UserID: 200, Username: "user2", DisplayName: "User 2", Counter: 2},
+		{UserID: 300, Username: "user3", DisplayName: "User 3", Counter: 3},
 	}
 
 	// convert users slice to single slice with no keys, just values.
 	var usersSlice []interface{}
 	for _, v := range users {
-		usersSlice = append(usersSlice, v.UserID)
-		usersSlice = append(usersSlice, v.Username)
-		usersSlice = append(usersSlice, v.DisplayName)
-		usersSlice = append(usersSlice, v.Counter)
-		usersSlice = append(usersSlice, v.CreatedAt)
-		usersSlice = append(usersSlice, v.JoinedAt)
-		usersSlice = append(usersSlice, v.UpdatedAt)
+		usersSlice = append(
+			usersSlice,
+			v.UserID,
+			v.Username,
+			v.DisplayName,
+			v.Counter,
+			time.Now(),
+			time.Now(),
+			time.Now(),
+		)
 	}
 
 	c, err := db.Connx(ctx)
@@ -162,18 +166,103 @@ func TestGetTotal(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data) != "3" {
-		t.Errorf("Expected 3, got %s", data)
+	if string(data) != "6" {
+		t.Errorf("Expected 6, got %s", data)
 	}
 
 	// test it again from memory
-
 	data2, err := deps.GetTotal(ctx)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if string(data2) != "3" {
-		t.Errorf("Expected 3, got %s", data)
+	if string(data2) != string(data) {
+		t.Errorf("Expected %s, got %s", data, data2)
+	}
+}
+
+func TestGetHourly(t *testing.T) {
+	t.Cleanup(Cleanup)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	// create a dummy hourly type
+	hourly := []server.Hourly{
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24),
+			ZeroHour:   14,
+			OneHour:    15,
+			TwoHour:    16,
+		},
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24 * 2),
+			ZeroHour:   3,
+			OneHour:    4,
+			TwoHour:    5,
+		},
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24 * 3),
+			ZeroHour:   6,
+			OneHour:    7,
+			TwoHour:    8,
+		},
+	}
+
+	// convert hourly slice to a single interface{} slice
+	var hourlySlice []interface{}
+	for _, v := range hourly {
+		hourlySlice = append(hourlySlice, v.TodaysDate, v.ZeroHour, v.OneHour, v.TwoHour)
+	}
+
+	c, err := db.Connx(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	defer c.Close()
+
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		`INSERT INTO analytics_hourly
+			(todays_date, zero_hour, one_hour, two_hour)
+			VALUES
+			($1, $2, $3, $4),
+			($5, $6, $7, $8),
+			($9, $10, $11, $12)`,
+		hourlySlice...,
+	)
+	if err != nil {
+		tx.Rollback()
+		t.Error(err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		t.Error(err)
+	}
+
+	deps := &server.Dependency{
+		DB:     db,
+		Memory: memory,
+	}
+
+	data, err := deps.GetHourly(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	data2, err := deps.GetHourly(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data) != string(data2) {
+		t.Errorf("Expected %s, got %s", data, data2)
 	}
 }
