@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	Setup()
 
 	defer Teardown()
-
+	defer Cleanup()
 	os.Exit(m.Run())
 }
 
@@ -40,13 +40,13 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics")
+	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics RESTART IDENTITY")
 	if err != nil {
 		tx.Rollback()
 		log.Fatal(err)
 	}
 
-	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly")
+	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly RESTART IDENTITY")
 	if err != nil {
 		tx.Rollback()
 		log.Fatal(err)
@@ -87,6 +87,43 @@ func Setup() {
 }
 
 func Teardown() {
-	memory.Close()
-	db.Close()
+	defer memory.Close()
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c, err := db.Connx(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics")
+	if err != nil {
+		tx.Rollback()
+		log.Fatal(err)
+	}
+
+	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics_hourly")
+	if err != nil {
+		tx.Rollback()
+		log.Fatal(err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		log.Fatal(err)
+	}
+
+	err = memory.Reset()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

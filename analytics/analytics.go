@@ -51,7 +51,7 @@ type HourlyMap struct {
 	EighteenHour    int       `json:"eighteen_hour" db:"eighteen_hour"`
 	NineteenHour    int       `json:"nineteen_hour" db:"nineteen_hour"`
 	TwentyHour      int       `json:"twenty_hour" db:"twenty_hour"`
-	TwentyOneHour   int       `json:"twenty_one_hour" db:"twenty_one_hour"`
-	TwentyTwoHour   int       `json:"twenty_two_hour" db:"twenty_two_hour"`
-	TwentyThreeHour int       `json:"twenty_three_hour" db:"twenty_three_hour"`
+	TwentyOneHour   int       `json:"twentyone_hour" db:"twentyone_hour"`
+	TwentyTwoHour   int       `json:"twentytwo_hour" db:"twentytwo_hour"`
+	TwentyThreeHour int       `json:"twentythree_hour" db:"twentythree_hour"`
 }

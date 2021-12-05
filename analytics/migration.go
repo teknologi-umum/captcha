@@ -60,7 +60,7 @@ func (d *Dependency) Migrate() error {
 	_, err = t.ExecContext(
 		ctx,
 		`CREATE TABLE IF NOT EXISTS analytics_hourly (
-			todays_date 		TIMESTAMP 	PRIMARY KEY,
+			todays_date 		TIMESTAMP 	UNIQUE,
 			zero_hour 			INTEGER 	DEFAULT 0,
 			one_hour 			INTEGER 	DEFAULT 0,
 			two_hour 			INTEGER 	DEFAULT 0,

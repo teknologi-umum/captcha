@@ -8,7 +8,7 @@ import (
 )
 
 func TestIncrementUsrDB(t *testing.T) {
-	defer Cleanup()
+	t.Cleanup(Cleanup)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -49,16 +49,6 @@ func TestIncrementUsrDB(t *testing.T) {
 	}
 
 	err := d.IncrementUsrDB(ctx, users[0])
-	if err != nil {
-		t.Error(err)
-	}
-
-	err = d.IncrementUsrDB(ctx, users[1])
-	if err != nil {
-		t.Error(err)
-	}
-
-	err = d.IncrementUsrDB(ctx, users[2])
 	if err != nil {
 		t.Error(err)
 	}

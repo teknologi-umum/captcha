@@ -9,12 +9,13 @@
 // Here: https://github.com/teknologi-umum/polarite
 //
 // Unless, you're stubborn and want to learn the hard way, all I can
-// say is just.. good luck.
+// say is just... good luck.
 //
 // This source code is very ugly. Let me tell you that up front.
 package main
 
 import (
+	"github.com/allegro/bigcache/v3"
 	"log"
 	"os"
 	"os/signal"
@@ -26,8 +27,7 @@ import (
 
 	"time"
 
-	"github.com/allegro/bigcache/v3"
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
@@ -48,8 +48,8 @@ func init() {
 		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
 	}
 
-	sentry := os.Getenv("SENTRY_DSN")
-	if env == "production" && sentry == "" {
+	sentryDSN := os.Getenv("SENTRY_DSN")
+	if env == "production" && sentryDSN == "" {
 		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
 	}
 

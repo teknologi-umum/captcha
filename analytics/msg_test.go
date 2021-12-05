@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewMsg(t *testing.T) {
-	defer Cleanup()
+	t.Cleanup(Cleanup)
 
 	m := &tb.Message{
 		Sender: &tb.User{
