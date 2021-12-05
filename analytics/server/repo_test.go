@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"teknologi-umum-bot/analytics/server"
 	"testing"
@@ -11,7 +12,7 @@ import (
 func TestGetAll(t *testing.T) {
 	defer Cleanup()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	c, err := db.Connx(ctx)
@@ -99,7 +100,7 @@ func TestGetAll(t *testing.T) {
 func TestGetTotal(t *testing.T) {
 	defer Cleanup()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	// create a dummy user struct slice
@@ -175,5 +176,94 @@ func TestGetTotal(t *testing.T) {
 
 	if string(data2) != "3" {
 		t.Errorf("Expected 3, got %s", data)
+	}
+}
+
+func TestGetHourly(t *testing.T) {
+	defer Cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	c, err := db.Connx(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	defer c.Close()
+
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// create a dummy hourly type
+	hourly := []server.Hourly{
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24),
+			ZeroHour:   14,
+			OneHour:    15,
+			TwoHour:    16,
+		},
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24 * 2),
+			ZeroHour:   3,
+			OneHour:    4,
+			TwoHour:    5,
+		},
+		{
+			TodaysDate: time.Now().Add(-time.Hour * 24 * 3),
+			ZeroHour:   6,
+			OneHour:    7,
+			TwoHour:    8,
+		},
+	}
+
+	// convert hourly slice to a single interface{} slice
+	var hourlySlice []interface{}
+	for _, v := range hourly {
+		hourlySlice = append(hourlySlice, v.TodaysDate)
+		hourlySlice = append(hourlySlice, v.ZeroHour)
+		hourlySlice = append(hourlySlice, v.OneHour)
+		hourlySlice = append(hourlySlice, v.TwoHour)
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		`INSER INTO analytics_hourly
+			(todays_date, zero_hour, one_hour, two_hour)
+			VALUES
+			($1, $2, $3, $4),
+			($5, $6, $7, $8),
+			($9, $10, $11, $12)`,
+		hourlySlice...,
+	)
+	if err != nil {
+		tx.Rollback()
+		t.Error(err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		t.Error(err)
+	}
+
+	deps := &server.Dependency{
+		DB:     db,
+		Memory: memory,
+	}
+
+	data, err := deps.GetHourly(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	data2, err := deps.GetHourly(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data) != string(data2) {
+		t.Errorf("Expected %s, got %s", data, data2)
 	}
 }

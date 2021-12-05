@@ -17,7 +17,7 @@ func (d *Dependency) NewMsg(m *tb.Message) error {
 	usr := ParseToUser(user)
 	usr.Counter = 1
 
-	err := d.IncrementUsrDB(ctx, []UserMap{usr})
+	err := d.IncrementUsrDB(ctx, usr)
 	if err != nil {
 		shared.HandleError(err, d.Logger, d.Bot, m)
 	}

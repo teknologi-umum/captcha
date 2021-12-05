@@ -10,38 +10,7 @@ import (
 	"github.com/allegro/bigcache/v3"
 )
 
-func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
-	// check from in memory cache first for the data
-	data, err := d.Memory.Get("analytics:analytics")
-	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
-		return []byte{}, err
-	}
-
-	if len(data) > 0 {
-		return data, nil
-	}
-
-	// if not in memory cache, then check from the database
-	users, err := d.getDataFromDB(ctx)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	// convert the struct to json first
-	data, err = json.Marshal(users)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	err = d.Memory.Set("analytics:analytics", data)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return data, nil
-}
-
-func (d *Dependency) getDataFromDB(ctx context.Context) ([]User, error) {
+func (d *Dependency) getUserDataFromDB(ctx context.Context) ([]User, error) {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return []User{}, nil
@@ -80,6 +49,77 @@ func (d *Dependency) getDataFromDB(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
+func (d *Dependency) getHourlyDataFromDB(ctx context.Context) ([]Hourly, error) {
+	c, err := d.DB.Connx(ctx)
+	if err != nil {
+		return []Hourly{}, nil
+	}
+	defer c.Close()
+
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return []Hourly{}, err
+	}
+
+	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly")
+	if err != nil {
+		tx.Rollback()
+		return []Hourly{}, err
+	}
+	defer rows.Close()
+
+	var hourly []Hourly
+	for rows.Next() {
+		var hour Hourly
+		err := rows.StructScan(&hour)
+		if err != nil {
+			tx.Rollback()
+			return []Hourly{}, err
+		}
+
+		hourly = append(hourly, hour)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return []Hourly{}, err
+	}
+
+	return hourly, nil
+}
+
+func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
+	// check from in memory cache first for the data
+	data, err := d.Memory.Get("analytics:analytics")
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+		return []byte{}, err
+	}
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	// if not in memory cache, then check from the database
+	users, err := d.getUserDataFromDB(ctx)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// convert the struct to json first
+	data, err = json.Marshal(users)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	err = d.Memory.Set("analytics:analytics", data)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return data, nil
+}
+
 func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 	// get the total from the cache first
 	total, err := d.Memory.Get("analytics:total")
@@ -92,16 +132,51 @@ func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 	}
 
 	// if not in memory cache, then check from the database
-	data, err := d.getDataFromDB(ctx)
+	data, err := d.getUserDataFromDB(ctx)
 	if err != nil {
 		return []byte{}, err
 	}
 
-	total = []byte(strconv.Itoa(len(data)))
+	var tempTotal int
+	for _, user := range data {
+		tempTotal += user.Counter
+	}
+
+	total = []byte(strconv.Itoa(tempTotal))
 	err = d.Memory.Set("analytics:total", total)
 	if err != nil {
 		return []byte{}, err
 	}
 
 	return total, nil
+}
+
+func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
+	// get the hourly from the cache first
+	hourly, err := d.Memory.Get("analytics:hourly")
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+		return []byte{}, err
+	}
+
+	if len(hourly) > 0 {
+		return hourly, nil
+	}
+
+	// if not in memory cache, then check from the database
+	data, err := d.getHourlyDataFromDB(ctx)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	hourly, err = json.Marshal(data)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	err = d.Memory.Set("analytics:hourly", hourly)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return hourly, nil
 }

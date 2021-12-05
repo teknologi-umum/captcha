@@ -48,7 +48,17 @@ func TestIncrementUsrDB(t *testing.T) {
 		Memory: memory,
 	}
 
-	err := d.IncrementUsrDB(ctx, users)
+	err := d.IncrementUsrDB(ctx, users[0])
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = d.IncrementUsrDB(ctx, users[1])
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = d.IncrementUsrDB(ctx, users[2])
 	if err != nil {
 		t.Error(err)
 	}
