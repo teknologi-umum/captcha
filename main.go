@@ -74,7 +74,15 @@ func main() {
 	defer db.Close()
 
 	// Setup in memory cache
-	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 12))
+	cache, err := bigcache.NewBigCache(bigcache.Config{
+		Shards:             1024,
+		LifeWindow:         time.Minute * 5,
+		CleanWindow:        time.Minute * 1,
+		Verbose:            true,
+		HardMaxCacheSize:   1024 * 1024 * 1024,
+		MaxEntrySize:       500,
+		MaxEntriesInWindow: 50,
+	})
 	if err != nil {
 		log.Fatal(decrr.Wrap(err))
 	}
