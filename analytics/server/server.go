@@ -24,6 +24,14 @@ type Dependency struct {
 type User = analytics.UserMap
 type Hourly = analytics.HourlyMap
 
+type Endpoint int
+
+const (
+	UserEndpoint Endpoint = iota
+	HourlyEndpoint
+	TotalEndpoint
+)
+
 func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	deps := &Dependency{
 		DB:     db,
@@ -60,7 +68,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		lastUpdated, err := deps.LastUpdated(0)
+		lastUpdated, err := deps.LastUpdated(UserEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(err, r, deps.Logger)
@@ -82,7 +90,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		lastUpdated, err := deps.LastUpdated(2)
+		lastUpdated, err := deps.LastUpdated(HourlyEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(err, r, deps.Logger)
@@ -104,7 +112,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		lastUpdated, err := deps.LastUpdated(1)
+		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(err, r, deps.Logger)

@@ -197,9 +197,9 @@ func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
 	return hourly, nil
 }
 
-func (d *Dependency) LastUpdated(r int) (time.Time, error) {
+func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 	switch r {
-	case 0:
+	case UserEndpoint:
 		data, err := d.Memory.Get("analytics:last_updated:users")
 		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 			return time.Time{}, err
@@ -210,7 +210,7 @@ func (d *Dependency) LastUpdated(r int) (time.Time, error) {
 		}
 
 		return time.Time{}, nil
-	case 1:
+	case TotalEndpoint:
 		data, err := d.Memory.Get("analytics:last_updated:total")
 		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 			return time.Time{}, err
@@ -221,7 +221,7 @@ func (d *Dependency) LastUpdated(r int) (time.Time, error) {
 		}
 
 		return time.Time{}, nil
-	case 2:
+	case HourlyEndpoint:
 		data, err := d.Memory.Get("analytics:last_updated:hourly")
 		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 			return time.Time{}, err
