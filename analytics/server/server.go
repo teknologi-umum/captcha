@@ -24,6 +24,14 @@ type Dependency struct {
 type User = analytics.UserMap
 type Hourly = analytics.HourlyMap
 
+type Endpoint int
+
+const (
+	UserEndpoint Endpoint = iota
+	HourlyEndpoint
+	TotalEndpoint
+)
+
 func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	deps := &Dependency{
 		DB:     db,
@@ -49,7 +57,7 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Available routes:\n\n- GET /users\n-GET /hourly\n-GET /total"))
+		w.Write([]byte("Available routes:\n\n- GET /users\n- GET /hourly\n- GET /total"))
 	})
 
 	r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +68,16 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		lastUpdated, err := deps.LastUpdated(UserEndpoint)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 	})
@@ -73,7 +90,16 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		lastUpdated, err := deps.LastUpdated(HourlyEndpoint)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 	})
@@ -86,7 +112,16 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "text/plain")
+		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, r, deps.Logger)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 	})
