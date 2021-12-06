@@ -22,8 +22,8 @@ var HourMapper []string = []string{
 	"zero_hour", "one_hour", "two_hour", "three_hour", "four_hour", "five_hour",
 	"six_hour", "seven_hour", "eight_hour", "nine_hour", "ten_hour", "eleven_hour",
 	"twelve_hour", "thirteen_hour", "fourteen_hour", "fifteen_hour", "sixteen_hour",
-	"seventeen_hour", "eighteen_hour", "nineteen_hour", "twenty_hour", "twenty_one_hour",
-	"twenty_two_hour", "twenty_three_hour",
+	"seventeen_hour", "eighteen_hour", "nineteen_hour", "twenty_hour", "twentyone_hour",
+	"twentytwo_hour", "twentythree_hour",
 }
 
 type HourlyMap struct {
