@@ -292,7 +292,7 @@ func TestLastUpdated(t *testing.T) {
 		Memory: memory,
 	}
 
-	data, err := deps.LastUpdated(0)
+	data, err := deps.LastUpdated(server.UserEndpoint)
 	if err != nil {
 		t.Error(err)
 	}
@@ -301,7 +301,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Errorf("Expected %s, got %s", now, data)
 	}
 
-	data2, err := deps.LastUpdated(1)
+	data2, err := deps.LastUpdated(server.HourlyEndpoint)
 	if err != nil {
 		t.Error(err)
 	}
@@ -310,7 +310,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Errorf("Expected %s, got %s", now, data2)
 	}
 
-	data3, err := deps.LastUpdated(2)
+	data3, err := deps.LastUpdated(server.TotalEndpoint)
 	if err != nil {
 		t.Error(err)
 	}
