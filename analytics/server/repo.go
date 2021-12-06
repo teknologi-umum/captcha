@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/allegro/bigcache/v3"
 )
@@ -117,6 +118,11 @@ func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
 		return []byte{}, err
 	}
 
+	err = d.Memory.Set("analytics:last_updated:users", []byte(time.Now().Format(time.RFC3339)))
+	if err != nil {
+		return []byte{}, err
+	}
+
 	return data, nil
 }
 
@@ -144,6 +150,11 @@ func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 
 	total = []byte(strconv.Itoa(tempTotal))
 	err = d.Memory.Set("analytics:total", total)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	err = d.Memory.Set("analytics:last_updated:total", []byte(time.Now().Format(time.RFC3339)))
 	if err != nil {
 		return []byte{}, err
 	}
@@ -178,5 +189,50 @@ func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
 		return []byte{}, err
 	}
 
+	err = d.Memory.Set("analytics:last_updated:hourly", []byte(time.Now().Format(time.RFC3339)))
+	if err != nil {
+		return []byte{}, err
+	}
+
 	return hourly, nil
+}
+
+func (d *Dependency) LastUpdated(r int) (time.Time, error) {
+	switch r {
+	case 0:
+		data, err := d.Memory.Get("analytics:last_updated:users")
+		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+			return time.Time{}, err
+		}
+
+		if len(data) > 0 {
+			return time.Parse(time.RFC3339, string(data))
+		}
+
+		return time.Time{}, nil
+	case 1:
+		data, err := d.Memory.Get("analytics:last_updated:total")
+		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+			return time.Time{}, err
+		}
+
+		if len(data) > 0 {
+			return time.Parse(time.RFC3339, string(data))
+		}
+
+		return time.Time{}, nil
+	case 2:
+		data, err := d.Memory.Get("analytics:last_updated:hourly")
+		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+			return time.Time{}, err
+		}
+
+		if len(data) > 0 {
+			return time.Parse(time.RFC3339, string(data))
+		}
+
+		return time.Time{}, nil
+	default:
+		return time.Time{}, errors.New("invalid r value")
+	}
 }

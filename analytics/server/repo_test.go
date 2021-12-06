@@ -266,3 +266,56 @@ func TestGetHourly(t *testing.T) {
 		t.Errorf("Expected %s, got %s", data, data2)
 	}
 }
+
+func TestLastUpdated(t *testing.T) {
+	t.Cleanup(Cleanup)
+
+	now := time.Now().Format(time.RFC3339)
+
+	err := memory.Set("analytics:last_updated:users", []byte(now))
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = memory.Set("analytics:last_updated:hourly", []byte(now))
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = memory.Set("analytics:last_updated:total", []byte(now))
+	if err != nil {
+		t.Error(err)
+	}
+
+	deps := &server.Dependency{
+		DB:     db,
+		Memory: memory,
+	}
+
+	data, err := deps.LastUpdated(0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data.String()) != now {
+		t.Errorf("Expected %s, got %s", now, data)
+	}
+
+	data2, err := deps.LastUpdated(1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data2.String()) != now {
+		t.Errorf("Expected %s, got %s", now, data2)
+	}
+
+	data3, err := deps.LastUpdated(2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data3.String()) != now {
+		t.Errorf("Expected %s, got %s", now, data3)
+	}
+}
