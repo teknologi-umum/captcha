@@ -297,7 +297,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data.String()) != now {
+	if string(data.Format(time.RFC3339)) != now {
 		t.Errorf("Expected %s, got %s", now, data)
 	}
 
@@ -306,7 +306,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data2.String()) != now {
+	if string(data2.Format(time.RFC3339)) != now {
 		t.Errorf("Expected %s, got %s", now, data2)
 	}
 
@@ -315,7 +315,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data3.String()) != now {
+	if string(data3.Format(time.RFC3339)) != now {
 		t.Errorf("Expected %s, got %s", now, data3)
 	}
 }
