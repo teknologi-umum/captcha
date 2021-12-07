@@ -15,23 +15,31 @@
 package main
 
 import (
-	"github.com/allegro/bigcache/v3"
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
+
+	// Internals
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/cmd"
 	"teknologi-umum-bot/shared"
 
-	"time"
-
-	"github.com/getsentry/sentry-go"
+	// Database and cache
+	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+
+	// Others third party stuff
+	"github.com/getsentry/sentry-go"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -68,6 +76,11 @@ func init() {
 }
 
 func main() {
+	// Context for initiating database connection.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	// Connect to PostgreSQL
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
@@ -78,6 +91,25 @@ func main() {
 			log.Fatal(errors.WithStack(err))
 		}
 	}(db)
+
+	// Setup mongodb connection
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
+	if err != nil {
+		log.Fatal(errors.WithStack(err))
+	}
+	defer func(client *mongo.Client) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		err := client.Disconnect(ctx)
+		if err != nil {
+			log.Fatal(errors.WithStack(err))
+		}
+	}(mongoClient)
+
+	// Mongo health check
+	if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
+		log.Fatal(err)
+	}
 
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.Config{
@@ -182,7 +214,7 @@ func main() {
 	}()
 
 	go func() {
-		server.Server(db, cache, logger)
+		server.Server(db, mongoClient.Database(os.Getenv("MONGO_DBNAME")), cache, logger)
 	}()
 
 	signalChan := make(chan os.Signal, 1)

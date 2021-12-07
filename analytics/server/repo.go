@@ -2,129 +2,14 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/jmoiron/sqlx"
 	"strconv"
-	"teknologi-umum-bot/shared"
+	"teknologi-umum-bot/analytics"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
 )
-
-// Returns a slice of User from the database.
-func (d *Dependency) getUserDataFromDB(ctx context.Context) ([]User, error) {
-	c, err := d.DB.Connx(ctx)
-	if err != nil {
-		return []User{}, nil
-	}
-	defer func(c *sqlx.Conn) {
-		err := c.Close()
-		if err != nil {
-			shared.HandleError(err, d.Logger)
-		}
-	}(c)
-
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return []User{}, err
-	}
-
-	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics")
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			return []User{}, err
-		}
-		return []User{}, err
-	}
-	defer func(rows *sqlx.Rows) {
-		err := rows.Close()
-		if err != nil {
-			shared.HandleError(err, d.Logger)
-		}
-	}(rows)
-
-	var users []User
-	for rows.Next() {
-		var user User
-		err := rows.StructScan(&user)
-		if err != nil {
-			if r := tx.Rollback(); r != nil {
-				return []User{}, err
-			}
-			return []User{}, err
-		}
-		users = append(users, user)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			return []User{}, err
-		}
-		return []User{}, err
-	}
-
-	return users, nil
-}
-
-// Return a slice of Hourly from the database.
-func (d *Dependency) getHourlyDataFromDB(ctx context.Context) ([]Hourly, error) {
-	c, err := d.DB.Connx(ctx)
-	if err != nil {
-		return []Hourly{}, nil
-	}
-	defer func(c *sqlx.Conn) {
-		err := c.Close()
-		if err != nil {
-			shared.HandleError(err, d.Logger)
-		}
-	}(c)
-
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return []Hourly{}, err
-	}
-
-	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly")
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			return []Hourly{}, nil
-		}
-		return []Hourly{}, err
-	}
-	defer func(rows *sqlx.Rows) {
-		err := rows.Close()
-		if err != nil {
-			shared.HandleError(err, d.Logger)
-		}
-	}(rows)
-
-	var hourly []Hourly
-	for rows.Next() {
-		var hour Hourly
-		err := rows.StructScan(&hour)
-		if err != nil {
-			if r := tx.Rollback(); r != nil {
-				return []Hourly{}, nil
-			}
-			return []Hourly{}, err
-		}
-
-		hourly = append(hourly, hour)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			return []Hourly{}, nil
-		}
-		return []Hourly{}, err
-	}
-
-	return hourly, nil
-}
 
 // GetAll fetch the users' data either it's from the in memory cache
 // or from the database (if the data does not exist on the memory cache).
@@ -140,7 +25,7 @@ func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
 	}
 
 	// if not in memory cache, then check from the database
-	users, err := d.getUserDataFromDB(ctx)
+	users, err := (&analytics.Dependency{DB: d.DB}).GetUserDataFromDB(ctx)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -179,7 +64,7 @@ func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 	}
 
 	// if not in memory cache, then check from the database
-	data, err := d.getUserDataFromDB(ctx)
+	data, err := (&analytics.Dependency{DB: d.DB}).GetUserDataFromDB(ctx)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -218,7 +103,7 @@ func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
 	}
 
 	// if not in memory cache, then check from the database
-	data, err := d.getHourlyDataFromDB(ctx)
+	data, err := (&analytics.Dependency{DB: d.DB}).GetHourlyDataFromDB(ctx)
 	if err != nil {
 		return []byte{}, err
 	}

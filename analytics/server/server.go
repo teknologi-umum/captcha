@@ -14,6 +14,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Dependency specifies the dependency injection struct
@@ -22,6 +23,7 @@ type Dependency struct {
 	DB     *sqlx.DB
 	Memory *bigcache.BigCache
 	Logger *sentry.Client
+	Mongo  *mongo.Database
 }
 
 // User is a type alias for analytics.UserMap and should be
@@ -50,11 +52,12 @@ var ErrInvalidValue = errors.New("invalid value")
 // that can be used later by other third party sites or bots.
 //
 // Requires 3 parameter that should be sent from the main goroutine.
-func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
+func Server(db *sqlx.DB, mongoDB *mongo.Database, memory *bigcache.BigCache, logger *sentry.Client) {
 	deps := &Dependency{
 		DB:     db,
 		Memory: memory,
 		Logger: logger,
+		Mongo:  mongoDB,
 	}
 
 	secureMiddleware := secure.New(secure.Options{

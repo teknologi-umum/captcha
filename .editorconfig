@@ -15,7 +15,5 @@ indent_size = 4
 indent_size = 4
 trim_trailing_whitespace = false
 
-eclint_indent_style = unset
-
 [Dockerfile]
 indent_size = 4
