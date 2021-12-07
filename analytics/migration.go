@@ -3,11 +3,17 @@ package analytics
 import (
 	"context"
 	"database/sql"
+	"teknologi-umum-bot/shared"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
+// MustMigrate is the same as Migrate, but you don't
+// need to explicitly create a Dependency struct
+// instance. Just supply the database, and you're good
+// to go. It will not panic on error, instead it will
+// just return an error.
 func MustMigrate(db *sqlx.DB) error {
 	d := &Dependency{
 		DB: db,
@@ -16,6 +22,9 @@ func MustMigrate(db *sqlx.DB) error {
 	return d.Migrate()
 }
 
+// Migrate creates a migration to the database.
+// This can be called multiple times as it uses PostgreSQL
+// syntax of `IF NOT EXISTS`.
 func (d *Dependency) Migrate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -24,7 +33,12 @@ func (d *Dependency) Migrate() error {
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(c)
 
 	t, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -44,7 +58,10 @@ func (d *Dependency) Migrate() error {
 		)`,
 	)
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
 		return err
 	}
 
@@ -53,7 +70,10 @@ func (d *Dependency) Migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_counter ON analytics (counter)`,
 	)
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
 		return err
 	}
 
@@ -88,13 +108,19 @@ func (d *Dependency) Migrate() error {
 		)`,
 	)
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
 		return err
 	}
 
 	err = t.Commit()
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
 		return err
 	}
 

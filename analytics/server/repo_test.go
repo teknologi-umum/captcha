@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"teknologi-umum-bot/analytics/server"
 	"testing"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func TestGetAll(t *testing.T) {
@@ -19,7 +22,12 @@ func TestGetAll(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(c)
 
 	tx, err := c.BeginTx(ctx, nil)
 	if err != nil {
@@ -41,7 +49,9 @@ func TestGetAll(t *testing.T) {
 		time.Now(),
 	)
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			t.Error(e)
+		}
 		t.Fatal(err)
 	}
 
@@ -129,7 +139,12 @@ func TestGetTotal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(c)
 
 	tx, err := c.BeginTx(ctx, nil)
 	if err != nil {
@@ -147,7 +162,9 @@ func TestGetTotal(t *testing.T) {
 		usersSlice...,
 	)
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			t.Error(e)
+		}
 		t.Fatal(err)
 	}
 
@@ -219,7 +236,12 @@ func TestGetHourly(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(c)
 
 	tx, err := c.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -237,13 +259,17 @@ func TestGetHourly(t *testing.T) {
 		hourlySlice...,
 	)
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			t.Error(e)
+		}
 		t.Error(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			t.Error(e)
+		}
 		t.Error(err)
 	}
 
@@ -297,7 +323,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data.Format(time.RFC3339)) != now {
+	if data.Format(time.RFC3339) != now {
 		t.Errorf("Expected %s, got %s", now, data)
 	}
 
@@ -306,7 +332,7 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data2.Format(time.RFC3339)) != now {
+	if data2.Format(time.RFC3339) != now {
 		t.Errorf("Expected %s, got %s", now, data2)
 	}
 
@@ -315,7 +341,17 @@ func TestLastUpdated(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(data3.Format(time.RFC3339)) != now {
+	if data3.Format(time.RFC3339) != now {
 		t.Errorf("Expected %s, got %s", now, data3)
+	}
+
+	// should return an error
+	_, err = deps.LastUpdated(server.Endpoint(5))
+	if err == nil {
+		t.Error("should error, got none")
+	}
+
+	if !errors.Is(err, server.ErrInvalidValue) {
+		t.Error("should error with ErrInvalidValue, got:", err)
 	}
 }

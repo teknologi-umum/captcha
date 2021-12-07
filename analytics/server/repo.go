@@ -5,18 +5,26 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/jmoiron/sqlx"
 	"strconv"
+	"teknologi-umum-bot/shared"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
 )
 
+// Returns a slice of User from the database.
 func (d *Dependency) getUserDataFromDB(ctx context.Context) ([]User, error) {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return []User{}, nil
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(c)
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -25,17 +33,26 @@ func (d *Dependency) getUserDataFromDB(ctx context.Context) ([]User, error) {
 
 	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			return []User{}, err
+		}
 		return []User{}, err
 	}
-	defer rows.Close()
+	defer func(rows *sqlx.Rows) {
+		err := rows.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(rows)
 
 	var users []User
 	for rows.Next() {
 		var user User
 		err := rows.StructScan(&user)
 		if err != nil {
-			tx.Rollback()
+			if r := tx.Rollback(); r != nil {
+				return []User{}, err
+			}
 			return []User{}, err
 		}
 		users = append(users, user)
@@ -43,19 +60,27 @@ func (d *Dependency) getUserDataFromDB(ctx context.Context) ([]User, error) {
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			return []User{}, err
+		}
 		return []User{}, err
 	}
 
 	return users, nil
 }
 
+// Return a slice of Hourly from the database.
 func (d *Dependency) getHourlyDataFromDB(ctx context.Context) ([]Hourly, error) {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return []Hourly{}, nil
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(c)
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -64,17 +89,26 @@ func (d *Dependency) getHourlyDataFromDB(ctx context.Context) ([]Hourly, error) 
 
 	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			return []Hourly{}, nil
+		}
 		return []Hourly{}, err
 	}
-	defer rows.Close()
+	defer func(rows *sqlx.Rows) {
+		err := rows.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(rows)
 
 	var hourly []Hourly
 	for rows.Next() {
 		var hour Hourly
 		err := rows.StructScan(&hour)
 		if err != nil {
-			tx.Rollback()
+			if r := tx.Rollback(); r != nil {
+				return []Hourly{}, nil
+			}
 			return []Hourly{}, err
 		}
 
@@ -83,13 +117,17 @@ func (d *Dependency) getHourlyDataFromDB(ctx context.Context) ([]Hourly, error) 
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			return []Hourly{}, nil
+		}
 		return []Hourly{}, err
 	}
 
 	return hourly, nil
 }
 
+// GetAll fetch the users' data either it's from the in memory cache
+// or from the database (if the data does not exist on the memory cache).
 func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
 	// check from in memory cache first for the data
 	data, err := d.Memory.Get("analytics:analytics")
@@ -126,6 +164,9 @@ func (d *Dependency) GetAll(ctx context.Context) ([]byte, error) {
 	return data, nil
 }
 
+// GetTotal returns the total amount of chat as the data have it.
+// The data is fetched from the memory cache or the database,
+// if the memory cache data is empty or non-existent.
 func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 	// get the total from the cache first
 	total, err := d.Memory.Get("analytics:total")
@@ -162,6 +203,9 @@ func (d *Dependency) GetTotal(ctx context.Context) ([]byte, error) {
 	return total, nil
 }
 
+// GetHourly returns hourly message count, specified in a daily kind of object.
+// The data is fetched from the memory cache or the database,
+// if the memory cache data is empty or non-existent.
 func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
 	// get the hourly from the cache first
 	hourly, err := d.Memory.Get("analytics:hourly")
@@ -197,6 +241,8 @@ func (d *Dependency) GetHourly(ctx context.Context) ([]byte, error) {
 	return hourly, nil
 }
 
+// LastUpdated returns the last updated value as a time.Time object
+// for cached data.
 func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 	switch r {
 	case UserEndpoint:
@@ -233,6 +279,6 @@ func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 
 		return time.Time{}, nil
 	default:
-		return time.Time{}, errors.New("invalid r value")
+		return time.Time{}, ErrInvalidValue
 	}
 }

@@ -9,13 +9,18 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// CaptchaUserLeave handles the event when a user left the group.
+// This will check if the user is in the memory of current active
+// captcha or not.
+//
+// If it is, the captcha will be deleted.
 func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
-	// If they're not, continue execute the captcha.
+	// If they're not, continue to execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -27,7 +32,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	// or not.
 	check, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -35,24 +40,24 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	// OK, they exists in the cache. Now we've got to delete
+	// OK, they exist in the cache. Now we've got to delete
 	// all the message that we've sent before.
 	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -62,12 +67,12 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		MessageID: captcha.QuestionID,
 	})
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Delete user's messages.
-	for _, msgID := range captcha.UserMsgs {
+	for _, msgID := range captcha.UserMessages {
 		if msgID == "" {
 			continue
 		}
@@ -76,13 +81,13 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
 
 	// Delete any additional message.
-	for _, msgID := range captcha.AdditionalMsgs {
+	for _, msgID := range captcha.AdditionalMessages {
 		if msgID == "" {
 			continue
 		}
@@ -91,7 +96,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}

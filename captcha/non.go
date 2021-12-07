@@ -10,16 +10,15 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-// This is the handler for every incoming payload that
+// NonTextListener is the handler for every incoming payload that
 // is not a text format.
-//
 func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
 	exists, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -31,18 +30,18 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// If not, ask them to give the correct answer and time remaining.
 	// If yes, delete the message and remove the user from the captcha:users list.
 	//
-	// Get the answer and all of the data surrounding captcha from
+	// Get the answer and all the data surrounding captcha from
 	// this specific user ID from the cache.
 	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -64,19 +63,19 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.Bot.Delete(m)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 }

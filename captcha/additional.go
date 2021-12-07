@@ -10,15 +10,15 @@ import (
 // Collect AdditionalMsg that was sent because the user did something
 // and put it on cache.
 //
-// It is not recommended to use it with a goroutine.
+// It is not recommended using it with a goroutine.
 // This should be a normal blocking function.
 func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message, wrongMsg *tb.Message) error {
 	// Because the wrongMsg is another message sent by us, which correlates to the
 	// captcha message, we need to put the message ID into the cache.
 	// So that we can delete it later.
-	captcha.AdditionalMsgs = append(captcha.AdditionalMsgs, strconv.Itoa(wrongMsg.ID))
+	captcha.AdditionalMessages = append(captcha.AdditionalMessages, strconv.Itoa(wrongMsg.ID))
 
-	// Update the cache with the added AdditionalMsgs
+	// Update the cache with the added AdditionalMessages
 	data, err := json.Marshal(captcha)
 	if err != nil {
 		return err
@@ -32,11 +32,11 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 	return nil
 }
 
-func (d *Dependencies) collectUserMsgAndCache(captcha *Captcha, m *tb.Message) error {
-	// We store directly the message ID that was sent by the user into the UserMsgs slices.
-	captcha.UserMsgs = append(captcha.UserMsgs, strconv.Itoa(m.ID))
+func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Message) error {
+	// We store directly the message ID that was sent by the user into the UserMessages slices.
+	captcha.UserMessages = append(captcha.UserMessages, strconv.Itoa(m.ID))
 
-	// Update the cache with the added UserMsgs
+	// Update the cache with the added UserMessages
 	data, err := json.Marshal(captcha)
 	if err != nil {
 		return err

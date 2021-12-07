@@ -24,6 +24,7 @@ import (
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/cmd"
+	"teknologi-umum-bot/shared"
 
 	"time"
 
@@ -71,7 +72,12 @@ func main() {
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
 	}
-	defer db.Close()
+	defer func(db *sqlx.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatal(errors.WithStack(err))
+		}
+	}(db)
 
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.Config{
@@ -86,7 +92,12 @@ func main() {
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
 	}
-	defer cache.Close()
+	defer func(cache *bigcache.BigCache) {
+		err := cache.Close()
+		if err != nil {
+			log.Fatal(errors.WithStack(err))
+		}
+	}(cache)
 
 	// Setup Sentry for error handling.
 	logger, err := sentry.NewClient(sentry.ClientOptions{
@@ -143,7 +154,11 @@ func main() {
 	// This is basically just for health check.
 	b.Handle("/start", func(m *tb.Message) {
 		if m.FromGroup() {
-			b.Send(m.Chat, "ok")
+			_, err := b.Send(m.Chat, "ok")
+			if err != nil {
+				shared.HandleBotError(err, logger, b, m)
+				return
+			}
 		}
 	})
 

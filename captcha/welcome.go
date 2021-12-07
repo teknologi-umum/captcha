@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
 
@@ -11,7 +12,11 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-var currentWelcomeMessages [10]string = [10]string{
+// currentWelcomeMessages is a collection of welcome messages
+// that have a dynamic user value, written as {user}.
+//
+// This should be sent to the user with a random pick.
+var currentWelcomeMessages = [10]string{
 	`Halo, {user}!
 
 Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya.
@@ -86,16 +91,21 @@ Kita juga punya website dan Github organization. Bisa di cek di: https://teknolo
 dan https://github.com/teknologi-umum`,
 }
 
-func deleteMessage(bot *tb.Bot, message tb.StoredMessage) {
+// deleteMessage creates a timer of one minute to delete a certain message.
+func deleteMessage(bot *tb.Bot, message tb.StoredMessage, logger *sentry.Client) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
-		bot.Delete(message)
+		err := bot.Delete(message)
+		if err != nil {
+			shared.HandleError(err, logger)
+		}
 		c <- struct{}{}
 	})
 
 	<-c
 }
 
+// sendWelcomeMessage literally does what it's written.
 func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error {
 	msg, err := bot.Send(
 		m.Chat,
@@ -119,7 +129,11 @@ func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error
 		return err
 	}
 
-	go deleteMessage(bot, tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID})
+	go deleteMessage(
+		bot,
+		tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
+		logger,
+	)
 	return nil
 }
 

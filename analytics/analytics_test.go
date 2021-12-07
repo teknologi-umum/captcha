@@ -34,7 +34,12 @@ func Cleanup() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(c)
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -43,19 +48,25 @@ func Cleanup() {
 
 	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics RESTART IDENTITY")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 
 	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly RESTART IDENTITY")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 
@@ -88,8 +99,18 @@ func Setup() {
 }
 
 func Teardown() {
-	defer memory.Close()
-	defer db.Close()
+	defer func(memory *bigcache.BigCache) {
+		err := memory.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(memory)
+	defer func(db *sqlx.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(db)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -98,7 +119,12 @@ func Teardown() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(c)
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -107,19 +133,25 @@ func Teardown() {
 
 	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 
 	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics_hourly")
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		if r := tx.Rollback(); r != nil {
+			log.Fatal(r)
+		}
 		log.Fatal(err)
 	}
 

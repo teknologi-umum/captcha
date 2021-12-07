@@ -4,17 +4,25 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
+	"teknologi-umum-bot/shared"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
-func (d *Dependency) IncrementUsrDB(ctx context.Context, user UserMap) error {
+// IncrementUserDB literally increment a user's counter on the database.
+func (d *Dependency) IncrementUserDB(ctx context.Context, user UserMap) error {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil {
+			shared.HandleError(err, d.Logger)
+		}
+	}(c)
 
 	t, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -44,7 +52,9 @@ func (d *Dependency) IncrementUsrDB(ctx context.Context, user UserMap) error {
 		now,
 	)
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
 		return err
 	}
 
@@ -66,13 +76,17 @@ func (d *Dependency) IncrementUsrDB(ctx context.Context, user UserMap) error {
 		fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day()),
 	)
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
 		return err
 	}
 
 	err = t.Commit()
 	if err != nil {
-		t.Rollback()
+		if r := t.Rollback(); r != nil {
+			return r
+		}
 		return errors.Wrap(err, "failed on incrementing counter")
 	}
 
