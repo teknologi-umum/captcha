@@ -12,6 +12,11 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// Dependency contains the dependency injection struct
+// that is required for the main command to use.
+//
+// It will spread and use the correct dependencies for
+// each packages on the captcha project.
 type Dependency struct {
 	Memory    *bigcache.BigCache
 	Bot       *tb.Bot
@@ -46,9 +51,9 @@ func New(deps Dependency) *Dependency {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(m *tb.Message) {
-	err := d.analytics.NewMsg(m)
+	err := d.analytics.NewMessage(m)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -56,9 +61,9 @@ func (d *Dependency) OnTextHandler(m *tb.Message) {
 }
 
 // OnUserJoinHandler handle any incoming user join,
-// whether they was invited by someone (meaning they are
+// whether they were invited by someone (meaning they are
 // added by someone else into the group), or they join
-// the group all by themself.
+// the group all by themselves.
 func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 	var tempSender *tb.User
 	if m.UserJoined.ID != 0 {
@@ -77,14 +82,14 @@ func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
 func (d *Dependency) OnNonTextHandler(m *tb.Message) {
 	d.captcha.NonTextListener(m)
 
-	err := d.analytics.NewMsg(m)
+	err := d.analytics.NewMessage(m)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 }
 
-// OnUserLeftHandle handles during an event in which
+// OnUserLeftHandler handles during an event in which
 // a user left the group.
 func (d *Dependency) OnUserLeftHandler(m *tb.Message) {
 	d.captcha.CaptchaUserLeave(m)

@@ -2,6 +2,9 @@ package utils
 
 import tb "gopkg.in/tucnak/telebot.v2"
 
+// ShouldAddSpace thinks whether to add a space
+// to the given user, considering their first name
+// and last name.
 func ShouldAddSpace(m *tb.User) string {
 	if m.LastName != "" {
 		return " "
@@ -10,7 +13,7 @@ func ShouldAddSpace(m *tb.User) string {
 	return ""
 }
 
-// Check whether or not a user is in the admin list
+// IsAdmin checks whether a user is in the admin list
 func IsAdmin(admins []tb.ChatMember, user *tb.User) bool {
 	for _, v := range admins {
 		if v.User.ID == user.ID {

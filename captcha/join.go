@@ -22,24 +22,24 @@ type Captcha struct {
 	// Store the correct answer for the captcha
 	Answer string `json:"answer"`
 	// Expiry time for the captcha
-	Expiry         time.Time `json:"expiry"`
-	ChatID         int64     `json:"chat_id"`
-	QuestionID     string    `json:"question_id"`
-	AdditionalMsgs []string  `json:"additional_msgs"`
-	UserMsgs       []string  `json:"user_msgs"`
+	Expiry             time.Time `json:"expiry"`
+	ChatID             int64     `json:"chat_id"`
+	QuestionID         string    `json:"question_id"`
+	AdditionalMessages []string  `json:"additional_messages"`
+	UserMessages       []string  `json:"user_messages"`
 }
 
 const (
-	// How long a user will be banned in the group.
-	BAN_DURATION = 1 * time.Minute
-	// How long the captcha question will be valid.
+	// BanDuration specifies how long a user will be banned in the group.
+	BanDuration = 1 * time.Minute
+	// Timeout specifies how long the captcha question will be valid.
 	// After this time, the user will be kicked.
 	// Or banned exactly, for one hour.
-	CAPTCHA_TIMEOUT = 1 * time.Minute
+	Timeout = 1 * time.Minute
 )
 
-// Default captcha question.
-var CaptchaQuestion = `Halo, {user}!
+// DefaultQuestion contains the default captcha questions.
+var DefaultQuestion = `Halo, {user}!
 
 Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!
 
@@ -47,7 +47,8 @@ Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.
 
 <pre>{captcha}</pre>`
 
-// This is the most frustrating function that I've written at this point of time.
+// CaptchaUserJoin is the most frustrating function that I've written
+// at this point of time.
 //
 // As the function name says, it will prompt a captcha to the incoming user that
 // has just joined the group.
@@ -57,10 +58,10 @@ Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.
 func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
-	// If they're not, continue execute the captcha.
+	// If they're not, continue to execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -73,13 +74,13 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	}
 
 	// randNum generates a random number (4 digit) in string format
-	var randNum string = utils.GenerateRandomNumber()
+	var randNum = utils.GenerateRandomNumber()
 	// captcha generates ascii art from the randNum value
-	var captcha string = utils.GenerateAscii(randNum)
+	var captcha = utils.GenerateAscii(randNum)
 
 	// Replacing the template from CaptchaQuestion
 	question := strings.Replace(
-		strings.Replace(CaptchaQuestion, "{captcha}", captcha, 1),
+		strings.Replace(DefaultQuestion, "{captcha}", captcha, 1),
 		"{user}",
 		"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
 			sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
@@ -98,41 +99,41 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// OK. We've sent the question. Now we are going to prepare the data that will
 	// be kept on the in-memory store.
 	//
-	// The AdditionalMsgs key will be added later when there is an additional message
+	// The AdditionalMessages key will be added later when there is an additional message
 	// sent by the bot.
 	captchaData, err := json.Marshal(Captcha{
-		Expiry:     time.Now().Add(CAPTCHA_TIMEOUT),
+		Expiry:     time.Now().Add(Timeout),
 		ChatID:     m.Chat.ID,
 		Answer:     randNum,
 		QuestionID: strconv.Itoa(msgQuestion.ID),
 	})
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Yes, the cache key is their User ID in string format.
 	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), captchaData)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	err = d.Memory.Append("captcha:users", []byte(";"+strconv.Itoa(m.Sender.ID)))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	cond := sync.NewCond(&sync.Mutex{})
-	go d.waitOrDelete(m, msgQuestion, cond)
+	go d.waitOrDelete(m, cond)
 }
 
 func sanitizeInput(inp string) string {

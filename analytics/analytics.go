@@ -1,8 +1,5 @@
 package analytics
 
-// On this package we have 2 main keys on redis:
-// analytics:hour and analytics:counter
-
 import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
@@ -10,6 +7,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// Dependency is the dependency injection struct
+// for the analytics package.
 type Dependency struct {
 	Memory *bigcache.BigCache
 	Bot    *tb.Bot
@@ -17,8 +16,8 @@ type Dependency struct {
 	DB     *sqlx.DB
 }
 
-// For mapping a time.Hour() to a string
-var HourMapper []string = []string{
+// HourMapper is meant to use for mapping a time.Hour() to a string
+var HourMapper = []string{
 	"zero_hour", "one_hour", "two_hour", "three_hour", "four_hour", "five_hour",
 	"six_hour", "seven_hour", "eight_hour", "nine_hour", "ten_hour", "eleven_hour",
 	"twelve_hour", "thirteen_hour", "fourteen_hour", "fifteen_hour", "sixteen_hour",
@@ -26,6 +25,7 @@ var HourMapper []string = []string{
 	"twentytwo_hour", "twentythree_hour",
 }
 
+// HourlyMap contains the struct surrounding the hourly analytics.
 type HourlyMap struct {
 	TodaysDate      string `json:"todays_date" db:"todays_date"`
 	ZeroHour        int    `json:"zero_hour" db:"zero_hour"`

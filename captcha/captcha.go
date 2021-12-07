@@ -6,6 +6,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// Dependencies contains the dependency injection struct for
+// methods in the captcha package.
 type Dependencies struct {
 	Memory *bigcache.BigCache
 	Bot    *tb.Bot

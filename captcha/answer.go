@@ -11,7 +11,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-// This is the handler for listening to incoming user message.
+// WaitForAnswer is the handler for listening to incoming user message.
 // It will uh... do a pretty long task of validating the input message.
 func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
@@ -19,7 +19,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// If yes, check if the answer is correct or not
 	exists, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -31,24 +31,24 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// If not, ask them to give the correct answer and time remaining.
 	// If yes, delete the message and remove the user from the captcha:users list.
 	//
-	// Get the answer and all of the data surrounding captcha from
+	// Get the answer and all the data surrounding captcha from
 	// this specific user ID from the cache.
 	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	err = d.collectUserMsgAndCache(&captcha, m)
+	err = d.collectUserMessageAndCache(&captcha, m)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -72,13 +72,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 
 		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 
@@ -100,13 +100,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 
 		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 
@@ -115,7 +115,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Send the welcome message to the user.
 	err = sendWelcomeMessage(d.Bot, m, d.Logger)
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
@@ -133,12 +133,12 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		MessageID: captcha.QuestionID,
 	})
 	if err != nil {
-		shared.HandleError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
 	// Delete user's messages.
-	for _, msgID := range captcha.UserMsgs {
+	for _, msgID := range captcha.UserMessages {
 		if msgID == "" {
 			continue
 		}
@@ -147,13 +147,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
 
 	// Delete any additional message.
-	for _, msgID := range captcha.AdditionalMsgs {
+	for _, msgID := range captcha.AdditionalMessages {
 		if msgID == "" {
 			continue
 		}
@@ -162,7 +162,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
 	}
@@ -189,8 +189,8 @@ func (d *Dependencies) removeUserFromCache(key string) error {
 	return nil
 }
 
-// Uh.. You should understand what this function does.
-// It's pretty self explanatory.
+// Uh… You should understand what this function does.
+// It's pretty self-explanatory.
 func removeSpaces(text string) string {
 	return strings.ReplaceAll(text, " ", "")
 }

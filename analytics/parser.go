@@ -7,6 +7,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+// UserMap contains a data of a user.
 type UserMap struct {
 	UserID      int64     `json:"user_id" db:"user_id"`
 	Username    string    `json:"username,omitempty" db:"username" redis:"username"`
@@ -17,6 +18,7 @@ type UserMap struct {
 	JoinedAt    time.Time `json:"joined_at" db:"joined_at"`
 }
 
+// ParseToUser converts the tb.User struct into a UserMap struct.
 func ParseToUser(user *tb.User) UserMap {
 	return UserMap{
 		UserID:      int64(user.ID),

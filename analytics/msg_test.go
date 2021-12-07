@@ -30,5 +30,8 @@ func TestNewMsg(t *testing.T) {
 		}
 	}()
 
-	d.NewMsg(m)
+	err := d.NewMessage(m)
+	if err != nil {
+		t.Error(err)
+	}
 }

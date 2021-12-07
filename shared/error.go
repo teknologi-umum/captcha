@@ -11,8 +11,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-// We handle error by apologizing to the user and then sending the error to Sentry.
-func HandleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
+// HandleError handles common errors.
+func HandleError(e error, logger *sentry.Client) {
+	if os.Getenv("ENVIRONMENT") == "development" {
+		log.Println(e)
+	}
+
+	_ = logger.CaptureException(
+		errors.WithStack(e),
+		&sentry.EventHint{OriginalException: e},
+		nil,
+	)
+}
+
+// HandleBotError is the handler for an error which a function has a
+// bot and a message instance.
+//
+// For other errors that don't have one of those struct instance, use
+// HandleError instead.
+func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}
@@ -51,7 +68,8 @@ func HandleError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
 	)
 }
 
-func HandleHttpError(e error, r *http.Request, logger *sentry.Client) {
+// HandleHttpError handles error that has a http.Request struct instance
+func HandleHttpError(e error, logger *sentry.Client, r *http.Request) {
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}

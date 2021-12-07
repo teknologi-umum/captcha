@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Generates a random number from 0000 to 9999
+// GenerateRandomNumber generates a random number from 0000 to 9999
 func GenerateRandomNumber() string {
 	rand.Seed(time.Now().UnixMilli())
 	var out strings.Builder

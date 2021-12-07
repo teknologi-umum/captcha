@@ -15,27 +15,43 @@ import (
 	"github.com/unrolled/secure"
 )
 
+// Dependency specifies the dependency injection struct
+// for the server package to use.
 type Dependency struct {
 	DB     *sqlx.DB
 	Memory *bigcache.BigCache
 	Logger *sentry.Client
 }
 
+// User is a type alias for analytics.UserMap and should be
+// similar for the behavior and other stuffs.
 type User = analytics.UserMap
+
+// Hourly is a type alias for analytics.HourlyMap
 type Hourly = analytics.HourlyMap
 
+// Endpoint specifies a type to be used as enum.
 type Endpoint int
 
 const (
+	// UserEndpoint indicates the endpoint for getting users data
 	UserEndpoint Endpoint = iota
+	// HourlyEndpoint indicates the endpoint for getting the data per hour
 	HourlyEndpoint
+	// TotalEndpoint indicates the endpoint for getting the total amount
+	// of messages that was sent per the database's data.
 	TotalEndpoint
 )
 
+// Server creates and runs an HTTP server instance for fetching analytics data
+// that can be used later by other third party sites or bots.
+//
+// Requires 3 parameter that should be sent from the main goroutine.
 func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	deps := &Dependency{
 		DB:     db,
 		Memory: memory,
+		Logger: logger,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -57,21 +73,25 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Available routes:\n\n- GET /users\n- GET /hourly\n- GET /total"))
+		_, err := w.Write([]byte("Available routes:\n\n- GET /users\n- GET /hourly\n- GET /total"))
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
 	})
 
 	r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
 		data, err := deps.GetAll(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(UserEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
@@ -79,21 +99,25 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 		h.Set("Content-Type", "application/json")
 		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
 	})
 
 	r.Get("/hourly", func(w http.ResponseWriter, r *http.Request) {
 		data, err := deps.GetHourly(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(HourlyEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
@@ -101,21 +125,25 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 		h.Set("Content-Type", "application/json")
 		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
 	})
 
 	r.Get("/total", func(w http.ResponseWriter, r *http.Request) {
 		data, err := deps.GetTotal(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, r, deps.Logger)
+			shared.HandleHttpError(err, deps.Logger, r)
 			return
 		}
 
@@ -123,9 +151,16 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 		h.Set("Content-Type", "application/json")
 		h.Set("Last-Updated", lastUpdated.String())
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
 	})
 
 	log.Println("Starting server on port 8080")
-	http.ListenAndServe(":8080", r)
+	err := http.ListenAndServe(":8080", r)
+	if err != nil {
+		shared.HandleError(err, logger)
+	}
 }

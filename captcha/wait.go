@@ -11,17 +11,17 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-// It will start a timer. If the timer is expired, it will kick the user from the group.
-func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, cond *sync.Cond) {
+// waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.
+func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 	// Let's start the timer, shall we?
-	t := time.NewTimer(CAPTCHA_TIMEOUT)
+	t := time.NewTimer(Timeout)
 
 	// We need to wait for the timer to expire.
 	cond.L.Lock()
 
 	for _, ok := <-t.C; ok; {
 		// Now, when the timer is already finished, we want to check
-		// whether or not the User ID is still in the cache.
+		// whether the User ID is still in the cache.
 		//
 		// If they're still in the cache, we will say goodbye and
 		// kick them from the group.
@@ -32,18 +32,19 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 			var captcha Captcha
 			user, err := d.Memory.Get(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			err = json.Unmarshal(user, &captcha)
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
 			// Goodbye, user!
-			kickMsg, err := d.Bot.Send(msgUser.Chat,
+			kickMsg, err := d.Bot.Send(
+				msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.Itoa(msgUser.Sender.ID)+"\">"+
 					sanitizeInput(msgUser.Sender.FirstName)+
 					utils.ShouldAddSpace(msgUser.Sender)+
@@ -53,7 +54,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 					ParseMode: tb.ModeHTML,
 				})
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -61,11 +62,11 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
 			err = d.Bot.Ban(msgUser.Chat, &tb.ChatMember{
-				RestrictedUntil: time.Now().Unix() + int64(BAN_DURATION),
+				RestrictedUntil: time.Now().Unix() + int64(BanDuration),
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
@@ -76,27 +77,34 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, msgQst *tb.Message, con
 			}
 			err = d.Bot.Delete(&msgToBeDeleted)
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
-			for _, msgID := range captcha.AdditionalMsgs {
+			for _, msgID := range captcha.AdditionalMessages {
 				msgToBeDeleted = tb.StoredMessage{
 					ChatID:    msgUser.Chat.ID,
 					MessageID: msgID,
 				}
 				err = d.Bot.Delete(&msgToBeDeleted)
 				if err != nil {
-					shared.HandleError(err, d.Logger, d.Bot, msgUser)
+					shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 					return
 				}
 			}
 
-			go deleteMessage(d.Bot, tb.StoredMessage{MessageID: strconv.Itoa(kickMsg.ID), ChatID: kickMsg.Chat.ID})
+			go deleteMessage(
+				d.Bot,
+				tb.StoredMessage{
+					MessageID: strconv.Itoa(kickMsg.ID),
+					ChatID:    kickMsg.Chat.ID,
+				},
+				d.Logger,
+			)
 
 			err = d.Memory.Delete(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
-				shared.HandleError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				return
 			}
 
