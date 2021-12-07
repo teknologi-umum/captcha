@@ -45,6 +45,9 @@ const (
 	// TotalEndpoint indicates the endpoint for getting the total amount
 	// of messages that was sent per the database's data.
 	TotalEndpoint
+	// DukunEndpoint indicates the endpoint for getting the whole
+	// dukun points as used by the Javascript bot.
+	DukunEndpoint
 )
 
 var ErrInvalidValue = errors.New("invalid value")
@@ -165,6 +168,32 @@ func New(config Config) {
 		}
 
 		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		h.Set("Last-Updated", lastUpdated.String())
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(data)
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+	})
+
+	r.Get("/dukun", func(w http.ResponseWriter, r *http.Request) {
+		data, err := deps.GetDukunPoints(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+
+		lastUpdated, err := deps.LastUpdated(DukunEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(err, deps.Logger, r)

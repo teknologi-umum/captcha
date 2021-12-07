@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"os"
 	"teknologi-umum-bot/analytics/server"
+	"teknologi-umum-bot/dukun"
 	"testing"
 	"time"
 
@@ -293,6 +295,48 @@ func TestGetHourly(t *testing.T) {
 	}
 }
 
+func TestGetDukunPoints(t *testing.T) {
+	t.Cleanup(Cleanup)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Feed some dukun
+	collection := mongoClient.Database(os.Getenv("MONGO_DBNAME")).Collection("dukun")
+	_, err := collection.InsertOne(ctx, dukun.Dukun{
+		UserID:    1,
+		FirstName: "Jason",
+		LastName:  "Bourne",
+		UserName:  "jasonbourne",
+		Points:    100,
+		Master:    true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	deps := &server.Dependency{
+		Mongo:  mongoClient,
+		Memory: memory,
+	}
+
+	data, err := deps.GetDukunPoints(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	data2, err := deps.GetDukunPoints(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data) != string(data2) {
+		t.Errorf("Expected %s, got %s", data, data2)
+	}
+}
+
 func TestLastUpdated(t *testing.T) {
 	t.Cleanup(Cleanup)
 
@@ -309,6 +353,11 @@ func TestLastUpdated(t *testing.T) {
 	}
 
 	err = memory.Set("analytics:last_updated:total", []byte(now))
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = memory.Set("analytics:last_updated:dukun", []byte(now))
 	if err != nil {
 		t.Error(err)
 	}
@@ -343,6 +392,15 @@ func TestLastUpdated(t *testing.T) {
 
 	if data3.Format(time.RFC3339) != now {
 		t.Errorf("Expected %s, got %s", now, data3)
+	}
+
+	data4, err := deps.LastUpdated(server.DukunEndpoint)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if data4.Format(time.RFC3339) != now {
+		t.Errorf("Expected %s, got %s", now, data4)
 	}
 
 	// should return an error

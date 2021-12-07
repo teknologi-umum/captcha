@@ -12,10 +12,14 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var db *sqlx.DB
 var memory *bigcache.BigCache
+var mongoClient *mongo.Client
 
 func TestMain(m *testing.M) {
 	Setup()
@@ -69,6 +73,12 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
+	collection := mongoClient.Database(os.Getenv("MONGO_DBNAME")).Collection("dukun")
+	err = collection.Drop(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = memory.Reset()
 	if err != nil {
 		log.Fatal(err)
@@ -76,6 +86,9 @@ func Cleanup() {
 }
 
 func Setup() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	dbURL, err := pq.ParseURL(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
@@ -83,6 +96,15 @@ func Setup() {
 
 	db, err = sqlx.Open("postgres", dbURL)
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
 
@@ -110,6 +132,16 @@ func Teardown() {
 			log.Fatal(err)
 		}
 	}(db)
+
+	defer func(mongoClient *mongo.Client) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		err := mongoClient.Disconnect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(mongoClient)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

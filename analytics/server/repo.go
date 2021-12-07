@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"teknologi-umum-bot/analytics"
+	"teknologi-umum-bot/dukun"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -163,7 +164,53 @@ func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 		}
 
 		return time.Time{}, nil
+	case DukunEndpoint:
+		data, err := d.Memory.Get("analytics:last_updated:dukun")
+		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+			return time.Time{}, err
+		}
+
+		if len(data) > 0 {
+			return time.Parse(time.RFC3339, string(data))
+		}
+
+		return time.Time{}, nil
 	default:
 		return time.Time{}, ErrInvalidValue
 	}
+}
+
+func (d *Dependency) GetDukunPoints(ctx context.Context) ([]byte, error) {
+	// get the dukun points from the cache first
+	dukunPoints, err := d.Memory.Get("analytics:dukun")
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+		return []byte{}, err
+	}
+
+	if len(dukunPoints) > 0 {
+		return dukunPoints, nil
+	}
+
+	// if not in memory cache, then check from the database
+	data, err := (&dukun.Dependency{DBName: d.MongoDBName, Mongo: d.Mongo}).GetAllDukun(ctx)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	dukunPoints, err = json.Marshal(data)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	err = d.Memory.Set("analytics:dukun", dukunPoints)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	err = d.Memory.Set("analytics:last_updated:dukun", []byte(time.Now().Format(time.RFC3339)))
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return dukunPoints, nil
 }
