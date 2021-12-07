@@ -20,10 +20,11 @@ import (
 // Dependency specifies the dependency injection struct
 // for the server package to use.
 type Dependency struct {
-	DB     *sqlx.DB
-	Memory *bigcache.BigCache
-	Logger *sentry.Client
-	Mongo  *mongo.Database
+	DB          *sqlx.DB
+	Memory      *bigcache.BigCache
+	Logger      *sentry.Client
+	Mongo       *mongo.Client
+	MongoDBName string
 }
 
 // User is a type alias for analytics.UserMap and should be
@@ -48,16 +49,33 @@ const (
 
 var ErrInvalidValue = errors.New("invalid value")
 
-// Server creates and runs an HTTP server instance for fetching analytics data
+// Config is the configuration struct for the server package.
+// Only the Port field is optional. It will be set to 8080 if not set.
+type Config struct {
+	DB          *sqlx.DB
+	Mongo       *mongo.Client
+	MongoDBName string
+	Memory      *bigcache.BigCache
+	Logger      *sentry.Client
+	Port        string
+}
+
+// New creates and runs an HTTP server instance for fetching analytics data
 // that can be used later by other third party sites or bots.
 //
 // Requires 3 parameter that should be sent from the main goroutine.
-func Server(db *sqlx.DB, mongoDB *mongo.Database, memory *bigcache.BigCache, logger *sentry.Client) {
+func New(config Config) {
+	// Give default port
+	if config.Port == "" {
+		config.Port = "8080"
+	}
+
 	deps := &Dependency{
-		DB:     db,
-		Memory: memory,
-		Logger: logger,
-		Mongo:  mongoDB,
+		DB:          config.DB,
+		Memory:      config.Memory,
+		Logger:      config.Logger,
+		Mongo:       config.Mongo,
+		MongoDBName: config.MongoDBName,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -164,9 +182,9 @@ func Server(db *sqlx.DB, mongoDB *mongo.Database, memory *bigcache.BigCache, log
 		}
 	})
 
-	log.Println("Starting server on port 8080")
-	err := http.ListenAndServe(":8080", r)
+	log.Println("Starting server on port", config.Port)
+	err := http.ListenAndServe(":"+config.Port, r)
 	if err != nil {
-		shared.HandleError(err, logger)
+		shared.HandleError(err, config.Logger)
 	}
 }

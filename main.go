@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -62,17 +63,22 @@ func init() {
 		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
 	}
 
-	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgresql://") {
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgres") {
 		log.Fatal("Please provide the correct DATABASE_URL value on the .env file")
 	}
 
-	if redisURL := os.Getenv("REDIS_URL"); redisURL == "" || !strings.HasPrefix(redisURL, "redis://") {
+	if redisURL := os.Getenv("REDIS_URL"); redisURL == "" || !strings.HasPrefix(redisURL, "redis") {
 		log.Fatal("Please provide the correct REDIS_URL value on the .env file")
 	}
 
-	if tz := os.Getenv("TZ"); tz == "" {
-		log.Println("You are encouraged to provide the TZ value to UTC, but eh..")
+	if mongoURL := os.Getenv("MONGO_URL"); mongoURL == "" || !strings.HasPrefix(mongoURL, "mongodb") {
+		log.Fatal("Please provide the correct MONGO_URL value on the .env file")
 	}
+	if os.Getenv("TZ") == "" {
+		os.Setenv("TZ", "UTC")
+	}
+
+	log.Println("Passed the environment variable check")
 }
 
 func main() {
@@ -214,7 +220,20 @@ func main() {
 	}()
 
 	go func() {
-		server.Server(db, mongoClient.Database(os.Getenv("MONGO_DBNAME")), cache, logger)
+		// Parse mongo url
+		parsedURL, err := url.Parse(os.Getenv("MONGO_URL"))
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
+		}
+
+		server.New(server.Config{
+			DB:          db,
+			Memory:      cache,
+			Mongo:       mongoClient,
+			Logger:      logger,
+			MongoDBName: parsedURL.Path[1:],
+			Port:        os.Getenv("PORT"),
+		})
 	}()
 
 	signalChan := make(chan os.Signal, 1)
