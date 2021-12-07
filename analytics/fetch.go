@@ -82,7 +82,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 		return []HourlyMap{}, err
 	}
 
-	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_HourlyMap")
+	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
 			return []HourlyMap{}, nil

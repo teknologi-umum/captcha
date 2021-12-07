@@ -63,8 +63,10 @@ func TestGetAll(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		DB:     db,
-		Memory: memory,
+		DB:          db,
+		Mongo:       mongoClient,
+		Memory:      memory,
+		MongoDBName: os.Getenv("MONGO_DBNAME"),
 	}
 
 	res, err := deps.GetAll(ctx)
@@ -176,8 +178,10 @@ func TestGetTotal(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		DB:     db,
-		Memory: memory,
+		DB:          db,
+		Mongo:       mongoClient,
+		Memory:      memory,
+		MongoDBName: os.Getenv("MONGO_DBNAME"),
 	}
 
 	data, err := deps.GetTotal(ctx)
@@ -276,8 +280,10 @@ func TestGetHourly(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		DB:     db,
-		Memory: memory,
+		DB:          db,
+		Mongo:       mongoClient,
+		Memory:      memory,
+		MongoDBName: os.Getenv("MONGO_DBNAME"),
 	}
 
 	data, err := deps.GetHourly(ctx)
@@ -318,8 +324,10 @@ func TestGetDukunPoints(t *testing.T) {
 	}
 
 	deps := &server.Dependency{
-		Mongo:  mongoClient,
-		Memory: memory,
+		DB:          db,
+		Mongo:       mongoClient,
+		Memory:      memory,
+		MongoDBName: os.Getenv("MONGO_DBNAME"),
 	}
 
 	data, err := deps.GetDukunPoints(ctx)

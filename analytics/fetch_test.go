@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"teknologi-umum-bot/analytics"
-	"teknologi-umum-bot/analytics/server"
 	"testing"
 	"time"
 
@@ -89,7 +88,7 @@ func TestGetHourlyDataFromDB(t *testing.T) {
 	defer cancel()
 
 	// create a dummy hourly type
-	hourly := []server.Hourly{
+	hourly := []analytics.HourlyMap{
 		{
 			TodaysDate: "2021-01-01",
 			ZeroHour:   14,
