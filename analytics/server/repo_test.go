@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/jmoiron/sqlx"
 	"teknologi-umum-bot/analytics/server"
 	"testing"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func TestGetAll(t *testing.T) {
@@ -346,7 +347,11 @@ func TestLastUpdated(t *testing.T) {
 
 	// should return an error
 	_, err = deps.LastUpdated(server.Endpoint(5))
-	if err == nil || !errors.Is(err, errors.New("invalid r value")) {
+	if err == nil {
 		t.Error("should error, got none")
+	}
+
+	if !errors.Is(err, server.ErrInvalidValue) {
+		t.Error("should error with ErrInvalidValue, got:", err)
 	}
 }

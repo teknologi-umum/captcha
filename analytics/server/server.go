@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -42,6 +43,8 @@ const (
 	// of messages that was sent per the database's data.
 	TotalEndpoint
 )
+
+var ErrInvalidValue = errors.New("invalid value")
 
 // Server creates and runs an HTTP server instance for fetching analytics data
 // that can be used later by other third party sites or bots.

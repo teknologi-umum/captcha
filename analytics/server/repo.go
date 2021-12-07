@@ -279,6 +279,6 @@ func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 
 		return time.Time{}, nil
 	default:
-		return time.Time{}, errors.New("invalid r value")
+		return time.Time{}, ErrInvalidValue
 	}
 }
