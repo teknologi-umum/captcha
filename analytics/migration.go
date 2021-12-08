@@ -49,6 +49,7 @@ func (d *Dependency) Migrate() error {
 		ctx,
 		`CREATE TABLE IF NOT EXISTS analytics (
 			user_id 		INTEGER 		PRIMARY KEY,
+			group_id 		INTEGER,
 			username 		VARCHAR(255),
 			display_name 	VARCHAR(255),
 			counter 		INTEGER 		DEFAULT 0,
@@ -68,6 +69,18 @@ func (d *Dependency) Migrate() error {
 	_, err = t.ExecContext(
 		ctx,
 		`CREATE INDEX IF NOT EXISTS idx_counter ON analytics (counter)`,
+	)
+	if err != nil {
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
+		return err
+	}
+
+	_, err = t.ExecContext(
+		ctx,
+		`CREATE INDEX IF NOT EXISTS idx_active ON analytics (updated_at)`,
 	)
 	if err != nil {
 		if r := t.Rollback(); r != nil {

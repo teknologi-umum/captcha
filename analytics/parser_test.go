@@ -8,14 +8,20 @@ import (
 )
 
 func TestParseToUser(t *testing.T) {
-	user := &tb.User{
-		ID:        1,
-		FirstName: "Reinaldy",
-		LastName:  "Reinaldy",
-		Username:  "reinaldy",
+	message := &tb.Message{
+		Chat: &tb.Chat{
+			ID:   123456789,
+			Type: tb.ChatGroup,
+		},
+		Sender: &tb.User{
+			ID:        1,
+			FirstName: "Reinaldy",
+			LastName:  "Reinaldy",
+			Username:  "reinaldy",
+		},
 	}
 
-	userMap := analytics.ParseToUser(user)
+	userMap := analytics.ParseToUser(message)
 	if userMap.UserID != 1 {
 		t.Errorf("UserID should be 1, got: %d", userMap.UserID)
 	}
@@ -24,5 +30,8 @@ func TestParseToUser(t *testing.T) {
 	}
 	if userMap.Username != "reinaldy" {
 		t.Errorf("Username should be reinaldy, got: %s", userMap.Username)
+	}
+	if userMap.GroupID != 123456789 {
+		t.Errorf("GroupID should be 123456789, got: %d", userMap.GroupID)
 	}
 }

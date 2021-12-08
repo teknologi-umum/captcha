@@ -10,12 +10,15 @@ import (
 // NewMessage handles an incoming message from the group
 // to be noted into the database.
 func (d *Dependency) NewMessage(m *tb.Message) error {
-	user := m.Sender
+	// fast return if it's not from a group
+	if !m.FromGroup() {
+		return nil
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	usr := ParseToUser(user)
+	usr := ParseToUser(m)
 	usr.Counter = 1
 
 	err := d.IncrementUserDB(ctx, usr)
