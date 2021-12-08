@@ -14,14 +14,17 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Dependency specifies the dependency injection struct
 // for the server package to use.
 type Dependency struct {
-	DB     *sqlx.DB
-	Memory *bigcache.BigCache
-	Logger *sentry.Client
+	DB          *sqlx.DB
+	Memory      *bigcache.BigCache
+	Logger      *sentry.Client
+	Mongo       *mongo.Client
+	MongoDBName string
 }
 
 // User is a type alias for analytics.UserMap and should be
@@ -42,19 +45,40 @@ const (
 	// TotalEndpoint indicates the endpoint for getting the total amount
 	// of messages that was sent per the database's data.
 	TotalEndpoint
+	// DukunEndpoint indicates the endpoint for getting the whole
+	// dukun points as used by the Javascript bot.
+	DukunEndpoint
 )
 
 var ErrInvalidValue = errors.New("invalid value")
 
-// Server creates and runs an HTTP server instance for fetching analytics data
+// Config is the configuration struct for the server package.
+// Only the Port field is optional. It will be set to 8080 if not set.
+type Config struct {
+	DB          *sqlx.DB
+	Mongo       *mongo.Client
+	MongoDBName string
+	Memory      *bigcache.BigCache
+	Logger      *sentry.Client
+	Port        string
+}
+
+// New creates and runs an HTTP server instance for fetching analytics data
 // that can be used later by other third party sites or bots.
 //
 // Requires 3 parameter that should be sent from the main goroutine.
-func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
+func New(config Config) {
+	// Give default port
+	if config.Port == "" {
+		config.Port = "8080"
+	}
+
 	deps := &Dependency{
-		DB:     db,
-		Memory: memory,
-		Logger: logger,
+		DB:          config.DB,
+		Memory:      config.Memory,
+		Logger:      config.Logger,
+		Mongo:       config.Mongo,
+		MongoDBName: config.MongoDBName,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -161,9 +185,35 @@ func Server(db *sqlx.DB, memory *bigcache.BigCache, logger *sentry.Client) {
 		}
 	})
 
-	log.Println("Starting server on port 8080")
-	err := http.ListenAndServe(":8080", r)
+	r.Get("/dukun", func(w http.ResponseWriter, r *http.Request) {
+		data, err := deps.GetDukunPoints(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+
+		lastUpdated, err := deps.LastUpdated(DukunEndpoint)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		h.Set("Last-Updated", lastUpdated.String())
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(data)
+		if err != nil {
+			shared.HandleHttpError(err, deps.Logger, r)
+			return
+		}
+	})
+
+	log.Println("Starting server on port", config.Port)
+	err := http.ListenAndServe(":"+config.Port, r)
 	if err != nil {
-		shared.HandleError(err, logger)
+		shared.HandleError(err, config.Logger)
 	}
 }
