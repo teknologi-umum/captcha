@@ -99,7 +99,7 @@ func Setup() {
 		log.Fatal(err)
 	}
 
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
+	mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
 	if err != nil {
 		log.Fatal(err)
 	}
