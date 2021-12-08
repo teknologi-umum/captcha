@@ -3,10 +3,11 @@ package analytics
 import (
 	"context"
 	"database/sql"
-	"github.com/jmoiron/sqlx"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -41,14 +42,15 @@ func (d *Dependency) NewUser(m *tb.Message, user *tb.User) {
 	_, err = t.ExecContext(
 		ctx,
 		`INSERT INTO analytics
-			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
+			(user_id, group_id, username, display_name, counter, created_at, joined_at, updated_at)
 			VALUES
-			($1, $2, $3, $4, $5, $6, $7)
+			($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT (user_id)
 			DO UPDATE
-				SET joined_at = $8,
-					updated_at = $9`,
+				SET joined_at = $9,
+					updated_at = $10`,
 		user.ID,
+		m.Chat.ID,
 		user.Username,
 		user.FirstName+utils.ShouldAddSpace(user)+user.LastName,
 		0,

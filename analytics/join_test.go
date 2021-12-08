@@ -28,5 +28,5 @@ func TestNewUser(t *testing.T) {
 		}
 	}()
 
-	d.NewUser(&tb.Message{}, user)
+	d.NewUser(&tb.Message{Chat: &tb.Chat{ID: 10}}, user)
 }

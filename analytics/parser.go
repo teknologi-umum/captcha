@@ -9,7 +9,7 @@ import (
 
 // UserMap contains a data of a user.
 type UserMap struct {
-	GroupID     int64     `json:"group_id" db:"group_id"`
+	GroupID     int64     `json:"group_id,omitempty" db:"group_id"`
 	UserID      int64     `json:"user_id" db:"user_id"`
 	Username    string    `json:"username,omitempty" db:"username" redis:"username"`
 	DisplayName string    `json:"display_name,omitempty" db:"display_name" redis:"display_name"`

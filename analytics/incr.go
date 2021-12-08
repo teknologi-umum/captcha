@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"teknologi-umum-bot/shared"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/pkg/errors"
 )
@@ -34,9 +35,9 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, user UserMap) error {
 	_, err = t.ExecContext(
 		ctx,
 		`INSERT INTO analytics
-			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
+			(user_id, username, display_name, counter, created_at, joined_at, updated_at, group_id)
 			VALUES
-			($1, $2, $3, $4, $5, $6, $7)
+			($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT (user_id)
 			DO UPDATE
 			SET counter = (SELECT counter FROM analytics WHERE user_id = $1)+$4,
@@ -50,6 +51,7 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, user UserMap) error {
 		now,
 		now,
 		now,
+		user.GroupID,
 	)
 	if err != nil {
 		if r := t.Rollback(); r != nil {

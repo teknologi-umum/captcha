@@ -16,6 +16,7 @@ func TestIncrementUsrDB(t *testing.T) {
 	users := []analytics.UserMap{
 		{
 			UserID:      1,
+			GroupID:     5,
 			Username:    "reinaldy",
 			DisplayName: "Reinaldy",
 			Counter:     10,
@@ -25,6 +26,7 @@ func TestIncrementUsrDB(t *testing.T) {
 		},
 		{
 			UserID:      2,
+			GroupID:     5,
 			Username:    "elianiva",
 			DisplayName: "Dicha",
 			Counter:     20,
@@ -34,6 +36,7 @@ func TestIncrementUsrDB(t *testing.T) {
 		},
 		{
 			UserID:      3,
+			GroupID:     5,
 			Username:    "farhan443",
 			DisplayName: "Farhan",
 			Counter:     15,
