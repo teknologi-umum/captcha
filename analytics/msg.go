@@ -18,7 +18,7 @@ func (d *Dependency) NewMessage(m *tb.Message) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	usr := ParseToUser(m)
+	usr := ParseGroupMember(m)
 	usr.Counter = 1
 
 	err := d.IncrementUserDB(ctx, usr)

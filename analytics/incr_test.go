@@ -13,7 +13,7 @@ func TestIncrementUsrDB(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	users := []analytics.UserMap{
+	users := []analytics.GroupMember{
 		{
 			UserID:      1,
 			GroupID:     analytics.NullInt64{Int64: 5, Valid: true},

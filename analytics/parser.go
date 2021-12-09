@@ -13,8 +13,8 @@ import (
 
 type NullInt64 sql.NullInt64
 
-// UserMap contains a data of a user.
-type UserMap struct {
+// GroupMember contains information about a user from a group.
+type GroupMember struct {
 	GroupID     NullInt64 `json:"group_id,omitempty" db:"group_id"`
 	UserID      int64     `json:"user_id" db:"user_id"`
 	Username    string    `json:"username,omitempty" db:"username" redis:"username"`
@@ -25,11 +25,11 @@ type UserMap struct {
 	JoinedAt    time.Time `json:"joined_at" db:"joined_at"`
 }
 
-// ParseToUser converts the tb.Message struct into a UserMap struct.
-func ParseToUser(m *tb.Message) UserMap {
+// ParseGroupMember converts the tb.Message struct into a GroupMember struct.
+func ParseGroupMember(m *tb.Message) GroupMember {
 	user := m.Sender
 
-	return UserMap{
+	return GroupMember{
 		UserID:      int64(user.ID),
 		GroupID:     NullInt64{Int64: m.Chat.ID, Valid: true},
 		DisplayName: user.FirstName + utils.ShouldAddSpace(user) + user.LastName,

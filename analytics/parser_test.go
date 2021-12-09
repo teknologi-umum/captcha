@@ -7,7 +7,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func TestParseToUser(t *testing.T) {
+func TestParseGroupMember(t *testing.T) {
 	message := &tb.Message{
 		Chat: &tb.Chat{
 			ID:   123456789,
@@ -21,7 +21,7 @@ func TestParseToUser(t *testing.T) {
 		},
 	}
 
-	userMap := analytics.ParseToUser(message)
+	userMap := analytics.ParseGroupMember(message)
 	if userMap.UserID != 1 {
 		t.Errorf("UserID should be 1, got: %d", userMap.UserID)
 	}

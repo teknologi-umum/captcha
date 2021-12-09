@@ -13,7 +13,7 @@ import (
 )
 
 // IncrementUserDB literally increment a user's counter on the database.
-func (d *Dependency) IncrementUserDB(ctx context.Context, user UserMap) error {
+func (d *Dependency) IncrementUserDB(ctx context.Context, member GroupMember) error {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err
@@ -44,14 +44,14 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, user UserMap) error {
 				username = $2,
 				display_name = $3,
 				updated_at = $7`,
-		user.UserID,
-		user.Username,
-		user.DisplayName,
-		user.Counter,
+		member.UserID,
+		member.Username,
+		member.DisplayName,
+		member.Counter,
 		now,
 		now,
 		now,
-		user.GroupID,
+		member.GroupID,
 	)
 	if err != nil {
 		if r := t.Rollback(); r != nil {
