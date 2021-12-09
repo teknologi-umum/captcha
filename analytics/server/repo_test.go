@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/dukun"
 	"testing"
@@ -39,10 +40,11 @@ func TestGetAll(t *testing.T) {
 	_, err = tx.ExecContext(
 		ctx,
 		`INSERT INTO analytics
-			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
+			(user_id, group_id, username, display_name, counter, created_at, joined_at, updated_at)
 			VALUES
-			($1, $2, $3, $4, $5, $6, $7)`,
+			($1, $2, $3, $4, $5, $6, $7, $8)`,
 		90,
+		analytics.NullInt64{Int64: 123456, Valid: true},
 		"user1",
 		"User 1",
 		1,
@@ -119,9 +121,9 @@ func TestGetTotal(t *testing.T) {
 
 	// create a dummy user struct slice
 	users := []server.User{
-		{UserID: 100, Username: "user1", DisplayName: "User 1", Counter: 1},
-		{UserID: 200, Username: "user2", DisplayName: "User 2", Counter: 2},
-		{UserID: 300, Username: "user3", DisplayName: "User 3", Counter: 3},
+		{UserID: 100, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user1", DisplayName: "User 1", Counter: 1},
+		{UserID: 200, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user2", DisplayName: "User 2", Counter: 2},
+		{UserID: 300, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user3", DisplayName: "User 3", Counter: 3},
 	}
 
 	// convert users slice to single slice with no keys, just values.
@@ -130,6 +132,7 @@ func TestGetTotal(t *testing.T) {
 		usersSlice = append(
 			usersSlice,
 			v.UserID,
+			v.GroupID,
 			v.Username,
 			v.DisplayName,
 			v.Counter,
@@ -158,11 +161,11 @@ func TestGetTotal(t *testing.T) {
 	_, err = tx.ExecContext(
 		ctx,
 		`INSERT INTO analytics
-			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
+			(user_id, group_id, username, display_name, counter, created_at, joined_at, updated_at)
 			VALUES
-			($1, $2, $3, $4, $5, $6, $7),
-			($8, $9, $10, $11, $12, $13, $14),
-			($15, $16, $17, $18, $19, $20, $21)`,
+			($1, $2, $3, $4, $5, $6, $7, $8),
+			($9, $10, $11, $12, $13, $14, $15, $16),
+			($17, $18, $19, $20, $21, $22, $23, $24)`,
 		usersSlice...,
 	)
 	if err != nil {

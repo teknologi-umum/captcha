@@ -8,11 +8,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Returns a slice of UserMap from the database.
-func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]UserMap, error) {
+// Returns a slice of GroupMember from the database.
+func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, error) {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
-		return []UserMap{}, nil
+		return []GroupMember{}, nil
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
@@ -23,15 +23,15 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]UserMap, error) {
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return []UserMap{}, err
+		return []GroupMember{}, err
 	}
 
 	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
-			return []UserMap{}, err
+			return []GroupMember{}, err
 		}
-		return []UserMap{}, err
+		return []GroupMember{}, err
 	}
 	defer func(rows *sqlx.Rows) {
 		err := rows.Close()
@@ -40,15 +40,15 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]UserMap, error) {
 		}
 	}(rows)
 
-	var users []UserMap
+	var users []GroupMember
 	for rows.Next() {
-		var user UserMap
+		var user GroupMember
 		err := rows.StructScan(&user)
 		if err != nil {
 			if r := tx.Rollback(); r != nil {
-				return []UserMap{}, err
+				return []GroupMember{}, err
 			}
-			return []UserMap{}, err
+			return []GroupMember{}, err
 		}
 		users = append(users, user)
 	}
@@ -56,9 +56,9 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]UserMap, error) {
 	err = tx.Commit()
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
-			return []UserMap{}, err
+			return []GroupMember{}, err
 		}
-		return []UserMap{}, err
+		return []GroupMember{}, err
 	}
 
 	return users, nil

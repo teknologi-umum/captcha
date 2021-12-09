@@ -27,9 +27,9 @@ type Dependency struct {
 	MongoDBName string
 }
 
-// User is a type alias for analytics.UserMap and should be
+// User is a type alias for analytics.GroupMember and should be
 // similar for the behavior and other stuffs.
-type User = analytics.UserMap
+type User = analytics.GroupMember
 
 // Hourly is a type alias for analytics.HourlyMap
 type Hourly = analytics.HourlyMap
