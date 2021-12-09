@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"reflect"
 	"teknologi-umum-bot/utils"
@@ -30,7 +31,7 @@ func ParseToUser(m *tb.Message) UserMap {
 
 	return UserMap{
 		UserID:      int64(user.ID),
-		GroupID:     NullInt64{Int64: m.Chat.ID},
+		GroupID:     NullInt64{Int64: m.Chat.ID, Valid: true},
 		DisplayName: user.FirstName + utils.ShouldAddSpace(user) + user.LastName,
 		Username:    user.Username,
 	}
@@ -63,4 +64,12 @@ func (n *NullInt64) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &n.Int64)
 	n.Valid = (err == nil)
 	return err
+}
+
+func (n NullInt64) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+
+	return n.Int64, nil
 }

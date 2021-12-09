@@ -44,7 +44,7 @@ func TestGetAll(t *testing.T) {
 			VALUES
 			($1, $2, $3, $4, $5, $6, $7, $8)`,
 		90,
-		12345678,
+		analytics.NullInt64{Int64: 123456, Valid: true},
 		"user1",
 		"User 1",
 		1,
@@ -121,9 +121,9 @@ func TestGetTotal(t *testing.T) {
 
 	// create a dummy user struct slice
 	users := []server.User{
-		{UserID: 100, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user1", DisplayName: "User 1", Counter: 1},
-		{UserID: 200, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user2", DisplayName: "User 2", Counter: 2},
-		{UserID: 300, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user3", DisplayName: "User 3", Counter: 3},
+		{UserID: 100, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user1", DisplayName: "User 1", Counter: 1},
+		{UserID: 200, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user2", DisplayName: "User 2", Counter: 2},
+		{UserID: 300, GroupID: analytics.NullInt64{Int64: 123456, Valid: true}, Username: "user3", DisplayName: "User 3", Counter: 3},
 	}
 
 	// convert users slice to single slice with no keys, just values.
