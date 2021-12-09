@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/dukun"
 	"testing"
@@ -120,9 +121,9 @@ func TestGetTotal(t *testing.T) {
 
 	// create a dummy user struct slice
 	users := []server.User{
-		{UserID: 100, GroupID: 12345678, Username: "user1", DisplayName: "User 1", Counter: 1},
-		{UserID: 200, GroupID: 12345678, Username: "user2", DisplayName: "User 2", Counter: 2},
-		{UserID: 300, GroupID: 12345678, Username: "user3", DisplayName: "User 3", Counter: 3},
+		{UserID: 100, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user1", DisplayName: "User 1", Counter: 1},
+		{UserID: 200, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user2", DisplayName: "User 2", Counter: 2},
+		{UserID: 300, GroupID: analytics.NullInt64{Int64: 123456}, Username: "user3", DisplayName: "User 3", Counter: 3},
 	}
 
 	// convert users slice to single slice with no keys, just values.

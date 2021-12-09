@@ -1,15 +1,20 @@
 package analytics
 
 import (
+	"database/sql"
+	"encoding/json"
+	"reflect"
 	"teknologi-umum-bot/utils"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+type NullInt64 sql.NullInt64
+
 // UserMap contains a data of a user.
 type UserMap struct {
-	GroupID     int64     `json:"group_id,omitempty" db:"group_id"`
+	GroupID     NullInt64 `json:"group_id,omitempty" db:"group_id"`
 	UserID      int64     `json:"user_id" db:"user_id"`
 	Username    string    `json:"username,omitempty" db:"username" redis:"username"`
 	DisplayName string    `json:"display_name,omitempty" db:"display_name" redis:"display_name"`
@@ -25,8 +30,37 @@ func ParseToUser(m *tb.Message) UserMap {
 
 	return UserMap{
 		UserID:      int64(user.ID),
-		GroupID:     int64(m.Chat.ID),
+		GroupID:     NullInt64{Int64: m.Chat.ID},
 		DisplayName: user.FirstName + utils.ShouldAddSpace(user) + user.LastName,
 		Username:    user.Username,
 	}
+}
+
+func (n *NullInt64) Scan(value interface{}) error {
+	var i sql.NullInt64
+	if err := i.Scan(value); err != nil {
+		return err
+	}
+
+	if reflect.TypeOf(value) == nil {
+		*n = NullInt64{i.Int64, false}
+	} else {
+		*n = NullInt64{i.Int64, true}
+	}
+
+	return nil
+}
+
+func (n *NullInt64) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(n.Int64)
+}
+
+func (n *NullInt64) UnmarshalJSON(b []byte) error {
+	err := json.Unmarshal(b, &n.Int64)
+	n.Valid = (err == nil)
+	return err
 }

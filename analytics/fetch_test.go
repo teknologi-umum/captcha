@@ -32,6 +32,8 @@ func TestGetUserDataFromDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// The lack of group_id value is intentional, because I want to check for
+	// null SQL values.
 	_, err = tx.ExecContext(
 		ctx,
 		`INSERT INTO analytics
