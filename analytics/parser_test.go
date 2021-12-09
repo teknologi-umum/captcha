@@ -31,7 +31,7 @@ func TestParseToUser(t *testing.T) {
 	if userMap.Username != "reinaldy" {
 		t.Errorf("Username should be reinaldy, got: %s", userMap.Username)
 	}
-	if userMap.GroupID.Int64 != 123456 {
+	if userMap.GroupID.Int64 != 123456789 {
 		t.Errorf("GroupID should be 123456789, got: %d", userMap.GroupID.Int64)
 	}
 }
