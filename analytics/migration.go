@@ -48,8 +48,8 @@ func (d *Dependency) Migrate() error {
 	_, err = t.ExecContext(
 		ctx,
 		`CREATE TABLE IF NOT EXISTS analytics (
-			user_id 		INTEGER 		PRIMARY KEY,
-			group_id 		INTEGER,
+			user_id 		BIGINT	 		PRIMARY KEY,
+			group_id 		BIGINT,
 			username 		VARCHAR(255),
 			display_name 	VARCHAR(255),
 			counter 		INTEGER 		DEFAULT 0,

@@ -49,9 +49,7 @@ Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang ba
 	`Wah mantap, {user} bisa nyelesain captcha yang aneh itu.
 
 Di grup ini nggak usah sungkan-sungkan kalau mau tanya atau bicara ya. Kita semua manusia bar-bar.
-Sehari bisa muncul lebih dari 500 message, jadi jangan lupa matiin notifikasi ya!
-
-Oh, kalau boleh tahu, kamu pernah ngoding pakai bahasa apa aja?`,
+Sehari bisa muncul lebih dari 500 message, jadi jangan lupa matiin notifikasi ya!`,
 	`Haii {user}!
 
 Selama di grup ini, jangan sungkan & malu-malu ya. Biarin aja grup ini berisik. Jangan lupa matiin notification juga.

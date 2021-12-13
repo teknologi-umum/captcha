@@ -75,7 +75,10 @@ func init() {
 		log.Fatal("Please provide the correct MONGO_URL value on the .env file")
 	}
 	if os.Getenv("TZ") == "" {
-		os.Setenv("TZ", "UTC")
+		err := os.Setenv("TZ", "UTC")
+		if err != nil {
+			log.Fatalln("during setting TZ environment variable:", err)
+		}
 	}
 
 	log.Println("Passed the environment variable check")
@@ -89,32 +92,32 @@ func main() {
 	// Connect to PostgreSQL
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during opening a postgres client:", errors.WithStack(err))
 	}
 	defer func(db *sqlx.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Fatal(errors.WithStack(err))
+			log.Fatal("during closing the postgres client:", errors.WithStack(err))
 		}
 	}(db)
 
 	// Setup mongodb connection
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during connecting to mongo client:", errors.WithStack(err))
 	}
 	defer func(client *mongo.Client) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 		err := client.Disconnect(ctx)
 		if err != nil {
-			log.Fatal(errors.WithStack(err))
+			log.Fatal("during closing the mongo connection:", errors.WithStack(err))
 		}
 	}(mongoClient)
 
 	// Mongo health check
 	if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
-		log.Fatal(err)
+		log.Fatal("during mongodb ping:", err)
 	}
 
 	// Setup in memory cache
@@ -128,7 +131,7 @@ func main() {
 		MaxEntriesInWindow: 50,
 	})
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during creating a in memory cache:", errors.WithStack(err))
 	}
 	defer func(cache *bigcache.BigCache) {
 		err := cache.Close()
@@ -145,14 +148,14 @@ func main() {
 		Environment:      os.Getenv("ENVIRONMENT"),
 	})
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
 	}
 	defer logger.Flush(5 * time.Second)
 
 	// Running migration on database first.
 	err = analytics.MustMigrate(db)
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during initial database migration:", errors.WithStack(err))
 	}
 
 	// Setup Telegram Bot
@@ -168,7 +171,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatal(errors.WithStack(err))
+		log.Fatal("during init of bot client:", errors.WithStack(err))
 	}
 	defer b.Stop()
 
@@ -179,6 +182,7 @@ func main() {
 			_ = logger.CaptureException(r.(error), &sentry.EventHint{
 				OriginalException: r.(error),
 			}, nil)
+			log.Println(r.(error))
 		}
 	}()
 
@@ -211,8 +215,6 @@ func main() {
 	b.Handle(tb.OnVoice, deps.OnNonTextHandler)
 	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
 	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
-
-	b.Handle("/ascii", deps.AsciiCmdHandler)
 
 	log.Println("Bot started!")
 	go func() {
