@@ -33,13 +33,13 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			user, err := d.Memory.Get(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			err = json.Unmarshal(user, &captcha)
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			// Goodbye, user!
@@ -55,7 +55,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				})
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			// Even if the keyword is Ban, it's just kicking them.
@@ -67,7 +67,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			}, true)
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			// Delete all the message that we've sent unless the last one.
@@ -78,7 +78,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			err = d.Bot.Delete(&msgToBeDeleted)
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			for _, msgID := range captcha.AdditionalMessages {
@@ -89,7 +89,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				err = d.Bot.Delete(&msgToBeDeleted)
 				if err != nil {
 					shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-					return
+					break
 				}
 			}
 
@@ -105,11 +105,13 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			err = d.Memory.Delete(strconv.Itoa(msgUser.Sender.ID))
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
-				return
+				break
 			}
 
 			// We're done here. Let's send the value to the done channel.
-			return
+			break
+		} else {
+			break
 		}
 	}
 	cond.Broadcast()
