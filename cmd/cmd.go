@@ -1,14 +1,19 @@
 package cmd
 
 import (
+	"context"
+	"strconv"
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/ascii"
+	"teknologi-umum-bot/badwords"
 	"teknologi-umum-bot/captcha"
 	"teknologi-umum-bot/shared"
+	"time"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
+	"go.mongodb.org/mongo-driver/mongo"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -18,13 +23,16 @@ import (
 // It will spread and use the correct dependencies for
 // each packages on the captcha project.
 type Dependency struct {
-	Memory    *bigcache.BigCache
-	Bot       *tb.Bot
-	Logger    *sentry.Client
-	DB        *sqlx.DB
-	captcha   *captcha.Dependencies
-	ascii     *ascii.Dependencies
-	analytics *analytics.Dependency
+	Memory      *bigcache.BigCache
+	Bot         *tb.Bot
+	Logger      *sentry.Client
+	DB          *sqlx.DB
+	Mongo       *mongo.Client
+	MongoDBName string
+	captcha     *captcha.Dependencies
+	ascii       *ascii.Dependencies
+	analytics   *analytics.Dependency
+	badwords    *badwords.Dependency
 }
 
 // New returns a pointer struct of Dependency
@@ -45,6 +53,11 @@ func New(deps Dependency) *Dependency {
 			Bot:    deps.Bot,
 			Logger: deps.Logger,
 			DB:     deps.DB,
+		},
+		badwords: &badwords.Dependency{
+			Logger:      deps.Logger,
+			Mongo:       deps.Mongo,
+			MongoDBName: deps.MongoDBName,
 		},
 	}
 }
@@ -98,4 +111,32 @@ func (d *Dependency) OnUserLeftHandler(m *tb.Message) {
 // AsciiCmdHandler handle the /ascii command.
 func (d *Dependency) AsciiCmdHandler(m *tb.Message) {
 	d.ascii.Ascii(m)
+}
+
+// BadWordsCmdHandler handle the /badwords command.
+// This can only be accessed by some users on Telegram
+// and only valid for private chats.
+func (d *Dependency) BadWordHandler(m *tb.Message) {
+	if !m.Private() {
+		return
+	}
+	ok := d.badwords.Authenticate(strconv.Itoa(m.Sender.ID))
+	if !ok {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	err := d.badwords.AddBadWord(ctx, m.Text)
+	if err != nil {
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		return
+	}
+
+	_, err = d.Bot.Send(m.Sender, "Terimakasih telah menambahkan kata yang tidak pantas.")
+	if err != nil {
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		return
+	}
 }
