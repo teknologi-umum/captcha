@@ -12,6 +12,7 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 )
 
 var db *sqlx.DB
@@ -36,7 +37,7 @@ func Cleanup() {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			log.Fatal(err)
 		}
 	}(c)
@@ -121,7 +122,7 @@ func Teardown() {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			log.Fatal(err)
 		}
 	}(c)

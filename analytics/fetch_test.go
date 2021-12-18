@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 func TestGetUserDataFromDB(t *testing.T) {
@@ -22,7 +23,7 @@ func TestGetUserDataFromDB(t *testing.T) {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			t.Fatal(err)
 		}
 	}(c)
@@ -123,7 +124,7 @@ func TestGetHourlyDataFromDB(t *testing.T) {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			t.Fatal(err)
 		}
 	}(c)

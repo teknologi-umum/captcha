@@ -120,6 +120,13 @@ func main() {
 		log.Fatal("during mongodb ping:", err)
 	}
 
+	// Get the MongoDB database name from the given MONGO_URL environment variable.
+	parsedURL, err := url.Parse(os.Getenv("MONGO_URL"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
+	}
+	mongoDBName := parsedURL.Path[1:]
+
 	// Setup in memory cache
 	cache, err := bigcache.NewBigCache(bigcache.Config{
 		Shards:             1024,
@@ -187,10 +194,12 @@ func main() {
 	}()
 
 	deps := cmd.New(cmd.Dependency{
-		Memory: cache,
-		Bot:    b,
-		Logger: logger,
-		DB:     db,
+		Memory:      cache,
+		Bot:         b,
+		Logger:      logger,
+		DB:          db,
+		Mongo:       mongoClient,
+		MongoDBName: mongoDBName,
 	})
 
 	// This is basically just for health check.
@@ -216,24 +225,22 @@ func main() {
 	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
 	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
 
+	// Badword handlers
+	b.Handle("/badwords", deps.BadWordHandler)
+
 	log.Println("Bot started!")
 	go func() {
 		b.Start()
 	}()
 
 	go func() {
-		// Parse mongo url
-		parsedURL, err := url.Parse(os.Getenv("MONGO_URL"))
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
-		}
-
+		// Start a HTTP server instance
 		server.New(server.Config{
 			DB:          db,
 			Memory:      cache,
 			Mongo:       mongoClient,
 			Logger:      logger,
-			MongoDBName: parsedURL.Path[1:],
+			MongoDBName: mongoDBName,
 			Port:        os.Getenv("PORT"),
 		})
 	}()
