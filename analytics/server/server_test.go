@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"os"
 	"teknologi-umum-bot/analytics"
@@ -39,7 +40,7 @@ func Cleanup() {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			log.Fatal(err)
 		}
 	}(c)
@@ -152,7 +153,7 @@ func Teardown() {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			log.Fatal(err)
 		}
 	}(c)

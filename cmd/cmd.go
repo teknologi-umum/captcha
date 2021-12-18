@@ -51,13 +51,13 @@ func New(deps Dependency) *Dependency {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(m *tb.Message) {
+	d.captcha.WaitForAnswer(m)
+
 	err := d.analytics.NewMessage(m)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
-
-	d.captcha.WaitForAnswer(m)
 }
 
 // OnUserJoinHandler handle any incoming user join,

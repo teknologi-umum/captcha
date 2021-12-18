@@ -148,7 +148,7 @@ func TestGetTotal(t *testing.T) {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			t.Fatal(err)
 		}
 	}(c)
@@ -247,7 +247,7 @@ func TestGetHourly(t *testing.T) {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			t.Fatal(err)
 		}
 	}(c)

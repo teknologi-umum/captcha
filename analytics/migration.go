@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 // MustMigrate is the same as Migrate, but you don't
@@ -35,7 +36,7 @@ func (d *Dependency) Migrate() error {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			shared.HandleError(err, d.Logger)
 		}
 	}(c)

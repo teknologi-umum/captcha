@@ -2,12 +2,12 @@ package captcha
 
 import (
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 	"teknologi-umum-bot/shared"
 	"time"
 
+	"github.com/pkg/errors"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -48,7 +48,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	err = d.collectUserMessageAndCache(&captcha, m)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(errors.Wrap(err, "collecting user message"), d.Logger, d.Bot, m)
 		return
 	}
 
@@ -127,16 +127,6 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	// Delete the question message.
-	err = d.Bot.Delete(&tb.StoredMessage{
-		ChatID:    m.Chat.ID,
-		MessageID: captcha.QuestionID,
-	})
-	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
-	}
-
 	// Delete user's messages.
 	for _, msgID := range captcha.UserMessages {
 		if msgID == "" {
@@ -165,6 +155,16 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
+	}
+
+	// Delete the question message.
+	err = d.Bot.Delete(&tb.StoredMessage{
+		ChatID:    m.Chat.ID,
+		MessageID: captcha.QuestionID,
+	})
+	if err != nil {
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		return
 	}
 }
 

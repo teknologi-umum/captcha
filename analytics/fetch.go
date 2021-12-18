@@ -6,6 +6,7 @@ import (
 	"teknologi-umum-bot/shared"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 // Returns a slice of GroupMember from the database.
@@ -16,7 +17,7 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, erro
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			shared.HandleError(err, d.Logger)
 		}
 	}(c)
@@ -72,7 +73,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			shared.HandleError(err, d.Logger)
 		}
 	}(c)

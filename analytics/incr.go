@@ -20,7 +20,7 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, member GroupMember) er
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			shared.HandleError(err, d.Logger)
 		}
 	}(c)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -27,7 +28,7 @@ func (d *Dependency) NewUser(m *tb.Message, user *tb.User) {
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
 			shared.HandleError(err, d.Logger)
 		}
 	}(c)
