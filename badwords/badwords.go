@@ -32,13 +32,11 @@ func (d *Dependency) AddBadWord(ctx context.Context, word string) error {
 // badword into the database.
 func (d *Dependency) Authenticate(id string) bool {
 	admins := strings.Split(os.Getenv("ADMIN_ID"), ",")
-	var exists bool
 
 	for _, admin := range admins {
 		if admin == id {
-			exists = true
-			break
+			return true
 		}
 	}
-	return exists
+	return false
 }
