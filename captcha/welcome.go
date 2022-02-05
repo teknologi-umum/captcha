@@ -137,5 +137,5 @@ func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error
 
 func randomNum() int {
 	rand.Seed(time.Now().Unix())
-	return rand.Intn(9)
+	return rand.Intn(len(currentWelcomeMessages) - 1)
 }
