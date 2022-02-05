@@ -16,7 +16,7 @@ import (
 // that have a dynamic user value, written as {user}.
 //
 // This should be sent to the user with a random pick.
-var currentWelcomeMessages = [7]string{
+var currentWelcomeMessages = [8]string{
 	`Halo, {user}!
 
 Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya.
@@ -60,7 +60,10 @@ Banyak member grup ini yang udah kerja di tempat-tempat keren, dan mereka juga s
 Github. Pastiin profile Github-mu isinya project yang keren juga ya! Nggak usah malu-malu kalau menurutmu masih
 biasa aja :D
 
-Jangan lupa matiin notifikasi, grup ini berisik banget, apalagi kalo lagi ngegibah.`}
+Jangan lupa matiin notifikasi, grup ini berisik banget, apalagi kalo lagi ngegibah.`,
+	`您好 {user}! 
+	欢迎您在 Teknologi Umum, 我们每天都很嘈杂, 请把你的筒子声音关掉,
+	您要问什么, 请问吧. 希望您很高兴在这里`}
 
 // deleteMessage creates a timer of one minute to delete a certain message.
 func deleteMessage(bot *tb.Bot, message tb.StoredMessage, logger *sentry.Client) {
