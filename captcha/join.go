@@ -39,13 +39,10 @@ const (
 )
 
 // DefaultQuestion contains the default captcha questions.
-var DefaultQuestion = `Halo, {user}!
-
-Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!
-
-Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.
-
-<pre>{captcha}</pre>`
+var DefaultQuestion = "Halo, {user}!\n\n"+
+"Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!\n\n"+
+"Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.\n\n"+
+"<pre>{captcha}</pre>"
 
 // CaptchaUserJoin is the most frustrating function that I've written
 // at this point of time.
@@ -73,7 +70,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
-	// randNum generates a random number (4 digit) in string format
+	// randNum generates a random number (3 digit) in string format
 	var randNum = utils.GenerateRandomNumber()
 	// captcha generates ascii art from the randNum value
 	var captcha = utils.GenerateAscii(randNum)

@@ -7,7 +7,7 @@ import (
 
 func TestGenerateRandomNumber(t *testing.T) {
 	n := utils.GenerateRandomNumber()
-	if len(n) != 4 {
-		t.Errorf("GenerateRandomNumber() should return 4 digits, got %d", len(n))
+	if len(n) != 3 {
+		t.Errorf("GenerateRandomNumber() should return 3 digits, got %d", len(n))
 	}
 }

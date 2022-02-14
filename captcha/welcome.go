@@ -17,52 +17,35 @@ import (
 //
 // This should be sent to the user with a random pick.
 var currentWelcomeMessages = [8]string{
-	"Halo, {user} \n" +
-
-		"Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya. \n" +
-
-		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. \n" +
-
+	"Halo, {user}\n\n" +
+		"Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
+		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
 		"Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.",
-	"Hai {user}! \n" +
-
-		"Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya. \n" +
-
-		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. \n" +
-
+	"Hai {user}! \n\n" +
+		"Selamat datang di grup Teknologi Umum. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
+		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. " +
 		"Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.",
-	"Welcome {user}! \n" +
-
+	"Welcome {user}!\n\n" +
 		"Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.",
-	"Haloo {user}! \n" +
-
-		"Selamat datang di grup Teknologi Umum, yuk langsung matiin notification biar hidup kamu ngga sengsara. \n" +
-
+	"Haloo {user}!\n\n" +
+		"Selamat datang di grup Teknologi Umum, yuk langsung matiin notification biar hidup kamu ngga sengsara. " +
 		"Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!",
-	"Hai, {user}! \n" +
-
-		"Selamat datang di grup Teknologi Umum! \n" +
-
-		"Coba ketik (dan kirim) /quiz deh, nanti grup ini tiba-tiba hidup. \n" +
-
+	"Hai, {user}!\n\n" +
+		"Selamat datang di grup Teknologi Umum!\n\n" +
+		"Coba ketik (dan kirim) /joke deh, nanti grup ini tiba-tiba hidup.\n\n" +
 		"Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang bakso bawa HT.",
-	"Haii {user}! \n" +
-
-		"Selama di grup ini, jangan sungkan & malu-malu ya. Biarin aja grup ini berisik. Jangan lupa matiin notification juga. \n" +
-
-		"Semoga betah yaa!\n " +
-
-		"Main-main ke website dan Github organization grup ini di https://teknologiumum.com \n" +
+	"Haii {user}!\n\n" +
+		"Selama di grup ini, jangan sungkan & malu-malu ya. Biarin aja grup ini berisik. Jangan lupa matiin notification juga. " +
+		"Semoga betah yaa!\n\n" +
+		"Main-main ke website dan Github organization grup ini di https://teknologiumum.com " +
 		"dan https://github.com/teknologi-umum",
-	"Hi {user}! Keren banget bisa selesain captcha aneh barusan \n." +
-
-		"Banyak member grup ini yang udah kerja di tempat-tempat keren, dan mereka juga sering ngelirik ke profile \n" +
-		"Github. Pastiin profile Github-mu isinya project yang keren juga ya! Nggak usah malu-malu kalau menurutmu masih \n" +
-		"biasa aja :D \n" +
-
+	"Hi {user}! Keren banget bisa selesain captcha aneh barusan.\n\n" +
+		"Banyak member grup ini yang udah kerja di tempat-tempat keren, dan mereka juga sering ngelirik ke profile " +
+		"Github. Pastiin profile Github-mu isinya project yang keren juga ya! Nggak usah malu-malu kalau menurutmu masih " +
+		"biasa aja :D\n\n" +
 		"Jangan lupa matiin notifikasi, grup ini berisik banget, apalagi kalo lagi ngegibah.",
-	"您好 {user}! \n" +
-		"欢迎您在 Teknologi Umum, 我们每天都很嘈杂, 请把你的筒子声音关掉, \n" +
+	"您好 {user}! \n\n" +
+		"欢迎您在 Teknologi Umum, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
 		"您要问什么, 请问吧. 希望您很高兴在这里"}
 
 // deleteMessage creates a timer of one minute to delete a certain message.
