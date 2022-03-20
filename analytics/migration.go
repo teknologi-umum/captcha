@@ -48,6 +48,25 @@ func (d *Dependency) Migrate() error {
 
 	_, err = t.ExecContext(
 		ctx,
+		`CREATE TABLE IF NOT EXISTS captcha_swarm (
+			user_id BIGINT NOT NULL,
+			group_id BIGINT NOT NULL,
+			username VARCHAR(255),
+			display_name VARCHAR(255),
+			finished_captcha BOOLEAN NOT NULL,
+			joined_at TIMESTAMP
+		)`,
+	)
+	if err != nil {
+		if r := t.Rollback(); r != nil {
+			return r
+		}
+
+		return err
+	}
+
+	_, err = t.ExecContext(
+		ctx,
 		`CREATE TABLE IF NOT EXISTS analytics (
 			user_id 		BIGINT	 		PRIMARY KEY,
 			group_id 		BIGINT,
