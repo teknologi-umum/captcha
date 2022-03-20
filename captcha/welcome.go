@@ -54,7 +54,7 @@ func deleteMessage(bot *tb.Bot, message tb.StoredMessage, logger *sentry.Client)
 	time.AfterFunc(time.Minute*1, func() {
 	DELETEMSG_RETRY:
 		err := bot.Delete(message)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 			if strings.Contains(err.Error(), "retry after") {
 				// Acquire the retry number
 				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
