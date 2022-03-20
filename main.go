@@ -170,6 +170,11 @@ func main() {
 		Token:  os.Getenv("BOT_TOKEN"),
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 		Reporter: func(err error) {
+			if strings.Contains(err.Error(), "Conflict: terminated by other getUpdates request") {
+				// This error means the bot is currently being deployed
+				return
+			}
+
 			_ = logger.CaptureException(
 				err,
 				&sentry.EventHint{OriginalException: err},
