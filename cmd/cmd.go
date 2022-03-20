@@ -39,21 +39,23 @@ type Dependency struct {
 // which map the incoming dependencies provided
 // into what's needed by each domain.
 func New(deps Dependency) *Dependency {
+	analyticsDeps := &analytics.Dependency{
+		Memory: deps.Memory,
+		Bot:    deps.Bot,
+		Logger: deps.Logger,
+		DB:     deps.DB,
+	}
 	return &Dependency{
 		captcha: &captcha.Dependencies{
 			Memory: deps.Memory,
 			Bot:    deps.Bot,
 			Logger: deps.Logger,
+			A: analyticsDeps,
 		},
 		ascii: &ascii.Dependencies{
 			Bot: deps.Bot,
 		},
-		analytics: &analytics.Dependency{
-			Memory: deps.Memory,
-			Bot:    deps.Bot,
-			Logger: deps.Logger,
-			DB:     deps.DB,
-		},
+		analytics: analyticsDeps,
 		badwords: &badwords.Dependency{
 			Logger:      deps.Logger,
 			Mongo:       deps.Mongo,
