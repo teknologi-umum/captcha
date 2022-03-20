@@ -60,12 +60,17 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					// Acquire the retry number
 					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
 					if err != nil {
-						// If there's an error, we'll just retry after 1 second
-						retry = 1
+						// If there's an error, we'll just retry after 10 second
+						retry = 10
 					}
 
 					// Let's wait a bit and retry
 					time.Sleep(time.Second * time.Duration(retry))
+					goto KICKMSG_RETRY
+				}
+
+				if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+					time.Sleep(time.Second * 10)
 					goto KICKMSG_RETRY
 				}
 
@@ -86,12 +91,17 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					// Acquire the retry number
 					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
 					if err != nil {
-						// If there's an error, we'll just retry after 1 second
-						retry = 1
+						// If there's an error, we'll just retry after 10 second
+						retry = 10
 					}
 
 					// Let's wait a bit and retry
 					time.Sleep(time.Second * time.Duration(retry))
+					goto BAN_RETRY
+				}
+
+				if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+					time.Sleep(time.Second * 10)
 					goto BAN_RETRY
 				}
 

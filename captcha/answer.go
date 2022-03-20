@@ -127,6 +127,8 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
+	go d.A.UpdateSwarm(m.Sender, m.Chat.ID, true)
+
 	// Delete user's messages.
 	for _, msgID := range captcha.UserMessages {
 		if msgID == "" {

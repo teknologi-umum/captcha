@@ -104,14 +104,20 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 			// Acquire the retry number
 			retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
 			if err != nil {
-				// If there's an error, we'll just retry after 1 second
-				retry = 1
+				// If there's an error, we'll just retry after 10 second
+				retry = 10
 			}
 
 			// Let's wait a bit and retry
 			time.Sleep(time.Second * time.Duration(retry))
 			goto SENDMSG_RETRY
 		}
+
+		if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+			time.Sleep(time.Second * 10)
+			goto SENDMSG_RETRY
+		}
+
 
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
