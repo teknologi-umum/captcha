@@ -58,7 +58,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// If they're not, continue to execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		if !strings.Contains(err.Error(), "Gateway Timeout (504)") || strings.Contains(err.Error(), "retry after") {
+		if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
