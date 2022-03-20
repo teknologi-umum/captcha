@@ -3,6 +3,7 @@ package captcha
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 	"sync"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
@@ -42,6 +43,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				break
 			}
 
+			KICKMSG_RETRY:
 			// Goodbye, user!
 			kickMsg, err := d.Bot.Send(
 				msgUser.Chat,
@@ -54,10 +56,24 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					ParseMode: tb.ModeHTML,
 				})
 			if err != nil {
+				if strings.Contains(err.Error(), "retry after") {
+					// Acquire the retry number
+					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+					if err != nil {
+						// If there's an error, we'll just retry after 1 second
+						retry = 1
+					}
+
+					// Let's wait a bit and retry
+					time.Sleep(time.Second * time.Duration(retry))
+					goto KICKMSG_RETRY
+				}
+
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break
 			}
 
+			BAN_RETRY:
 			// Even if the keyword is Ban, it's just kicking them.
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
@@ -66,6 +82,19 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
+				if strings.Contains(err.Error(), "retry after") {
+					// Acquire the retry number
+					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+					if err != nil {
+						// If there's an error, we'll just retry after 1 second
+						retry = 1
+					}
+
+					// Let's wait a bit and retry
+					time.Sleep(time.Second * time.Duration(retry))
+					goto BAN_RETRY
+				}
+
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break
 			}

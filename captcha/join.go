@@ -59,7 +59,8 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
+		// TEMPORARY FIX: just continue.
+		// return
 	}
 
 	if m.UserJoined.ID != 0 {
@@ -85,6 +86,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		1,
 	)
 
+	SENDMSG_RETRY:
 	// Send the question first.
 	msgQuestion, err := d.Bot.Send(
 		m.Chat,
@@ -96,6 +98,19 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		},
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "retry after") {
+			// Acquire the retry number
+			retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+			if err != nil {
+				// If there's an error, we'll just retry after 1 second
+				retry = 1
+			}
+
+			// Let's wait a bit and retry
+			time.Sleep(time.Second * time.Duration(retry))
+			goto SENDMSG_RETRY
+		}
+
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
