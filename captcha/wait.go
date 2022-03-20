@@ -9,6 +9,8 @@ import (
 	"teknologi-umum-bot/utils"
 	"time"
 
+	"github.com/allegro/bigcache/v3"
+	"github.com/pkg/errors"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -43,7 +45,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				break
 			}
 
-			KICKMSG_RETRY:
+		KICKMSG_RETRY:
 			// Goodbye, user!
 			kickMsg, err := d.Bot.Send(
 				msgUser.Chat,
@@ -78,7 +80,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				break
 			}
 
-			BAN_RETRY:
+		BAN_RETRY:
 			// Even if the keyword is Ban, it's just kicking them.
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
@@ -142,7 +144,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			)
 
 			err = d.Memory.Delete(strconv.Itoa(msgUser.Sender.ID))
-			if err != nil {
+			if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break
 			}

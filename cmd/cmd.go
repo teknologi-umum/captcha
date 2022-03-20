@@ -50,7 +50,7 @@ func New(deps Dependency) *Dependency {
 			Memory: deps.Memory,
 			Bot:    deps.Bot,
 			Logger: deps.Logger,
-			A: analyticsDeps,
+			A:      analyticsDeps,
 		},
 		ascii: &ascii.Dependencies{
 			Bot: deps.Bot,

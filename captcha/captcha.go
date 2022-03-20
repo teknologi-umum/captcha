@@ -14,5 +14,5 @@ type Dependencies struct {
 	Memory *bigcache.BigCache
 	Bot    *tb.Bot
 	Logger *sentry.Client
-	A *analytics.Dependency
+	A      *analytics.Dependency
 }

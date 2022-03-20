@@ -39,10 +39,10 @@ const (
 )
 
 // DefaultQuestion contains the default captcha questions.
-var DefaultQuestion = "Halo, {user}!\n\n"+
-"Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!\n\n"+
-"Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.\n\n"+
-"<pre>{captcha}</pre>"
+var DefaultQuestion = "Halo, {user}!\n\n" +
+	"Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!\n\n" +
+	"Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
+	"<pre>{captcha}</pre>"
 
 // CaptchaUserJoin is the most frustrating function that I've written
 // at this point of time.
@@ -58,9 +58,10 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// If they're not, continue to execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		// TEMPORARY FIX: just continue.
-		// return
+		if !strings.Contains(err.Error(), "Gateway Timeout (504)") || strings.Contains(err.Error(), "retry after") {
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			return
+		}
 	}
 
 	if m.UserJoined.ID != 0 {
@@ -88,7 +89,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		1,
 	)
 
-	SENDMSG_RETRY:
+SENDMSG_RETRY:
 	// Send the question first.
 	msgQuestion, err := d.Bot.Send(
 		m.Chat,
@@ -117,7 +118,6 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 			time.Sleep(time.Second * 10)
 			goto SENDMSG_RETRY
 		}
-
 
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

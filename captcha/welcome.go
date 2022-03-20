@@ -52,8 +52,27 @@ var currentWelcomeMessages = [8]string{
 func deleteMessage(bot *tb.Bot, message tb.StoredMessage, logger *sentry.Client) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
+	DELETEMSG_RETRY:
 		err := bot.Delete(message)
 		if err != nil {
+			if strings.Contains(err.Error(), "retry after") {
+				// Acquire the retry number
+				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+				if err != nil {
+					// If there's an error, we'll just retry after 10 second
+					retry = 10
+				}
+
+				// Let's wait a bit and retry
+				time.Sleep(time.Second * time.Duration(retry))
+				goto DELETEMSG_RETRY
+			}
+
+			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				time.Sleep(time.Second * 10)
+				goto DELETEMSG_RETRY
+			}
+
 			shared.HandleError(err, logger)
 		}
 		c <- struct{}{}
