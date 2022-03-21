@@ -22,7 +22,7 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, erro
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: true})
 	if err != nil {
 		return []GroupMember{}, err
 	}
@@ -78,7 +78,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: true})
 	if err != nil {
 		return []HourlyMap{}, err
 	}

@@ -28,7 +28,7 @@ func TestGetUserDataFromDB(t *testing.T) {
 		}
 	}(c)
 
-	tx, err := c.BeginTx(ctx, nil)
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestGetHourlyDataFromDB(t *testing.T) {
 		}
 	}(c)
 
-	tx, err := c.BeginTx(ctx, &sql.TxOptions{})
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		t.Error(err)
 	}

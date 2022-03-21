@@ -41,7 +41,7 @@ func (d *Dependency) Migrate() error {
 		}
 	}(c)
 
-	t, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 	if err != nil {
 		return err
 	}
