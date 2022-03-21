@@ -31,7 +31,7 @@ type Captcha struct {
 
 const (
 	// BanDuration specifies how long a user will be banned in the group.
-	BanDuration = 1 * time.Minute
+	BanDuration = 7 * 24 * time.Hour
 	// Timeout specifies how long the captcha question will be valid.
 	// After this time, the user will be kicked.
 	// Or banned exactly, for one hour.
@@ -129,10 +129,11 @@ SENDMSG_RETRY:
 	// The AdditionalMessages key will be added later when there is an additional message
 	// sent by the bot.
 	captchaData, err := json.Marshal(Captcha{
-		Expiry:     time.Now().Add(Timeout),
-		ChatID:     m.Chat.ID,
-		Answer:     randNum,
-		QuestionID: strconv.Itoa(msgQuestion.ID),
+		Expiry:             time.Now().Add(Timeout),
+		ChatID:             m.Chat.ID,
+		Answer:             randNum,
+		QuestionID:         strconv.Itoa(msgQuestion.ID),
+		AdditionalMessages: []string{strconv.Itoa(m.ID)},
 	})
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
