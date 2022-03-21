@@ -4,11 +4,9 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -48,42 +46,9 @@ var currentWelcomeMessages = [8]string{
 		"欢迎您在 Teknologi Umum, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
 		"您要问什么, 请问吧. 希望您很高兴在这里"}
 
-// deleteMessage creates a timer of one minute to delete a certain message.
-func deleteMessage(bot *tb.Bot, message tb.StoredMessage, logger *sentry.Client) {
-	c := make(chan struct{}, 1)
-	time.AfterFunc(time.Minute*1, func() {
-	DELETEMSG_RETRY:
-		err := bot.Delete(message)
-		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
-			if strings.Contains(err.Error(), "retry after") {
-				// Acquire the retry number
-				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-				if err != nil {
-					// If there's an error, we'll just retry after 10 second
-					retry = 10
-				}
-
-				// Let's wait a bit and retry
-				time.Sleep(time.Second * time.Duration(retry))
-				goto DELETEMSG_RETRY
-			}
-
-			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
-				time.Sleep(time.Second * 10)
-				goto DELETEMSG_RETRY
-			}
-
-			shared.HandleError(err, logger)
-		}
-		c <- struct{}{}
-	})
-
-	<-c
-}
-
 // sendWelcomeMessage literally does what it's written.
-func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error {
-	msg, err := bot.Send(
+func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
+	msg, err := d.Bot.Send(
 		m.Chat,
 		strings.Replace(
 			currentWelcomeMessages[randomNum()],
@@ -105,10 +70,8 @@ func sendWelcomeMessage(bot *tb.Bot, m *tb.Message, logger *sentry.Client) error
 		return err
 	}
 
-	go deleteMessage(
-		bot,
-		tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
-		logger,
+	go d.deleteMessage(
+		&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
 	)
 	return nil
 }

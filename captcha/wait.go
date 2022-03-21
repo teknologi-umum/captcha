@@ -116,7 +116,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				ChatID:    msgUser.Chat.ID,
 				MessageID: captcha.QuestionID,
 			}
-			err = d.Bot.Delete(&msgToBeDeleted)
+			err = d.deleteMessageBlocking(&msgToBeDeleted)
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break
@@ -127,20 +127,18 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					ChatID:    msgUser.Chat.ID,
 					MessageID: msgID,
 				}
-				err = d.Bot.Delete(&msgToBeDeleted)
+				err = d.deleteMessageBlocking(&msgToBeDeleted)
 				if err != nil {
 					shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 					break
 				}
 			}
 
-			go deleteMessage(
-				d.Bot,
-				tb.StoredMessage{
+			go d.deleteMessage(
+				&tb.StoredMessage{
 					MessageID: strconv.Itoa(kickMsg.ID),
 					ChatID:    kickMsg.Chat.ID,
 				},
-				d.Logger,
 			)
 
 			err = d.Memory.Delete(strconv.Itoa(msgUser.Sender.ID))

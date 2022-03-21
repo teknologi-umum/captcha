@@ -121,7 +121,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	// Congratulate the user, delete the message, then delete user from captcha:users
 	// Send the welcome message to the user.
-	err = sendWelcomeMessage(d.Bot, m, d.Logger)
+	err = d.sendWelcomeMessage(m)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -134,7 +134,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.Bot.Delete(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -149,7 +149,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.Bot.Delete(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -160,7 +160,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	}
 
 	// Delete the question message.
-	err = d.Bot.Delete(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(&tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})

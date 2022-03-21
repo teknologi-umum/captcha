@@ -67,7 +67,10 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		return
 	}
 
-	err = d.Bot.Delete(m)
+	err = d.deleteMessageBlocking(&tb.StoredMessage{
+		ChatID:    m.Chat.ID,
+		MessageID: strconv.Itoa(m.ID),
+	})
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

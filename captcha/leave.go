@@ -62,7 +62,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	}
 
 	// Delete the question message.
-	err = d.Bot.Delete(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(&tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})
@@ -76,7 +76,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.Bot.Delete(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -91,7 +91,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.Bot.Delete(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(&tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
