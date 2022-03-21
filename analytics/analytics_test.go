@@ -47,7 +47,7 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics CASCADE RESTART IDENTITY")
+	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics RESTART IDENTITY CASCADE")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
 			log.Fatal(r)
@@ -55,7 +55,7 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly CASCADE RESTART IDENTITY")
+	_, err = tx.ExecContext(ctx, "TRUNCATE TABLE analytics_hourly RESTART IDENTITY CASCADE")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
 			log.Fatal(r)
