@@ -17,7 +17,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := userExists(d.Memory, strconv.Itoa(m.Sender.ID))
+	exists, err := userExists(d.Memory, strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -33,7 +33,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	//
 	// Get the answer and all the data surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Memory.Get(strconv.Itoa(m.Sender.ID))
+	data, err := d.Memory.Get(strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -113,7 +113,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	err = d.removeUserFromCache(strconv.Itoa(m.Sender.ID))
+	err = d.removeUserFromCache(strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

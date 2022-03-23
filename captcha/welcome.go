@@ -52,7 +52,7 @@ func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
 		m.Chat,
 		strings.NewReplacer(
 			"{user}",
-			"<a href=\"tg://user?id="+strconv.Itoa(m.Sender.ID)+"\">"+
+			"<a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
 				sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
 				"</a>",
 			"{groupname}",

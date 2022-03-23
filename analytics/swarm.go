@@ -180,7 +180,7 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 		err = d.Bot.Ban(m.Chat, &tb.ChatMember{
 			RestrictedUntil: tb.Forever(),
 			User: &tb.User{
-				ID: int(userID),
+				ID: userID,
 			},
 		}, true)
 		if err != nil {

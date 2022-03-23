@@ -93,12 +93,12 @@ func TestGetAll(t *testing.T) {
 		t.Error("user id should be 90, got:", user[0].UserID)
 	}
 
-	if user[0].Username != "user1" {
-		t.Error("username should be user1, got:", user[0].Username)
+	if user[0].Username != "user2" {
+		t.Error("username should be user2, got:", user[0].Username)
 	}
 
-	if user[0].DisplayName != "User 1" {
-		t.Error("display name should be User 1, got:", user[0].DisplayName)
+	if user[0].DisplayName != "User 2" {
+		t.Error("display name should be User 2, got:", user[0].DisplayName)
 	}
 
 	if user[0].Counter != 1 {

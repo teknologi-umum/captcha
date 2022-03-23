@@ -124,7 +124,7 @@ func (d *Dependency) BadWordHandler(m *tb.Message) {
 	if !m.Private() {
 		return
 	}
-	ok := d.badwords.Authenticate(strconv.Itoa(m.Sender.ID))
+	ok := d.badwords.Authenticate(strconv.FormatInt(m.Sender.ID, 10))
 	if !ok {
 		return
 	}

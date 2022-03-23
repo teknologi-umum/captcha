@@ -24,7 +24,7 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 		return err
 	}
 
-	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), data)
+	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Messag
 		return err
 	}
 
-	err = d.Memory.Set(strconv.Itoa(m.Sender.ID), data)
+	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
 		return err
 	}
