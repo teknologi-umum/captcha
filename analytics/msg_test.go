@@ -24,8 +24,8 @@ func TestNewMsg(t *testing.T) {
 	}
 
 	d := &analytics.Dependency{
-		DB:     db,
-		Memory: memory,
+		DB:       db,
+		Memory:   memory,
 		TeknumID: "123456789",
 	}
 
