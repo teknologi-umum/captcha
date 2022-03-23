@@ -3,6 +3,7 @@ package analytics
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
@@ -19,6 +20,10 @@ import (
 // reason, their data should still be here. But, their joined date
 // will be updated to their newest join date.
 func (d *Dependency) NewUser(m *tb.Message, user *tb.User) {
+	if !m.FromGroup() || strconv.FormatInt(m.Chat.ID, 10) != d.TeknumID {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

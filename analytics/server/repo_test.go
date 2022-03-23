@@ -45,8 +45,8 @@ func TestGetAll(t *testing.T) {
 			($1, $2, $3, $4, $5, $6, $7, $8)`,
 		90,
 		analytics.NullInt64{Int64: 123456, Valid: true},
-		"user1",
-		"User 1",
+		"user2",
+		"User 2",
 		1,
 		time.Now(),
 		time.Now(),
@@ -54,13 +54,16 @@ func TestGetAll(t *testing.T) {
 	)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			t.Error(e)
+			t.Fatal(e)
 		}
 		t.Fatal(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			t.Fatal(e)
+		}
 		t.Fatal(err)
 	}
 
@@ -83,7 +86,7 @@ func TestGetAll(t *testing.T) {
 	}
 
 	if len(user) != 1 {
-		t.Errorf("Expected 1 user, got %d", len(user))
+		t.Fatalf("Expected 1 user, got %d", len(user))
 	}
 
 	if user[0].UserID != 90 {

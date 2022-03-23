@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -12,6 +13,10 @@ import (
 func (d *Dependency) NewMessage(m *tb.Message) error {
 	// fast return if it's not from a group
 	if !m.FromGroup() {
+		return nil
+	}
+
+	if strconv.FormatInt(m.Chat.ID, 10) != d.TeknumID {
 		return nil
 	}
 

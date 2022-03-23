@@ -10,10 +10,11 @@ import (
 // Dependency is the dependency injection struct
 // for the analytics package.
 type Dependency struct {
-	Memory *bigcache.BigCache
-	Bot    *tb.Bot
-	Logger *sentry.Client
-	DB     *sqlx.DB
+	Memory   *bigcache.BigCache
+	Bot      *tb.Bot
+	Logger   *sentry.Client
+	DB       *sqlx.DB
+	TeknumID string
 }
 
 // HourMapper is meant to use for mapping a time.Hour() to a string

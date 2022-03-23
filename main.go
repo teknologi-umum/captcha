@@ -205,6 +205,7 @@ func main() {
 		DB:          db,
 		Mongo:       mongoClient,
 		MongoDBName: mongoDBName,
+		TeknumID:    os.Getenv("TEKNUM_ID"),
 	})
 
 	// This is basically just for health check.

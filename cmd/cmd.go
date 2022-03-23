@@ -29,6 +29,7 @@ type Dependency struct {
 	DB          *sqlx.DB
 	Mongo       *mongo.Client
 	MongoDBName string
+	TeknumID    string
 	captcha     *captcha.Dependencies
 	ascii       *ascii.Dependencies
 	analytics   *analytics.Dependency
@@ -40,10 +41,11 @@ type Dependency struct {
 // into what's needed by each domain.
 func New(deps Dependency) *Dependency {
 	analyticsDeps := &analytics.Dependency{
-		Memory: deps.Memory,
-		Bot:    deps.Bot,
-		Logger: deps.Logger,
-		DB:     deps.DB,
+		Memory:   deps.Memory,
+		Bot:      deps.Bot,
+		Logger:   deps.Logger,
+		DB:       deps.DB,
+		TeknumID: deps.TeknumID,
 	}
 	return &Dependency{
 		captcha: &captcha.Dependencies{

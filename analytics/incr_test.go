@@ -49,6 +49,7 @@ func TestIncrementUsrDB(t *testing.T) {
 	d := &analytics.Dependency{
 		DB:     db,
 		Memory: memory,
+		TeknumID: "123456789",
 	}
 
 	err := d.IncrementUserDB(ctx, users[0])
