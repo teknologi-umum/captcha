@@ -72,7 +72,7 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 		return
 	}
 
-	go d.A.SwarmLog(m.Sender, m.Chat.ID, false)
+	// go d.A.SwarmLog(m.Sender, m.Chat.ID, false)
 
 	// randNum generates a random number (3 digit) in string format
 	var randNum = utils.GenerateRandomNumber()
