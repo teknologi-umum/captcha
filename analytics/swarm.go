@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
@@ -12,6 +13,10 @@ import (
 )
 
 func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool) {
+	if strconv.FormatInt(groupID, 10) != d.TeknumID {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -64,6 +69,10 @@ func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool
 }
 
 func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha bool) {
+	if strconv.FormatInt(groupID, 10) != d.TeknumID {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 

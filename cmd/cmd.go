@@ -48,11 +48,18 @@ func New(deps Dependency) *Dependency {
 		TeknumID: deps.TeknumID,
 	}
 	return &Dependency{
+		Bot:         deps.Bot,
+		Logger:      deps.Logger,
+		Memory:      deps.Memory,
+		DB:          deps.DB,
+		Mongo:       deps.Mongo,
+		MongoDBName: deps.MongoDBName,
 		captcha: &captcha.Dependencies{
-			Memory: deps.Memory,
-			Bot:    deps.Bot,
-			Logger: deps.Logger,
-			A:      analyticsDeps,
+			Memory:    deps.Memory,
+			Bot:       deps.Bot,
+			Logger:    deps.Logger,
+			Analytics: analyticsDeps,
+			TeknumID:  deps.TeknumID,
 		},
 		ascii: &ascii.Dependencies{
 			Bot: deps.Bot,

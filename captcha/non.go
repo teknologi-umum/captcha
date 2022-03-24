@@ -16,7 +16,7 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := userExists(d.Memory, strconv.FormatInt(m.Sender.ID, 10))
+	exists, err := d.userExists(strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

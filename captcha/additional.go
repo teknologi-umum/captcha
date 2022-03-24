@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -21,12 +22,12 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 	// Update the cache with the added AdditionalMessages
 	data, err := json.Marshal(captcha)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
 	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set captcha in cache: %w", err)
 	}
 
 	return nil
@@ -39,12 +40,12 @@ func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Messag
 	// Update the cache with the added UserMessages
 	data, err := json.Marshal(captcha)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
 	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set captcha in cache: %w", err)
 	}
 
 	return nil

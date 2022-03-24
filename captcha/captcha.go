@@ -11,8 +11,9 @@ import (
 // Dependencies contains the dependency injection struct for
 // methods in the captcha package.
 type Dependencies struct {
-	Memory *bigcache.BigCache
-	Bot    *tb.Bot
-	Logger *sentry.Client
-	A      *analytics.Dependency
+	Memory    *bigcache.BigCache
+	Bot       *tb.Bot
+	Logger    *sentry.Client
+	Analytics *analytics.Dependency
+	TeknumID  string
 }

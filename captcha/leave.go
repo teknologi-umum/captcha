@@ -30,7 +30,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 
 	// We need to check if the user is in the captcha:users cache
 	// or not.
-	check, err := userExists(d.Memory, strconv.FormatInt(m.Sender.ID, 10))
+	check, err := d.userExists(strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

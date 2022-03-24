@@ -28,7 +28,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 		//
 		// If they're still in the cache, we will say goodbye and
 		// kick them from the group.
-		check := cacheExists(d.Memory, strconv.FormatInt(msgUser.Sender.ID, 10))
+		check := d.cacheExists(strconv.FormatInt(msgUser.Sender.ID, 10))
 
 		if check {
 			// Fetch the captcha data first

@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"teknologi-umum-bot/shared"
@@ -64,7 +65,7 @@ DELETEMSG_RETRY:
 			goto DELETEMSG_RETRY
 		}
 
-		return err
+		return fmt.Errorf("error deleting message: %w", err)
 	}
 
 	return nil

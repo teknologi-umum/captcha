@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -46,8 +47,17 @@ var currentWelcomeMessages = [8]string{
 		"欢迎您在 {groupname}, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
 		"您要问什么, 请问吧. 希望您很高兴在这里"}
 
+var regularWelcomeMessage = "Halo, {user}!\n\n" +
+	"Selamat datang di {groupname}. Jangan lupa untuk baca pinned message, ya. Semoga hari mu menyenangkan."
+
 // sendWelcomeMessage literally does what it's written.
 func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
+	var msgToSend string = regularWelcomeMessage
+
+	if strconv.FormatInt(m.Chat.ID, 10) == d.TeknumID {
+		msgToSend = currentWelcomeMessages[randomNum()]
+	}
+
 	msg, err := d.Bot.Send(
 		m.Chat,
 		strings.NewReplacer(
@@ -57,7 +67,7 @@ func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
 				"</a>",
 			"{groupname}",
 			sanitizeInput(m.Chat.Title),
-		).Replace(currentWelcomeMessages[randomNum()]),
+		).Replace(msgToSend),
 		&tb.SendOptions{
 			ReplyTo:               m,
 			ParseMode:             tb.ModeHTML,
@@ -67,7 +77,7 @@ func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
 		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send welcome message: %w", err)
 	}
 
 	go d.deleteMessage(

@@ -8,14 +8,14 @@ import (
 )
 
 // Check if a cache with a specific key exists or not.
-func cacheExists(cache *bigcache.BigCache, key string) bool {
-	_, err := cache.Get(key)
+func (d *Dependencies) cacheExists(key string) bool {
+	_, err := d.Memory.Get(key)
 	return !errors.Is(err, bigcache.ErrEntryNotFound)
 }
 
 // Check if a user exists on the "captcha:users" key.
-func userExists(cache *bigcache.BigCache, key string) (bool, error) {
-	users, err := cache.Get("captcha:users")
+func (d *Dependencies) userExists(key string) (bool, error) {
+	users, err := d.Memory.Get("captcha:users")
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		return false, err
 	}
