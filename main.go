@@ -85,10 +85,6 @@ func init() {
 }
 
 func main() {
-	// Context for initiating database connection.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
 	// Connect to PostgreSQL
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -101,13 +97,17 @@ func main() {
 		}
 	}(db)
 
+	// Context for initiating database connection.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
 	// Setup mongodb connection
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
 	if err != nil {
 		log.Fatal("during connecting to mongo client:", errors.WithStack(err))
 	}
 	defer func(client *mongo.Client) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
 		err := client.Disconnect(ctx)
 		if err != nil {

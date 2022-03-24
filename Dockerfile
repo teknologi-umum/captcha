@@ -1,6 +1,8 @@
-FROM golang:1.18-bullseye AS builder
+FROM golang:1.18.0-bullseye
 
 ARG CERT_URL
+
+ARG PORT=8080
 
 WORKDIR /app
 
@@ -11,14 +13,6 @@ COPY . .
 RUN go mod download
 
 RUN go build main.go
-
-FROM debian:bullseye
-
-WORKDIR /app
-
-COPY --from=builder /app .
-
-ARG PORT=8080
 
 EXPOSE ${PORT}
 
