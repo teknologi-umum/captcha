@@ -16,7 +16,7 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := d.userExists(strconv.FormatInt(m.Sender.ID, 10))
+	exists, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -32,7 +32,7 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	//
 	// Get the answer and all the data surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Memory.Get(strconv.FormatInt(m.Sender.ID, 10))
+	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

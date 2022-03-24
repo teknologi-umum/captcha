@@ -25,7 +25,7 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
-	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
+	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
 		return fmt.Errorf("failed to set captcha in cache: %w", err)
 	}
@@ -43,7 +43,7 @@ func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Messag
 		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
-	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), data)
+	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), data)
 	if err != nil {
 		return fmt.Errorf("failed to set captcha in cache: %w", err)
 	}

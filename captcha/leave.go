@@ -30,7 +30,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 
 	// We need to check if the user is in the captcha:users cache
 	// or not.
-	check, err := d.userExists(strconv.FormatInt(m.Sender.ID, 10))
+	check, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -42,7 +42,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 
 	// OK, they exist in the cache. Now we've got to delete
 	// all the message that we've sent before.
-	data, err := d.Memory.Get(strconv.FormatInt(m.Sender.ID, 10))
+	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -55,7 +55,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		return
 	}
 
-	err = d.removeUserFromCache(strconv.FormatInt(m.Sender.ID, 10))
+	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return

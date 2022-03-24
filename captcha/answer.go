@@ -17,7 +17,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
-	exists, err := d.userExists(strconv.FormatInt(m.Sender.ID, 10))
+	exists, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -33,7 +33,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	//
 	// Get the answer and all the data surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Memory.Get(strconv.FormatInt(m.Sender.ID, 10))
+	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -113,7 +113,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	err = d.removeUserFromCache(strconv.FormatInt(m.Sender.ID, 10))
+	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -171,19 +171,19 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 }
 
 // It... remove the user from cache. What else do you expect?
-func (d *Dependencies) removeUserFromCache(key string) error {
-	users, err := d.Memory.Get("captcha:users")
+func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
+	users, err := d.Memory.Get("captcha:users:" + strconv.FormatInt(groupID, 10))
 	if err != nil {
 		return err
 	}
 
-	str := strings.Replace(string(users), ";"+key, "", 1)
-	err = d.Memory.Set("captcha:users", []byte(str))
+	str := strings.Replace(string(users), ";"+strconv.FormatInt(userID, 10), "", 1)
+	err = d.Memory.Set("captcha:users:"+strconv.FormatInt(groupID, 10), []byte(str))
 	if err != nil {
 		return err
 	}
 
-	err = d.Memory.Delete(key)
+	err = d.Memory.Delete(strconv.FormatInt(groupID, 10) + ":" + strconv.FormatInt(userID, 10))
 	if err != nil {
 		return err
 	}

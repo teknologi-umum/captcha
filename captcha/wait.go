@@ -28,12 +28,12 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 		//
 		// If they're still in the cache, we will say goodbye and
 		// kick them from the group.
-		check := d.cacheExists(strconv.FormatInt(msgUser.Sender.ID, 10))
+		check := d.cacheExists(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))
 
 		if check {
 			// Fetch the captcha data first
 			var captcha Captcha
-			user, err := d.Memory.Get(strconv.FormatInt(msgUser.Sender.ID, 10))
+			user, err := d.Memory.Get(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))
 			if err != nil {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break
@@ -141,7 +141,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				},
 			)
 
-			err = d.Memory.Delete(strconv.FormatInt(msgUser.Sender.ID, 10))
+			err = d.Memory.Delete(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))
 			if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
 				break

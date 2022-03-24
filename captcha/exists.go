@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/allegro/bigcache/v3"
@@ -14,8 +15,8 @@ func (d *Dependencies) cacheExists(key string) bool {
 }
 
 // Check if a user exists on the "captcha:users" key.
-func (d *Dependencies) userExists(key string) (bool, error) {
-	users, err := d.Memory.Get("captcha:users")
+func (d *Dependencies) userExists(userID int64, groupID int64) (bool, error) {
+	users, err := d.Memory.Get("captcha:users:" + strconv.FormatInt(groupID, 10))
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		return false, err
 	}
@@ -25,6 +26,7 @@ func (d *Dependencies) userExists(key string) (bool, error) {
 	// Also, we'd like to pop the last array, because it's
 	// just an empty string.
 	str := strings.Split(string(users), ";")
+	key := strconv.FormatInt(userID, 10)
 	for _, v := range str {
 		if v == key {
 			return true, nil

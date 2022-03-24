@@ -141,13 +141,13 @@ SENDMSG_RETRY:
 	}
 
 	// Yes, the cache key is their User ID in string format.
-	err = d.Memory.Set(strconv.FormatInt(m.Sender.ID, 10), captchaData)
+	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), captchaData)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
 
-	err = d.Memory.Append("captcha:users", []byte(";"+strconv.FormatInt(m.Sender.ID, 10)))
+	err = d.Memory.Append("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10), []byte(";"+strconv.FormatInt(m.Sender.ID, 10)))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
