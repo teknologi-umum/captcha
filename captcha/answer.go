@@ -7,6 +7,7 @@ import (
 	"teknologi-umum-bot/shared"
 	"time"
 
+	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -35,6 +36,10 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// this specific user ID from the cache.
 	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
+		if errors.Is(err, bigcache.ErrEntryNotFound) {
+			return
+		}
+
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
