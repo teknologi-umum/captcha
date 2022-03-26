@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"strconv"
+	"strings"
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/ascii"
 	"teknologi-umum-bot/badwords"
@@ -140,7 +141,7 @@ func (d *Dependency) BadWordHandler(m *tb.Message) {
 	defer cancel()
 
 	err := d.badwords.AddBadWord(ctx, m.Text)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}
