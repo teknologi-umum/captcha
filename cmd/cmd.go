@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"strconv"
+	"strings"
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/ascii"
 	"teknologi-umum-bot/badwords"
@@ -139,7 +140,7 @@ func (d *Dependency) BadWordHandler(m *tb.Message) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	err := d.badwords.AddBadWord(ctx, m.Text)
+	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(m.Text, "/badwords "))
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
