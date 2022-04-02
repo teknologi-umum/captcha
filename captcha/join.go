@@ -119,6 +119,23 @@ SENDMSG_RETRY:
 			goto SENDMSG_RETRY
 		}
 
+		if strings.Contains(err.Error(), "replied message not found") {
+			msgQuestion, err = d.Bot.Send(
+				m.Chat,
+				question,
+				&tb.SendOptions{
+					ParseMode:             tb.ModeHTML,
+					DisableWebPagePreview: true,
+				},
+			)
+			if err != nil {
+				if !strings.Contains(err.Error(), "retry after") && !strings.Contains(err.Error(), "Gateway Timeout (504)") {
+					shared.HandleBotError(err, d.Logger, d.Bot, m)
+					return
+				}
+			}
+		}
+
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}

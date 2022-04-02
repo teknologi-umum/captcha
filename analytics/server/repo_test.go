@@ -32,7 +32,7 @@ func TestGetAll(t *testing.T) {
 		}
 	}(c)
 
-	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 	if err != nil {
 		t.Fatal(err)
 	}

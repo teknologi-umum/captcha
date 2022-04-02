@@ -141,7 +141,7 @@ func (d *Dependency) BadWordHandler(m *tb.Message) {
 	defer cancel()
 
 	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(m.Text, "/badwords "))
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
 	}

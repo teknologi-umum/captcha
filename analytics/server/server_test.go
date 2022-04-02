@@ -45,7 +45,7 @@ func Cleanup() {
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func Teardown() {
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
 		log.Fatal(err)
 	}

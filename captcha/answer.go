@@ -77,6 +77,10 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
+			if strings.Contains(err.Error(), "replied message not found") {
+				return
+			}
+
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
@@ -105,6 +109,10 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			},
 		)
 		if err != nil {
+			if strings.Contains(err.Error(), "replied message not found") {
+				return
+			}
+
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
@@ -189,7 +197,7 @@ func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
 	}
 
 	err = d.Memory.Delete(strconv.FormatInt(groupID, 10) + ":" + strconv.FormatInt(userID, 10))
-	if err != nil {
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		return err
 	}
 
