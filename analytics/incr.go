@@ -25,7 +25,7 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, member GroupMember) er
 		}
 	}(c)
 
-	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
+	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: false})
 	if err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, member GroupMember) er
 
 	hourlyQuery := fmt.Sprintf(
 		`INSERT INTO analytics_hourly
-		(todays_date, %s)
+			(todays_date, %s)
 		VALUES
-		($1, 1)
+			($1, 1)
 		ON CONFLICT (todays_date) DO UPDATE
 		SET %s = (SELECT %s FROM analytics_hourly WHERE todays_date = $1)+1`,
 		HourMapper[now.Hour()],

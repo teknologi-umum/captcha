@@ -74,13 +74,15 @@ func New(deps Dependency) *Dependency {
 	}
 }
 
+var globalMsgs = make(chan *tb.Message)
+
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(m *tb.Message) {
 	d.captcha.WaitForAnswer(m)
 
 	err := d.analytics.NewMessage(m)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger)
 		return
 	}
 }
@@ -109,7 +111,7 @@ func (d *Dependency) OnNonTextHandler(m *tb.Message) {
 
 	err := d.analytics.NewMessage(m)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleError(err, d.Logger)
 		return
 	}
 }
