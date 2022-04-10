@@ -233,6 +233,7 @@ func main() {
 
 	// Badword handlers
 	b.Handle("/badwords", deps.BadWordHandler)
+	b.Handle("/cukup", deps.CukupHandler)
 
 	log.Println("Bot started!")
 	go func() {

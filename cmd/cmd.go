@@ -154,3 +154,16 @@ func (d *Dependency) BadWordHandler(m *tb.Message) {
 		return
 	}
 }
+
+// CukupHandler was created just to mock laode.
+func (d *Dependency) CukupHandler(m *tb.Message) {
+	if m.Private() {
+		return
+	}
+
+	_, err := d.Bot.Send(m.Sender, &tb.Photo{File: tb.FromURL("https://i.ibb.co/WvynnPb/ezgif-4-13e23b17f1.jpg")})
+	if err != nil {
+		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		return
+	}
+}
