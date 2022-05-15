@@ -13,6 +13,10 @@ import (
 
 // HandleError handles common errors.
 func HandleError(e error, logger *sentry.Client) {
+	if e == nil {
+		return
+	}
+
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}
@@ -30,6 +34,10 @@ func HandleError(e error, logger *sentry.Client) {
 // For other errors that don't have one of those struct instance, use
 // HandleError instead.
 func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
+	if e == nil {
+		return
+	}
+
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}
@@ -70,6 +78,10 @@ func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) 
 
 // HandleHttpError handles error that has a http.Request struct instance
 func HandleHttpError(e error, logger *sentry.Client, r *http.Request) {
+	if e == nil {
+		return
+	}
+
 	if os.Getenv("ENVIRONMENT") == "development" {
 		log.Println(e)
 	}
