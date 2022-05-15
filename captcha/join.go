@@ -136,8 +136,11 @@ SENDMSG_RETRY:
 			}
 		}
 
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
+		// err could possibly be nil at this point, so we better check it out.
+		if err != nil {
+			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			return
+		}
 	}
 
 	// OK. We've sent the question. Now we are going to prepare the data that will
