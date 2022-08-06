@@ -8,8 +8,6 @@ import (
 )
 
 func TestIncrementUsrDB(t *testing.T) {
-	t.Cleanup(Cleanup)
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
@@ -46,13 +44,7 @@ func TestIncrementUsrDB(t *testing.T) {
 		},
 	}
 
-	d := &analytics.Dependency{
-		DB:       db,
-		Memory:   memory,
-		TeknumID: "123456789",
-	}
-
-	err := d.IncrementUserDB(ctx, users[0])
+	err := dependency.IncrementUserDB(ctx, users[0])
 	if err != nil {
 		t.Error(err)
 	}

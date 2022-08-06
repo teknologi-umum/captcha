@@ -13,23 +13,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var db *mongo.Client
+var dependency *dukun.Dependency
 
 func TestMain(m *testing.M) {
-	Setup()
+	mongoUrl, ok := os.LookupEnv("MONGO_URL")
+	if !ok {
+		mongoUrl = "mongodb://root:password@localhost:27017/"
+	}
 
-	defer Teardown()
-	defer Cleanup()
-	os.Exit(m.Run())
-}
+	dbName, ok := os.LookupEnv("MONGO_DBNAME")
+	if !ok {
+		dbName = "captcha"
+	}
 
-func Setup() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	var err error
-
-	db, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
+	db, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUrl))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,37 +37,42 @@ func Setup() {
 	if err = db.Ping(ctx, readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
-}
 
-func Teardown() {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	dependency = &dukun.Dependency{
+		Mongo:  db,
+		DBName: dbName,
+	}
 
-	err := db.Disconnect(ctx)
+	err = seed()
 	if err != nil {
 		log.Fatal(err)
 	}
-}
 
-func Cleanup() {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	exitCode := m.Run()
 
-	collection := db.Database(os.Getenv("MONGO_DBNAME")).Collection("dukun")
-	err := collection.Drop(ctx)
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cleanupCancel()
+
+	collection := db.Database(dependency.DBName).Collection("dukun")
+	err = collection.Drop(cleanupCtx)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = db.Disconnect(cleanupCtx)
+	if err != nil {
+		log.Print(err)
+	}
+
+	os.Exit(exitCode)
 }
 
-func TestGetAllDukun(t *testing.T) {
-	t.Cleanup(Cleanup)
-
+func seed() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	// Feed some dukun
-	collection := db.Database(os.Getenv("MONGO_DBNAME")).Collection("dukun")
+	collection := dependency.Mongo.Database(dependency.DBName).Collection("dukun")
 	_, err := collection.InsertOne(ctx, dukun.Dukun{
 		UserID:    1,
 		FirstName: "Jason",
@@ -79,12 +84,17 @@ func TestGetAllDukun(t *testing.T) {
 		UpdatedAt: time.Now(),
 	})
 	if err != nil {
-		t.Error(err)
+		return err
 	}
 
-	deps := &dukun.Dependency{Mongo: db, DBName: os.Getenv("MONGO_DBNAME")}
+	return nil
+}
 
-	data, err := deps.GetAllDukun(ctx)
+func TestGetAllDukun(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	data, err := dependency.GetAllDukun(ctx)
 	if err != nil {
 		t.Error(err)
 	}

@@ -15,15 +15,65 @@ import (
 	"github.com/pkg/errors"
 )
 
-var db *sqlx.DB
-var memory *bigcache.BigCache
+var dependency *analytics.Dependency
 
 func TestMain(m *testing.M) {
-	Setup()
+	databaseUrl, ok := os.LookupEnv("DATABASE_URL")
+	if !ok {
+		databaseUrl = "postgresql://postgres:password@localhost:5432/captcha?sslmode=disable"
+	}
+	dbURL, err := pq.ParseURL(databaseUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := sqlx.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	memory, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = analytics.MustMigrate(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dependency = &analytics.Dependency{
+		DB:       db,
+		Memory:   memory,
+		TeknumID: "123456789",
+	}
+
+	setupCtx, setupCancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer setupCancel()
+
+	err = Seed(setupCtx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	exitCode := m.Run()
-	Teardown()
+
 	Cleanup()
+
+	err = Teardown()
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = memory.Close()
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = db.Close()
+	if err != nil {
+		log.Print(err)
+	}
 
 	os.Exit(exitCode)
 }
@@ -32,7 +82,7 @@ func Cleanup() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	c, err := db.Connx(ctx)
+	c, err := dependency.DB.Connx(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,93 +122,156 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	err = memory.Reset()
+	err = dependency.Memory.Reset()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func Setup() {
-	dbURL, err := pq.ParseURL(os.Getenv("DATABASE_URL"))
+func Teardown() error {
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cleanupCancel()
+
+	c, err := dependency.DB.Connx(cleanupCtx)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	db, err = sqlx.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	memory, err = bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = analytics.MustMigrate(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func Teardown() {
-	defer func(memory *bigcache.BigCache) {
-		err := memory.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(memory)
-	defer func(db *sqlx.DB) {
-		err := db.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(db)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	c, err := db.Connx(ctx)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+	tx, err := c.BeginTxx(cleanupCtx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics")
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			log.Fatal(r)
-		}
-		log.Fatal(err)
+	queries := []string{
+		"DROP INDEX IF EXISTS idx_counter",
+		"DROP INDEX IF EXISTS idx_active",
+		"DROP TABLE IF EXISTS captcha_swarm",
+		"DROP TABLE IF EXISTS analytics",
+		"DROP TABLE IF EXISTS analytics_hourly",
 	}
 
-	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics_hourly")
-	if err != nil {
-		if r := tx.Rollback(); r != nil {
-			log.Fatal(r)
+	for _, query := range queries {
+		_, err = tx.ExecContext(cleanupCtx, query)
+		if err != nil {
+			if r := tx.Rollback(); r != nil {
+				return r
+			}
+
+			return err
 		}
-		log.Fatal(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
-			log.Fatal(r)
+			return r
 		}
-		log.Fatal(err)
+
+		return err
 	}
 
-	err = memory.Reset()
+	err = dependency.Memory.Reset()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
+}
+
+func Seed(ctx context.Context) error {
+	c, err := dependency.DB.Connx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func(c *sqlx.Conn) {
+		err := c.Close()
+		if err != nil && !errors.Is(err, sql.ErrConnDone) {
+			log.Print(err)
+		}
+	}(c)
+
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+
+	// The lack of group_id value is intentional, because I want to check for
+	// null SQL values.
+	_, err = tx.ExecContext(
+		ctx,
+		`INSERT INTO analytics
+			(user_id, username, display_name, counter, created_at, joined_at, updated_at)
+			VALUES
+			($1, $2, $3, $4, $5, $6, $7)`,
+		90,
+		"user1",
+		"User 1",
+		1,
+		time.Now(),
+		time.Now(),
+		time.Now(),
+	)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return e
+		}
+
+		return err
+	}
+
+	// create a dummy hourly type
+	hourly := []analytics.HourlyMap{
+		{
+			TodaysDate: "2021-01-01",
+			ZeroHour:   14,
+			OneHour:    15,
+			TwoHour:    16,
+		},
+		{
+			TodaysDate: "2021-01-02",
+			ZeroHour:   3,
+			OneHour:    4,
+			TwoHour:    5,
+		},
+		{
+			TodaysDate: "2021-01-03",
+			ZeroHour:   6,
+			OneHour:    7,
+			TwoHour:    8,
+		},
+	}
+
+	for _, hour := range hourly {
+		_, err = tx.ExecContext(
+			ctx,
+			`INSERT INTO analytics_hourly
+				(todays_date, zero_hour, one_hour, two_hour)
+				VALUES
+				($1, $2, $3, $4)`,
+			hour.TodaysDate,
+			hour.ZeroHour,
+			hour.OneHour,
+			hour.TwoHour,
+		)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return e
+			}
+
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

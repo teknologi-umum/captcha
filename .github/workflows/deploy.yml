@@ -20,10 +20,20 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_USER: postgres
           POSTGRES_DB: captcha
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       cache:
         image: redis:6-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd 'redis-cli ping'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       mongo:
         image: mongo:5-focal
         ports:
@@ -32,6 +42,11 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: password
           MONGO_INITDB_DATABASE: captcha
+        options: >-
+          --health-cmd 'echo "db.runCommand({serverStatus:1}).ok" | mongo admin -u root -p password --quiet'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -75,7 +90,7 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         with:
-          args: 'deploy --build-arg CERT_URL=${{ secrets.CERT_URL }}'
+          args: "deploy --build-arg CERT_URL=${{ secrets.CERT_URL }}"
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1

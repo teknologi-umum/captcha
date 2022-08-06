@@ -67,7 +67,6 @@ func New(deps Dependency) *Dependency {
 		},
 		analytics: analyticsDeps,
 		badwords: &badwords.Dependency{
-			Logger:      deps.Logger,
 			Mongo:       deps.Mongo,
 			MongoDBName: deps.MongoDBName,
 		},
