@@ -15,7 +15,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	"go.mongodb.org/mongo-driver/mongo"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // Dependency contains the dependency injection struct
@@ -67,7 +67,6 @@ func New(deps Dependency) *Dependency {
 		},
 		analytics: analyticsDeps,
 		badwords: &badwords.Dependency{
-			Logger:      deps.Logger,
 			Mongo:       deps.Mongo,
 			MongoDBName: deps.MongoDBName,
 		},
@@ -77,93 +76,101 @@ func New(deps Dependency) *Dependency {
 var globalMsgs = make(chan *tb.Message)
 
 // OnTextHandler handle any incoming text from the group
-func (d *Dependency) OnTextHandler(m *tb.Message) {
-	d.captcha.WaitForAnswer(m)
+func (d *Dependency) OnTextHandler(c tb.Context) error {
+	d.captcha.WaitForAnswer(c.Message())
 
-	err := d.analytics.NewMessage(m)
+	err := d.analytics.NewMessage(c.Message())
 	if err != nil {
 		shared.HandleError(err, d.Logger)
-		return
 	}
+
+	return nil
 }
 
 // OnUserJoinHandler handle any incoming user join,
 // whether they were invited by someone (meaning they are
 // added by someone else into the group), or they join
 // the group all by themselves.
-func (d *Dependency) OnUserJoinHandler(m *tb.Message) {
+func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	var tempSender *tb.User
-	if m.UserJoined.ID != 0 {
-		tempSender = m.UserJoined
+	if c.Message().UserJoined.ID != 0 {
+		tempSender = c.Message().UserJoined
 	} else {
-		tempSender = m.Sender
+		tempSender = c.Message().Sender
 	}
 
-	go d.analytics.NewUser(m, tempSender)
+	go d.analytics.NewUser(c.Message(), tempSender)
 
-	d.captcha.CaptchaUserJoin(m)
+	d.captcha.CaptchaUserJoin(c.Message())
+
+	return nil
 }
 
 // OnNonTextHandler meant to handle anything else
 // than an incoming text message.
-func (d *Dependency) OnNonTextHandler(m *tb.Message) {
-	d.captcha.NonTextListener(m)
+func (d *Dependency) OnNonTextHandler(c tb.Context) error {
+	d.captcha.NonTextListener(c.Message())
 
-	err := d.analytics.NewMessage(m)
+	err := d.analytics.NewMessage(c.Message())
 	if err != nil {
 		shared.HandleError(err, d.Logger)
-		return
 	}
+
+	return nil
 }
 
 // OnUserLeftHandler handles during an event in which
 // a user left the group.
-func (d *Dependency) OnUserLeftHandler(m *tb.Message) {
-	d.captcha.CaptchaUserLeave(m)
+func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
+	d.captcha.CaptchaUserLeave(c.Message())
+	return nil
 }
 
 // AsciiCmdHandler handle the /ascii command.
-func (d *Dependency) AsciiCmdHandler(m *tb.Message) {
-	d.ascii.Ascii(m)
+func (d *Dependency) AsciiCmdHandler(c tb.Context) error {
+	d.ascii.Ascii(c.Message())
+	return nil
 }
 
 // BadWordsCmdHandler handle the /badwords command.
 // This can only be accessed by some users on Telegram
 // and only valid for private chats.
-func (d *Dependency) BadWordHandler(m *tb.Message) {
-	if !m.Private() {
-		return
+func (d *Dependency) BadWordHandler(c tb.Context) error {
+	if !c.Message().Private() {
+		return nil
 	}
-	ok := d.badwords.Authenticate(strconv.FormatInt(m.Sender.ID, 10))
+	ok := d.badwords.Authenticate(strconv.FormatInt(c.Sender().ID, 10))
 	if !ok {
-		return
+		return nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(m.Text, "/badwords "))
+	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
 	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
+		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
+		return nil
 	}
 
-	_, err = d.Bot.Send(m.Sender, "Terimakasih telah menambahkan kata yang tidak pantas.")
+	_, err = c.Bot().Send(c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
+		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
 	}
+
+	return nil
 }
 
 // CukupHandler was created just to mock laode.
-func (d *Dependency) CukupHandler(m *tb.Message) {
-	if m.Private() {
-		return
+func (d *Dependency) CukupHandler(c tb.Context) error {
+	if c.Message().Private() {
+		return nil
 	}
 
-	_, err := d.Bot.Send(m.Chat, &tb.Photo{File: tb.FromURL("https://i.ibb.co/WvynnPb/ezgif-4-13e23b17f1.jpg")})
+	_, err := c.Bot().Send(c.Chat(), &tb.Photo{File: tb.FromURL("https://i.ibb.co/WvynnPb/ezgif-4-13e23b17f1.jpg")})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
-		return
+		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
 	}
+
+	return nil
 }

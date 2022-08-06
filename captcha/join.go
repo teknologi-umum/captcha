@@ -9,10 +9,10 @@ import (
 	"teknologi-umum-bot/utils"
 	"time"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
-// Captcha struct keep all the data needed for the captcha
+// Captcha struct keeps all the data needed for the captcha
 // for a certain user.
 //
 // It will be converted to JSON format (as array of bytes or []byte)

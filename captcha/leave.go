@@ -6,7 +6,7 @@ import (
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // CaptchaUserLeave handles the event when a user left the group.

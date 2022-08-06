@@ -1,6 +1,6 @@
 package utils
 
-import tb "gopkg.in/tucnak/telebot.v2"
+import tb "gopkg.in/telebot.v3"
 
 // ShouldAddSpace thinks whether to add a space
 // to the given user, considering their first name

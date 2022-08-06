@@ -9,7 +9,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // WaitForAnswer is the handler for listening to incoming user message.
@@ -32,9 +32,9 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// If not, ask them to give the correct answer and time remaining.
 	// If yes, delete the message and remove the user from the captcha:users list.
 	//
-	// Get the answer and all the data surrounding captcha from
+	// Get the answer and all the captchaData surrounding captcha from
 	// this specific user ID from the cache.
-	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
+	captchaData, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			return
@@ -45,7 +45,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	}
 
 	var captcha Captcha
-	err = json.Unmarshal(data, &captcha)
+	err = json.Unmarshal(captchaData, &captcha)
 	if err != nil {
 		shared.HandleBotError(err, d.Logger, d.Bot, m)
 		return
@@ -81,6 +81,20 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 				return
 			}
 
+			if strings.Contains(err.Error(), "retry after") {
+				// If this happen, probably we're in a spam bot surge and would
+				// probably doesn't care with the user captcha after all.
+				// If they're human, they'll complete the captcha anyway,
+				// or would ask to be unbanned later.
+				// So, we'll just put a return here.
+				return
+			}
+
+			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				// Yep, including this one.
+				return
+			}
+
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
 		}
@@ -110,6 +124,20 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		)
 		if err != nil {
 			if strings.Contains(err.Error(), "replied message not found") {
+				return
+			}
+
+			if strings.Contains(err.Error(), "retry after") {
+				// If this happen, probably we're in a spam bot surge and would
+				// probably doesn't care with the user captcha after all.
+				// If they're human, they'll complete the captcha anyway,
+				// or would ask to be unbanned later.
+				// So, we'll just put a return here.
+				return
+			}
+
+			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				// Yep, including this one.
 				return
 			}
 

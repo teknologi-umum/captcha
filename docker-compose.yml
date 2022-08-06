@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: captcha
+  cache:
+    image: redis:6-alpine
+    ports:
+      - 6379:6379
+  mongo:
+    image: mongo:5-focal
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: captcha

@@ -11,7 +11,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.

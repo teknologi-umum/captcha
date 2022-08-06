@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -13,7 +12,6 @@ import (
 // Dependency contains the dependency injection struct
 // for the badwords package.
 type Dependency struct {
-	Logger      *sentry.Client
 	Mongo       *mongo.Client
 	MongoDBName string
 }

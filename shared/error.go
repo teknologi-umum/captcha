@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"

@@ -1,15 +1,12 @@
 package analytics_test
 
 import (
-	"teknologi-umum-bot/analytics"
 	"testing"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 func TestNewMsg(t *testing.T) {
-	t.Cleanup(Cleanup)
-
 	m := &tb.Message{
 		Chat: &tb.Chat{
 			ID:   123456789,
@@ -23,27 +20,19 @@ func TestNewMsg(t *testing.T) {
 		},
 	}
 
-	d := &analytics.Dependency{
-		DB:       db,
-		Memory:   memory,
-		TeknumID: "123456789",
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("panic: %v", r)
 		}
 	}()
 
-	err := d.NewMessage(m)
+	err := dependency.NewMessage(m)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestNewMsgNotGroup(t *testing.T) {
-	t.Cleanup(Cleanup)
-
 	m := &tb.Message{
 		Chat: &tb.Chat{
 			ID:   123456789,
@@ -57,12 +46,7 @@ func TestNewMsgNotGroup(t *testing.T) {
 		},
 	}
 
-	d := &analytics.Dependency{
-		DB:     db,
-		Memory: memory,
-	}
-
-	err := d.NewMessage(m)
+	err := dependency.NewMessage(m)
 	if err != nil {
 		t.Error(err)
 	}

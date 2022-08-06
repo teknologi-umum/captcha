@@ -7,7 +7,7 @@ import (
 	"teknologi-umum-bot/shared"
 	"time"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // deleteMessage creates a timer of one minute to delete a certain message.

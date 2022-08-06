@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // Collect AdditionalMsg that was sent because the user did something

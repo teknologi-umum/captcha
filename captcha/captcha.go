@@ -5,7 +5,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // Dependencies contains the dependency injection struct for

@@ -6,7 +6,7 @@ import (
 	"teknologi-umum-bot/utils"
 
 	"github.com/getsentry/sentry-go"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // Dependencies contains dependency injection struct
