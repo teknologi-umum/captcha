@@ -1,4 +1,4 @@
-FROM golang:1.18.0-bullseye
+FROM golang:1.18.5-bullseye
 
 ARG CERT_URL
 
