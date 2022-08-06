@@ -4,7 +4,7 @@ import (
 	"teknologi-umum-bot/utils"
 	"testing"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 func TestShouldAddSpace(t *testing.T) {

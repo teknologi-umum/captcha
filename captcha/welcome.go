@@ -8,7 +8,7 @@ import (
 	"teknologi-umum-bot/utils"
 	"time"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // currentWelcomeMessages is a collection of welcome messages

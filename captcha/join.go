@@ -9,7 +9,7 @@ import (
 	"teknologi-umum-bot/utils"
 	"time"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // Captcha struct keeps all the data needed for the captcha

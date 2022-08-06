@@ -21,10 +21,11 @@ var memory *bigcache.BigCache
 func TestMain(m *testing.M) {
 	Setup()
 
-	defer Teardown()
-	defer Cleanup()
+	exitCode := m.Run()
+	Teardown()
+	Cleanup()
 
-	os.Exit(m.Run())
+	os.Exit(exitCode)
 }
 
 func Cleanup() {

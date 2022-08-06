@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	tb "gopkg.in/tucnak/telebot.v2"
+	tb "gopkg.in/telebot.v3"
 )
 
 // NewMessage handles an incoming message from the group

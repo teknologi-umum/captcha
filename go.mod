@@ -14,7 +14,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/unrolled/secure v1.12.0
 	go.mongodb.org/mongo-driver v1.10.1
-	gopkg.in/tucnak/telebot.v2 v2.5.0
+	gopkg.in/telebot.v3 v3.0.0
 )
 
 require (

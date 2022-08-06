@@ -18,9 +18,12 @@ var mongoClient *mongo.Client
 func TestMain(m *testing.M) {
 	Setup()
 
-	defer Teardown()
-	defer Cleanup()
-	os.Exit(m.Run())
+	exitCode := m.Run()
+
+	Teardown()
+	Cleanup()
+
+	os.Exit(exitCode)
 }
 
 func Setup() {
@@ -79,6 +82,8 @@ func TestAuthenticate(t *testing.T) {
 	if notOK {
 		t.Errorf("should be ok, but success with the value of %d", 10)
 	}
+
+	os.Clearenv()
 }
 
 func TestAddBadWord(t *testing.T) {

@@ -25,9 +25,12 @@ var mongoClient *mongo.Client
 func TestMain(m *testing.M) {
 	Setup()
 
-	defer Teardown()
-	defer Cleanup()
-	os.Exit(m.Run())
+	exitCode := m.Run()
+
+	Teardown()
+	Cleanup()
+
+	os.Exit(exitCode)
 }
 
 func Cleanup() {
@@ -124,13 +127,13 @@ func Teardown() {
 	defer func(memory *bigcache.BigCache) {
 		err := memory.Close()
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}(memory)
 	defer func(db *sqlx.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}(db)
 
@@ -140,7 +143,7 @@ func Teardown() {
 
 		err := mongoClient.Disconnect(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}(mongoClient)
 
@@ -149,46 +152,46 @@ func Teardown() {
 
 	c, err := db.Connx(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}(c)
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics")
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			log.Fatal(e)
+			log.Print(e)
 		}
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS analytics_hourly")
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			log.Fatal(e)
+			log.Print(e)
 		}
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			log.Fatal(e)
+			log.Print(e)
 		}
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	err = memory.Reset()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }
