@@ -9,6 +9,7 @@ import (
 	"teknologi-umum-bot/badwords"
 	"teknologi-umum-bot/captcha"
 	"teknologi-umum-bot/shared"
+	"teknologi-umum-bot/underattack"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -35,6 +36,7 @@ type Dependency struct {
 	ascii       *ascii.Dependencies
 	analytics   *analytics.Dependency
 	badwords    *badwords.Dependency
+	underAttack *underattack.Dependency
 }
 
 // New returns a pointer struct of Dependency
@@ -70,10 +72,14 @@ func New(deps Dependency) *Dependency {
 			Mongo:       deps.Mongo,
 			MongoDBName: deps.MongoDBName,
 		},
+		underAttack: &underattack.Dependency{
+			Memory: deps.Memory,
+			DB:     deps.DB,
+			Bot:    deps.Bot,
+			Logger: deps.Logger,
+		},
 	}
 }
-
-var globalMsgs = make(chan *tb.Message)
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
@@ -92,6 +98,22 @@ func (d *Dependency) OnTextHandler(c tb.Context) error {
 // added by someone else into the group), or they join
 // the group all by themselves.
 func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
+	if err != nil {
+		shared.HandleError(err, d.Logger)
+	}
+
+	if underAttack {
+		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
+		if err != nil {
+			shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
+			return nil
+		}
+	}
+
 	var tempSender *tb.User
 	if c.Message().UserJoined.ID != 0 {
 		tempSender = c.Message().UserJoined
@@ -173,4 +195,12 @@ func (d *Dependency) CukupHandler(c tb.Context) error {
 	}
 
 	return nil
+}
+
+func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
+	return d.underAttack.EnableUnderAttackModeHandler(c)
+}
+
+func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
+	return d.underAttack.DisableUnderAttackModeHandler(c)
 }

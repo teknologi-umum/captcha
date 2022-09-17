@@ -243,6 +243,10 @@ func main() {
 	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
 	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
 
+	// Under attack handlers
+	b.Handle("/underattack", deps.EnableUnderAttackModeHandler)
+	b.Handle("/disableunderattack", deps.DisableUnderAttackModeHandler)
+
 	// Badword handlers
 	b.Handle("/badwords", deps.BadWordHandler)
 	b.Handle("/cukup", deps.CukupHandler)

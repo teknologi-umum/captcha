@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 	if !ok {
 		databaseUrl = "postgresql://postgres:password@localhost:5432/captcha?sslmode=disable"
 	}
+
 	dbURL, err := pq.ParseURL(databaseUrl)
 	if err != nil {
 		log.Fatal(err)

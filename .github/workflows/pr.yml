@@ -10,10 +10,10 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    container: golang:1.18-bullseye
+    container: golang:1.19-bullseye
     services:
       db:
-        image: postgres:14-alpine
+        image: postgres:14-bullseye
         ports:
           - 5432:5432
         env:
@@ -26,7 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       cache:
-        image: redis:6-alpine
+        image: redis:6-bullseye
         ports:
           - 6379:6379
         options: >-
@@ -35,7 +35,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       mongo:
-        image: mongo:5-focal
+        image: mongo:6
         ports:
           - 27017:27017
         env:
