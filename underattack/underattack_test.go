@@ -93,7 +93,7 @@ func Seed(ctx context.Context) error {
 		ctx,
 		`INSERT INTO
 			under_attack
-			(group_id, is_under_atack, expires_at, notification_message_id, updated_at)
+			(group_id, is_under_attack, expires_at, notification_message_id, updated_at)
 			VALUES
 			($1, $2, $3, $4, $5)`,
 		1,

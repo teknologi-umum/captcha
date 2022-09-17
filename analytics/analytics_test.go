@@ -229,19 +229,19 @@ func Seed(ctx context.Context) error {
 	// create a dummy hourly type
 	hourly := []analytics.HourlyMap{
 		{
-			TodaysDate: "2021-01-01",
+			TodaysDate: time.Now().Add(time.Hour * -48).Format("2006-01-02"),
 			ZeroHour:   14,
 			OneHour:    15,
 			TwoHour:    16,
 		},
 		{
-			TodaysDate: "2021-01-02",
+			TodaysDate: time.Now().Add(time.Hour * -24).Format("2006-01-02"),
 			ZeroHour:   3,
 			OneHour:    4,
 			TwoHour:    5,
 		},
 		{
-			TodaysDate: "2021-01-03",
+			TodaysDate: time.Now().Format("2006-01-02"),
 			ZeroHour:   6,
 			OneHour:    7,
 			TwoHour:    8,
