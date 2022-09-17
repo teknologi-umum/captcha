@@ -45,7 +45,7 @@ func (d *Dependency) Migrate(ctx context.Context) error {
 			is_under_attack BOOLEAN NOT NULL,
 			expires_at TIMESTAMP NOT NULL,
 			notification_message_id BIGINT NOT NULL,
-			updated_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL
 		)`,
 	)
 	if err != nil {

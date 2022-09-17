@@ -15,6 +15,10 @@ func TestGetUserDataFromDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if len(data) == 0 {
+		t.Fatal("expected data length to be greater than 0, got 0 instead")
+	}
+
 	if data[0].UserID != 90 {
 		t.Error("user id should be 90, got", data[0].UserID)
 	}
