@@ -18,6 +18,8 @@ type Dependency struct {
 	Logger *sentry.Client
 }
 
+// underattack provides a data struct to interact with
+// the database table.
 type underattack struct {
 	GroupID               int64     `db:"group_id"`
 	IsUnderAttack         bool      `db:"is_under_attack"`

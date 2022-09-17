@@ -10,6 +10,7 @@ import (
 	"github.com/allegro/bigcache/v3"
 )
 
+// AreWe ...on under attack mode?
 func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
 	underAttackCache, err := d.Memory.Get("underattack:" + strconv.FormatInt(chatID, 10))
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {

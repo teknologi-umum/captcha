@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// MustMigrate creates a dependency struct and a context that will execute the Migrate() function
 func MustMigrate(db *sqlx.DB) error {
 	d := &Dependency{DB: db}
 
@@ -19,6 +20,7 @@ func MustMigrate(db *sqlx.DB) error {
 	return d.Migrate(ctx)
 }
 
+// Migrate will migrates database tables for under attack domain.
 func (d *Dependency) Migrate(ctx context.Context) error {
 	c, err := d.DB.Conn(ctx)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	tb "gopkg.in/telebot.v3"
 )
 
+// EnableUnderAttackModeHandler provides a handler for /underattack command.
 func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 	if c.Message().Private() || c.Sender().IsBot {
 		return nil
@@ -108,6 +109,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 	return nil
 }
 
+// DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
 func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 	if c.Message().Private() || c.Sender().IsBot {
 		return nil

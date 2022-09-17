@@ -197,10 +197,12 @@ func (d *Dependency) CukupHandler(c tb.Context) error {
 	return nil
 }
 
+// EnableUnderAttackModeHandler provides a handler for /underattack command.
 func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 	return d.underAttack.EnableUnderAttackModeHandler(c)
 }
 
+// DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
 func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 	return d.underAttack.DisableUnderAttackModeHandler(c)
 }
