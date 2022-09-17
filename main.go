@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
 	"os/signal"
@@ -85,6 +86,8 @@ func init() {
 }
 
 func main() {
+	rand.Seed(time.Now().Unix())
+
 	// Connect to PostgreSQL
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -93,7 +96,7 @@ func main() {
 	defer func(db *sqlx.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Fatal("during closing the postgres client:", errors.WithStack(err))
+			log.Print("during closing the postgres client:", errors.WithStack(err))
 		}
 	}(db)
 
@@ -111,7 +114,7 @@ func main() {
 		defer cancel()
 		err := client.Disconnect(ctx)
 		if err != nil {
-			log.Fatal("during closing the mongo connection:", errors.WithStack(err))
+			log.Print("during closing the mongo connection:", errors.WithStack(err))
 		}
 	}(mongoClient)
 
@@ -143,7 +146,7 @@ func main() {
 	defer func(cache *bigcache.BigCache) {
 		err := cache.Close()
 		if err != nil {
-			log.Fatal(errors.WithStack(err))
+			log.Print(errors.WithStack(err))
 		}
 	}(cache)
 
@@ -186,6 +189,12 @@ func main() {
 	if err != nil {
 		log.Fatal("during init of bot client:", errors.WithStack(err))
 	}
+	defer func() {
+		_, err := b.Close()
+		if err != nil {
+			log.Print(errors.WithStack(err))
+		}
+	}()
 	defer b.Stop()
 
 	// This is for recovering from panic.
@@ -233,6 +242,10 @@ func main() {
 	b.Handle(tb.OnVoice, deps.OnNonTextHandler)
 	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
 	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
+
+	// Under attack handlers
+	b.Handle("/underattack", deps.EnableUnderAttackModeHandler)
+	b.Handle("/disableunderattack", deps.DisableUnderAttackModeHandler)
 
 	// Badword handlers
 	b.Handle("/badwords", deps.BadWordHandler)

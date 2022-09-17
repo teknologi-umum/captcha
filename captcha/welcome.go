@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"teknologi-umum-bot/utils"
-	"time"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -87,6 +86,5 @@ func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
 }
 
 func randomNum() int {
-	rand.Seed(time.Now().Unix())
 	return rand.Intn(len(currentWelcomeMessages) - 1)
 }

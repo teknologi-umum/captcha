@@ -27,7 +27,7 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, erro
 		return []GroupMember{}, err
 	}
 
-	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics")
+	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics WHERE counter > 0 AND created_at > NOW() - INTERVAL '90 DAYS'")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
 			return []GroupMember{}, err
@@ -83,7 +83,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 		return []HourlyMap{}, err
 	}
 
-	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly")
+	rows, err := tx.QueryxContext(ctx, "SELECT * FROM analytics_hourly WHERE to_date(todays_date, 'YYYY-MM-DD') > NOW() - INTERVAL '90 DAYS'")
 	if err != nil {
 		if r := tx.Rollback(); r != nil {
 			return []HourlyMap{}, nil

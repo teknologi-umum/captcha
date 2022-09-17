@@ -20,16 +20,16 @@ func MustMigrate(db *sqlx.DB) error {
 		DB: db,
 	}
 
-	return d.Migrate()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	return d.Migrate(ctx)
 }
 
 // Migrate creates a migration to the database.
 // This can be called multiple times as it uses PostgreSQL
 // syntax of `IF NOT EXISTS`.
-func (d *Dependency) Migrate() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
+func (d *Dependency) Migrate(ctx context.Context) error {
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err

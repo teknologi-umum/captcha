@@ -12,7 +12,7 @@ services:
     ports:
       - 6379:6379
   mongo:
-    image: mongo:5-focal
+    image: mongo:6-focal
     ports:
       - 27017:27017
     environment:
