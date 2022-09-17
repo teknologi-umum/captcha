@@ -100,7 +100,7 @@ func (d *Dependency) CreateNewEntry(ctx context.Context, groupID int64) error {
 		groupID,
 		false,
 		time.Time{},
-		"",
+		0,
 		time.Now(),
 	)
 	if err != nil {
@@ -159,6 +159,7 @@ func (d *Dependency) SetUnderAttackStatus(ctx context.Context, groupID int64, un
 		groupID,
 		underAttack,
 		expiresAt,
+		notificationMessageID,
 		time.Now(),
 	)
 	if err != nil {
