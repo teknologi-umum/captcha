@@ -14,7 +14,7 @@ import (
 // that have a dynamic user value, written as {user}.
 //
 // This should be sent to the user with a random pick.
-var currentWelcomeMessages = [8]string{
+var currentWelcomeMessages = [9]string{
 	"Halo, {user}\n\n" +
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
@@ -30,7 +30,7 @@ var currentWelcomeMessages = [8]string{
 		"Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!",
 	"Hai, {user}!\n\n" +
 		"Selamat datang di grup {groupname}!\n\n" +
-		"Coba ketik (dan kirim) /joke deh, nanti grup ini tiba-tiba hidup.\n\n" +
+		"Coba ketik (dan kirim) /joke@TeknologiUmumBot deh, nanti grup ini tiba-tiba hidup.\n\n" +
 		"Oh iya, grup ini ngga ada aturan. Tapi jangan sampe bikin kita diciduk tukang bakso bawa HT.",
 	"Haii {user}!\n\n" +
 		"Selama di grup ini, jangan sungkan & malu-malu ya. Biarin aja grup ini berisik. Jangan lupa matiin notification juga. " +
@@ -44,7 +44,12 @@ var currentWelcomeMessages = [8]string{
 		"Jangan lupa matiin notifikasi, grup ini berisik banget, apalagi kalo lagi ngegibah.",
 	"您好 {user}! \n\n" +
 		"欢迎您在 {groupname}, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
-		"您要问什么, 请问吧. 希望您很高兴在这里"}
+		"您要问什么, 请问吧. 希望您很高兴在这里",
+	"Halo, {user}!\n\n" +
+		"Bulan Oktober ini tentu saja ada event Hacktoberfest. Detailnya bisa lihat pinned message atau cek di " +
+		"https://hacktoberfest.teknologiumum.com/ \n\n" +
+		"Kalau notification group ini nyala, matiin dulu ya, kita berisik banget. Enjoy the group!",
+}
 
 var regularWelcomeMessage = "Halo, {user}!\n\n" +
 	"Selamat datang di {groupname}. Jangan lupa untuk baca pinned message, ya. Semoga hari mu menyenangkan."
