@@ -4,7 +4,7 @@ This repository provides a captcha bot for Telegram messaging app. To self host 
 please use the [captcha-lite](https://github.com/teknologi-umum/captcha-lite) as it has no analytics
 and database dependency whatsoever, it only needs a single small VM.
 
-Telebot repository and documentation: https://github.com/tucnak/telebot/tree/v2
+Telebot repository and documentation: https://github.com/tucnak/telebot/tree/v3
 
 ## License
 
