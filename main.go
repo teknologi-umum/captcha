@@ -30,6 +30,7 @@ import (
 	"teknologi-umum-bot/analytics/server"
 	"teknologi-umum-bot/cmd"
 	"teknologi-umum-bot/shared"
+	"teknologi-umum-bot/underattack"
 
 	// Database and cache
 	"github.com/allegro/bigcache/v3"
@@ -164,6 +165,10 @@ func main() {
 
 	// Running migration on database first.
 	err = analytics.MustMigrate(db)
+	if err != nil {
+		log.Fatal("during initial database migration:", errors.WithStack(err))
+	}
+	err = underattack.MustMigrate(db)
 	if err != nil {
 		log.Fatal("during initial database migration:", errors.WithStack(err))
 	}
