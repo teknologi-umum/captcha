@@ -40,7 +40,6 @@ func (d *Dependency) GetUnderAttackEntry(ctx context.Context, groupID int64) (un
 
 		if errors.Is(err, sql.ErrNoRows) {
 			go func(groupID int64) {
-				time.Sleep(time.Second * 5)
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 				defer cancel()
 
