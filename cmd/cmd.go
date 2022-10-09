@@ -110,8 +110,8 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
 		if err != nil {
 			shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
-			return nil
 		}
+		return nil
 	}
 
 	var tempSender *tb.User
