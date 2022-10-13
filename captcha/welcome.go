@@ -91,5 +91,5 @@ func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
 }
 
 func randomNum() int {
-	return rand.Intn(len(currentWelcomeMessages) - 1)
+	return rand.Intn(len(currentWelcomeMessages))
 }
