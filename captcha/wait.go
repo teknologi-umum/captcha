@@ -85,7 +85,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
 			err = d.Bot.Ban(msgUser.Chat, &tb.ChatMember{
-				RestrictedUntil: time.Now().Add(30 * time.Second).Unix(),
+				RestrictedUntil: time.Now().Add(60 * time.Second).Unix(),
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
