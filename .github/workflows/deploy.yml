@@ -13,7 +13,7 @@ jobs:
     container: golang:1.19-bullseye
     services:
       db:
-        image: postgres:14-bullseye
+        image: postgres:15-bullseye
         ports:
           - 5432:5432
         env:
@@ -49,13 +49,20 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Installling dependencies
-        run: go mod download
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
 
       - name: Build
-        run: go build main.go
+        run: go build .
 
       - name: Run test & coverage
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
@@ -79,18 +86,52 @@ jobs:
 
   cd:
     name: CD
-    needs: ci
+    needs: 
+      - ci
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    container: debian:bullseye
+    timeout-minutes: 120
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Install required packages
+        run: apt-get update && apt-get upgrade -y && apt-get install -y tar gzip curl ssh
 
-      - uses: superfly/flyctl-actions@master
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Register SSH key
+        uses: shimataro/ssh-key-action@v2
         with:
-          args: "deploy --build-arg CERT_URL=${{ secrets.CERT_URL }}"
+          key: ${{ secrets.SSH_KEY }}
+          name: id_ed25519
+          known_hosts: ${{ secrets.SSH_IP }}
+          if_key_exists: replace
+
+      - name: SSH Keyscan
+        run: ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_IP }} >> /root/.ssh/known_hosts
+
+      - name: Pull latest code
+        run: >
+          ssh
+          -i /root/.ssh/id_ed25519 
+          -p ${{ secrets.SSH_PORT }}
+          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} 
+          'ssh captcha "cd ${{ secrets.SSH_WORKDIR }}/captcha && git pull" '
+
+      - name: Build Docker images
+        run: >
+          ssh 
+          -i /root/.ssh/id_ed25519
+          -p ${{ secrets.SSH_PORT }}
+          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
+          "ssh captcha 'echo ${{ secrets.SSH_PASSWORD }} | sudo -S bash -c '\"'cd ${{ secrets.SSH_WORKDIR }}/captcha &&
+          docker compose up -d --build'\"' ' "
+
+      - name: Clean up docker artifacts
+        run: >
+          ssh 
+          -i /root/.ssh/id_ed25519
+          -p ${{ secrets.SSH_PORT }}
+          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
+          "ssh captcha 'echo ${{ secrets.SSH_PASSWORD }} | sudo -S bash -c '\"'docker container prune -f &&
+          docker image prune -f &&
+          docker builder prune -f '\"' ' "
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1

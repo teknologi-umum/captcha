@@ -2,11 +2,12 @@ package server
 
 import (
 	"errors"
-	"log"
+	"net"
 	"net/http"
 	"os"
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/shared"
+	"time"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
@@ -67,7 +68,7 @@ type Config struct {
 // that can be used later by other third party sites or bots.
 //
 // Requires 3 parameter that should be sent from the main goroutine.
-func New(config Config) {
+func New(config Config) *http.Server {
 	// Give default port
 	if config.Port == "" {
 		config.Port = "8080"
@@ -211,9 +212,12 @@ func New(config Config) {
 		}
 	})
 
-	log.Println("Starting server on port", config.Port)
-	err := http.ListenAndServe(":"+config.Port, r)
-	if err != nil {
-		shared.HandleError(err, config.Logger)
+	return &http.Server{
+		Handler:           r,
+		Addr:              net.JoinHostPort("", config.Port),
+		ReadTimeout:       time.Minute,
+		WriteTimeout:      time.Minute,
+		ReadHeaderTimeout: time.Minute,
+		IdleTimeout:       time.Minute,
 	}
 }

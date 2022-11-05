@@ -1,19 +1,23 @@
-FROM golang:1.18.5-bullseye
-
-ARG CERT_URL
+FROM golang:1.19.3-bullseye AS builder
 
 ARG PORT=8080
 
 WORKDIR /app
 
-RUN curl --create-dirs -o ./.postgresql/root.crt -O ${CERT_URL}
-
 COPY . .
 
-RUN go mod download
+RUN go build -o captcha .
 
-RUN go build main.go
+FROM debian:bullseye AS runtime
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y curl ca-certificates openssl
+
+COPY --from=builder /app/captcha /app/captcha
 
 EXPOSE ${PORT}
 
-CMD [ "./main" ]
+CMD [ "/app/captcha" ]

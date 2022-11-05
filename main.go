@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	// Internals
@@ -67,10 +66,6 @@ func init() {
 
 	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgres") {
 		log.Fatal("Please provide the correct DATABASE_URL value on the .env file")
-	}
-
-	if redisURL := os.Getenv("REDIS_URL"); redisURL == "" || !strings.HasPrefix(redisURL, "redis") {
-		log.Fatal("Please provide the correct REDIS_URL value on the .env file")
 	}
 
 	if mongoURL := os.Getenv("MONGO_URL"); mongoURL == "" || !strings.HasPrefix(mongoURL, "mongodb") {
@@ -161,7 +156,7 @@ func main() {
 	if err != nil {
 		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
 	}
-	defer logger.Flush(5 * time.Second)
+	defer logger.Flush(30 * time.Second)
 
 	// Running migration on database first.
 	err = analytics.MustMigrate(db)
@@ -223,6 +218,15 @@ func main() {
 		TeknumID:    os.Getenv("TEKNUM_ID"),
 	})
 
+	httpServer := server.New(server.Config{
+		DB:          db,
+		Memory:      cache,
+		Mongo:       mongoClient,
+		Logger:      logger,
+		MongoDBName: mongoDBName,
+		Port:        os.Getenv("PORT"),
+	})
+
 	// This is basically just for health check.
 	b.Handle("/start", func(c tb.Context) error {
 		if c.Message().FromGroup() {
@@ -256,25 +260,30 @@ func main() {
 	b.Handle("/badwords", deps.BadWordHandler)
 	b.Handle("/cukup", deps.CukupHandler)
 
-	log.Println("Bot started!")
 	go func() {
+		log.Println("Bot started!")
 		b.Start()
 	}()
 
 	go func() {
 		// Start a HTTP server instance
-		server.New(server.Config{
-			DB:          db,
-			Memory:      cache,
-			Mongo:       mongoClient,
-			Logger:      logger,
-			MongoDBName: mongoDBName,
-			Port:        os.Getenv("PORT"),
-		})
+		log.Printf("Starting http server on %s", httpServer.Addr)
+		err := httpServer.ListenAndServe()
+		if err != nil {
+			log.Printf("%s", err.Error())
+		}
 	}()
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	<-signalChan
+	exitSignal := make(chan os.Signal, 1)
+	signal.Notify(exitSignal, os.Interrupt)
+	<-exitSignal
 	log.Println("Shutdown signal received, exiting...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer shutdownCancel()
+
+	err = httpServer.Shutdown(shutdownCtx)
+	if err != nil {
+		log.Printf("Shutting down HTTP server: %s", err.Error())
+	}
 }
