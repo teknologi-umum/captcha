@@ -44,6 +44,7 @@ services:
       MONGO_URL: ${MONGO_URL}
       TZ: UTC
       TEKNUM_ID: ${TEKNUM_ID}
+      ADMIN_ID: ${ADMIN_ID}
       PORT: 8080
     labels:
       - "traefik.enable=true"
