@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o captcha .
+RUN go build .
 
 FROM debian:bullseye AS runtime
 
@@ -16,8 +16,8 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y curl ca-certificates openssl
 
-COPY --from=builder /app/captcha /app/captcha
+COPY --from=builder /app/teknologi-umum-bot .
 
 EXPOSE ${PORT}
 
-CMD [ "/app/captcha" ]
+CMD [ "./teknologi-umum-bot" ]
