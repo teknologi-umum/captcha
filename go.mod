@@ -1,6 +1,6 @@
 module teknologi-umum-bot
 
-go 1.18
+go 1.19
 
 require (
 	github.com/aldy505/asciitxt v0.0.2

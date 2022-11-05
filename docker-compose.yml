@@ -1,21 +1,104 @@
 services:
-  db:
-    image: postgres:14-alpine
-    ports:
-      - 5432:5432
+  postgres:
+    image: postgres:15.0-bullseye
     environment:
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
-      POSTGRES_DB: captcha
-  cache:
-    image: redis:6-alpine
-    ports:
-      - 6379:6379
-  mongo:
-    image: mongo:6-focal
-    ports:
-      - 27017:27017
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: UTC
+    platform: linux/amd64
+    healthcheck:
+      test: pg_isready
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 10
+        window: 120s
+      resources:
+        limits:
+          memory: 2GB
+          cpus: '2'
+        reservations:
+          memory: 50MB
+          cpus: '0.10'
+    networks:
+      - captcha
+    logging:
+      driver: json-file
+      options:
+        max-size: 100M
+        max-file: 3
+  application:
+    build: .
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: captcha
+      ENVIRONMENT: production
+      BOT_TOKEN: ${BOT_TOKEN}
+      SENTRY_DSN: ${SENTRY_DSN}
+      DATABASE_URL: ${DATABASE_URL}
+      MONGO_URL: ${MONGO_URL}
+      TZ: UTC
+      TEKNUM_ID: ${TEKNUM_ID}
+      ADMIN_ID: ${ADMIN_ID}
+      PORT: 8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.captcha_bot.entrypoints=web,websecure"
+      - "traefik.http.routers.captcha_bot.rule=Host(`captcha.teknologiumum.com`)"
+      - "traefik.http.routers.captcha_bot.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.captcha_bot.middlewares=captcha_bot-header,captcha_bot-rate,captcha_bot-redirectscheme"
+      - "traefik.http.services.captcha_bot.loadbalancer.server.port=8080"
+      - "traefik.http.services.captcha_bot.loadbalancer.server.scheme=http"
+      - "traefik.http.services.captcha_bot.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.captcha_bot.loadbalancer.healthcheck.path=/"
+      - "traefik.http.middlewares.captcha_bot-rate.ratelimit.average=100"
+      - "traefik.http.middlewares.captcha_bot-rate.ratelimit.burst=20"
+      - "traefik.http.middlewares.captcha_bot-rate.ratelimit.period=1m"
+      - "traefik.http.middlewares.captcha_bot-header.headers.addvaryheader=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.frameDeny=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.stsSeconds=604800"
+      - "traefik.http.middlewares.captcha_bot-header.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.captcha_bot-header.headers.customResponseHeaders.server=Teknologi Umum"
+      - "traefik.http.middlewares.captcha_bot-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.captcha_bot-redirectscheme.redirectscheme.permanent=true"
+    platform: linux/amd64
+    healthcheck:
+      test: curl -f http://application:8080 || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 10
+        window: 120s
+      resources:
+        limits:
+          memory: 500MB
+          cpus: '1'
+        reservations:
+          memory: 25MB
+          cpus: '0.10'
+    networks:
+      - captcha
+    logging:
+      driver: json-file
+      options:
+        max-size: 100M
+        max-file: 3
+
+networks:
+  captcha:
+    driver: bridge
+    external: true
