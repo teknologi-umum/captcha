@@ -31,11 +31,11 @@ type Captcha struct {
 
 const (
 	// BanDuration specifies how long a user will be banned in the group.
-	BanDuration = 7 * 24 * time.Hour
+	BanDuration = 60 * time.Second
 	// Timeout specifies how long the captcha question will be valid.
 	// After this time, the user will be kicked.
 	// Or banned exactly, for one hour.
-	Timeout = 1 * time.Minute
+	Timeout = 61 * time.Second
 )
 
 // DefaultQuestion contains the default captcha questions.
