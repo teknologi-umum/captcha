@@ -78,6 +78,8 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		)
 		if err != nil {
 			if strings.Contains(err.Error(), "replied message not found") {
+				// Don't retry to send the message if the user won't know
+				// which message we're replying to.
 				return
 			}
 
@@ -124,6 +126,8 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		)
 		if err != nil {
 			if strings.Contains(err.Error(), "replied message not found") {
+				// Don't retry to send the message if the user won't know
+				// which message we're replying to.
 				return
 			}
 
@@ -168,7 +172,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		return
 	}
 
-	go d.Analytics.UpdateSwarm(m.Sender, m.Chat.ID, true)
+	// go d.Analytics.UpdateSwarm(m.Sender, m.Chat.ID, true)
 
 	// Delete user's messages.
 	for _, msgID := range captcha.UserMessages {

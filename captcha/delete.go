@@ -14,29 +14,33 @@ import (
 func (d *Dependencies) deleteMessage(message *tb.StoredMessage) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
-	DELETEMSG_RETRY:
-		err := d.Bot.Delete(message)
-		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
-			if strings.Contains(err.Error(), "retry after") {
-				// Acquire the retry number
-				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-				if err != nil {
-					// If there's an error, we'll just retry after 10 second
-					retry = 10
+		for {
+			err := d.Bot.Delete(message)
+			if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
+				if strings.Contains(err.Error(), "retry after") {
+					// Acquire the retry number
+					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+					if err != nil {
+						// If there's an error, we'll just retry after 15 second
+						retry = 15
+					}
+
+					// Let's wait a bit and retry
+					time.Sleep(time.Second * time.Duration(retry))
+					continue
 				}
 
-				// Let's wait a bit and retry
-				time.Sleep(time.Second * time.Duration(retry))
-				goto DELETEMSG_RETRY
+				if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+					time.Sleep(time.Second * 10)
+					continue
+				}
+
+				shared.HandleError(err, d.Logger)
 			}
 
-			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
-				time.Sleep(time.Second * 10)
-				goto DELETEMSG_RETRY
-			}
-
-			shared.HandleError(err, d.Logger)
+			break
 		}
+
 		c <- struct{}{}
 	})
 
@@ -44,28 +48,31 @@ func (d *Dependencies) deleteMessage(message *tb.StoredMessage) {
 }
 
 func (d *Dependencies) deleteMessageBlocking(message *tb.StoredMessage) error {
-DELETEMSG_RETRY:
-	err := d.Bot.Delete(message)
-	if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
-		if strings.Contains(err.Error(), "retry after") {
-			// Acquire the retry number
-			retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-			if err != nil {
-				// If there's an error, we'll just retry after 10 second
-				retry = 10
+	for {
+		err := d.Bot.Delete(message)
+		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
+			if strings.Contains(err.Error(), "retry after") {
+				// Acquire the retry number
+				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+				if err != nil {
+					// If there's an error, we'll just retry after 15 second
+					retry = 15
+				}
+
+				// Let's wait a bit and retry
+				time.Sleep(time.Second * time.Duration(retry))
+				continue
 			}
 
-			// Let's wait a bit and retry
-			time.Sleep(time.Second * time.Duration(retry))
-			goto DELETEMSG_RETRY
+			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				time.Sleep(time.Second * 10)
+				continue
+			}
+
+			return fmt.Errorf("error deleting message: %w", err)
 		}
 
-		if strings.Contains(err.Error(), "Gateway Timeout (504)") {
-			time.Sleep(time.Second * 10)
-			goto DELETEMSG_RETRY
-		}
-
-		return fmt.Errorf("error deleting message: %w", err)
+		break
 	}
 
 	return nil

@@ -62,8 +62,8 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					// Acquire the retry number
 					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
 					if err != nil {
-						// If there's an error, we'll just retry after 10 second
-						retry = 10
+						// If there's an error, we'll just retry after 15 second
+						retry = 15
 					}
 
 					// Let's wait a bit and retry
@@ -93,8 +93,8 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					// Acquire the retry number
 					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
 					if err != nil {
-						// If there's an error, we'll just retry after 10 second
-						retry = 10
+						// If there's an error, we'll just retry after 15 second
+						retry = 15
 					}
 
 					// Let's wait a bit and retry
@@ -148,10 +148,9 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			}
 
 			// We're done here. Let's send the value to the done channel.
-			break
-		} else {
-			break
 		}
+
+		break
 	}
 	cond.Broadcast()
 	cond.L.Unlock()
