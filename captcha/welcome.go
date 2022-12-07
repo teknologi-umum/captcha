@@ -14,7 +14,7 @@ import (
 // that have a dynamic user value, written as {user}.
 //
 // This should be sent to the user with a random pick.
-var currentWelcomeMessages = [9]string{
+var currentWelcomeMessages = [11]string{
 	"Halo, {user}\n\n" +
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
@@ -45,10 +45,19 @@ var currentWelcomeMessages = [9]string{
 	"您好 {user}! \n\n" +
 		"欢迎您在 {groupname}, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
 		"您要问什么, 请问吧. 希望您很高兴在这里",
+	"こんにちは！\n\n" +
+		"Tenang, ini bukan grup jejepangan kok. Tapi kalau mau ngomongin topik apapun, dari Jepang, Korea, sampe negara yang " +
+		"nggak banyak orang tau boleh banget. Ini grup untuk bahas hal-hal yang dianggap OOT di grup lain.\n\n" +
+		"Semoga hidupmu di grup ini menyenangkan!",
 	"Halo, {user}!\n\n" +
-		"Bulan Oktober ini tentu saja ada event Hacktoberfest. Detailnya bisa lihat pinned message atau cek di " +
-		"https://hacktoberfest.teknologiumum.com/ \n\n" +
+		"Grup ini sempat request untuk ikut dibikinkan Mastodon (decentralized social media), mirip-mirip twitter " +
+		"gitu deh. Tapi sayang banget, sedikit sekali yang pakai.\n\n" +
+		"Kalau kamu mau coba, bisa mampir ke https://mastodon.teknologiumum.com/\n\n" +
 		"Kalau notification group ini nyala, matiin dulu ya, kita berisik banget. Enjoy the group!",
+	"Halo, {user}!\n\n" +
+		"Kalau kamu lagi senggang, dan kebetulan kamu adalah programmer, coba cek pinned message dan coba kerjakan " +
+		"kuis-kuis yang ada. Kebanyakan kuisnya anonim kok, jadi kamu nggak perlu takut salah-benar.\n\n" +
+		"Semoga harimu menyenangkan!",
 }
 
 var regularWelcomeMessage = "Halo, {user}!\n\n" +
