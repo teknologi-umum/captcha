@@ -60,6 +60,7 @@ func New(deps Dependency) *Dependency {
 		DB:          deps.DB,
 		Mongo:       deps.Mongo,
 		MongoDBName: deps.MongoDBName,
+		TeknumID:    deps.TeknumID,
 		captcha: &captcha.Dependencies{
 			Memory:    deps.Memory,
 			Bot:       deps.Bot,
