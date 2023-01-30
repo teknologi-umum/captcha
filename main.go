@@ -260,6 +260,9 @@ func main() {
 	b.Handle("/badwords", deps.BadWordHandler)
 	b.Handle("/cukup", deps.CukupHandler)
 
+	// <redacted>
+	b.Handle("/setir", deps.SetirHandler)
+
 	go func() {
 		log.Println("Bot started!")
 		b.Start()

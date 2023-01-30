@@ -4,17 +4,17 @@ go 1.19
 
 require (
 	github.com/aldy505/asciitxt v0.0.2
-	github.com/allegro/bigcache/v3 v3.0.2
-	github.com/getsentry/sentry-go v0.15.0
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/allegro/bigcache/v3 v3.1.0
+	github.com/getsentry/sentry-go v0.17.0
+	github.com/go-chi/chi/v5 v5.0.8
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
-	github.com/lib/pq v1.10.6
+	github.com/lib/pq v1.10.7
 	github.com/pkg/errors v0.9.1
-	github.com/rs/cors v1.8.2
-	github.com/unrolled/secure v1.12.0
-	go.mongodb.org/mongo-driver v1.10.1
-	gopkg.in/telebot.v3 v3.1.0
+	github.com/rs/cors v1.8.3
+	github.com/unrolled/secure v1.13.0
+	go.mongodb.org/mongo-driver v1.11.1
+	gopkg.in/telebot.v3 v3.1.2
 )
 
 require (

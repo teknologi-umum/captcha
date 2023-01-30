@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"teknologi-umum-bot/analytics"
@@ -10,6 +12,7 @@ import (
 	"teknologi-umum-bot/captcha"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/underattack"
+	"teknologi-umum-bot/utils"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -205,4 +208,101 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 // DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
 func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 	return d.underAttack.DisableUnderAttackModeHandler(c)
+}
+
+func (d *Dependency) SetirHandler(c tb.Context) error {
+	admin := strings.Split(os.Getenv("ADMIN_ID"), ",")
+	if !utils.IsIn(admin, strconv.FormatInt(c.Sender().ID, 10)) || c.Chat().Type != tb.ChatPrivate {
+		return nil
+	}
+
+	home, err := strconv.ParseInt(d.TeknumID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("parsing teknum id: %w", err)
+	}
+
+	if c.Message().IsReply() {
+		var replyToID int
+
+		if strings.HasPrefix(c.Message().Payload, "https://t.me/") {
+			replyToID, err = strconv.Atoi(strings.Split(c.Message().Payload, "/")[4])
+			if err != nil {
+				return err
+			}
+		} else {
+			replyToID, err = strconv.Atoi(c.Message().Payload)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = d.Bot.Send(tb.ChatID(home), c.Message().ReplyTo.Text, &tb.SendOptions{
+			ParseMode:         tb.ModeHTML,
+			AllowWithoutReply: true,
+			ReplyTo: &tb.Message{
+				ID: replyToID,
+				Chat: &tb.Chat{
+					ID: int64(home),
+				},
+			},
+		})
+		if err != nil {
+			_, err = d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
+			if err != nil {
+				return fmt.Errorf("failed sending that message: %w", err)
+			}
+		} else {
+			_, err = d.Bot.Send(c.Chat(), "Message sent")
+			if err != nil {
+				return fmt.Errorf("sending message: %w", err)
+			}
+		}
+
+		return nil
+	}
+
+	if strings.HasPrefix(c.Message().Payload, "https://") {
+		var toBeSent interface{}
+		if strings.HasSuffix(c.Message().Payload, ".jpg") || strings.HasSuffix(c.Message().Payload, ".png") || strings.HasSuffix(c.Message().Payload, ".jpeg") {
+			toBeSent = &tb.Photo{File: tb.FromURL(c.Message().Payload)}
+		} else if strings.HasSuffix(c.Message().Payload, ".gif") {
+			toBeSent = &tb.Animation{File: tb.FromURL(c.Message().Payload)}
+		} else {
+			return nil
+		}
+
+		_, err = d.Bot.Send(tb.ChatID(home), toBeSent, &tb.SendOptions{AllowWithoutReply: true})
+		if err != nil {
+			_, e := d.Bot.Send(c.Message().Chat, "Failed sending that photo: "+err.Error())
+			if e != nil {
+				return fmt.Errorf("sending message: %w", e)
+			}
+
+			return fmt.Errorf("sending photo: %w", err)
+		}
+
+		_, err = d.Bot.Send(c.Chat(), "Photo sent")
+		if err != nil {
+			return fmt.Errorf("sending message that says 'photo sent': %w", err)
+		}
+		return nil
+
+	}
+
+	_, err = d.Bot.Send(tb.ChatID(home), c.Message().Payload, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
+	if err != nil {
+		_, e := d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
+		if e != nil {
+			return fmt.Errorf("sending message: %w", e)
+		}
+
+		return fmt.Errorf("sending message: %w", err)
+	}
+
+	_, err = d.Bot.Send(c.Chat(), "Message sent")
+	if err != nil {
+		return fmt.Errorf("sending message: %w", err)
+	}
+
+	return nil
 }
