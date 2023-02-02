@@ -74,8 +74,8 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 		"Grup ini dalam kondisi under attack sampai pukul "+
 			expiresAt.In(time.FixedZone("WIB", 7*60*60)).Format("15:04 MST")+
 			". Semua yang baru masuk ke grup ini akan langsung di ban selamanya."+
-			"Untuk bisa bergabung, tunggu sampai under attack mode berakhir, atau hubungi admin grup.\n\n",
-		"This group is in under attack mode until "+
+			"Untuk bisa bergabung, tunggu sampai under attack mode berakhir, atau hubungi admin grup.\n\n"+
+			"This group is in under attack mode until "+
 			expiresAt.In(time.FixedZone("UTC +7", 7*60*60)).Format("15:04 MST")+
 			". Everyone that is joining this group will be banned forever."+
 			"To be able to join, wait until the under attack mode is over, or contact the group's administrator.\n\n",
@@ -105,6 +105,16 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 		shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
 		return nil
 	}
+
+	go func() {
+		// Set a timer to unpin the notification message
+		time.Sleep(time.Until(expiresAt))
+
+		err := c.Bot().Unpin(notificationMessage.Chat, notificationMessage.ID)
+		if err != nil {
+			shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
+		}
+	}()
 
 	return nil
 }
