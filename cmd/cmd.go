@@ -111,7 +111,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	}
 
 	if underAttack {
-		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
+		err := d.underAttack.Kicker(c)
 		if err != nil {
 			shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
 		}
