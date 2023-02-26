@@ -10,7 +10,7 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    container: golang:1.19-bullseye
+    container: golang:1.20-bullseye
     services:
       db:
         image: postgres:15-bullseye
@@ -62,7 +62,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: Build
-        run: go build .
+        run: go build -buildvcs=false .
 
       - name: Run test & coverage
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
