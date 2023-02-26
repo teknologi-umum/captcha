@@ -10,7 +10,7 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    container: golang:1.19-bullseye
+    container: golang:1.20-bullseye
     services:
       db:
         image: postgres:15-bullseye
@@ -62,7 +62,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: Build
-        run: go build .
+        run: go build -buildvcs=false .
 
       - name: Run test & coverage
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
@@ -86,7 +86,7 @@ jobs:
 
   cd:
     name: CD
-    needs: 
+    needs:
       - ci
     runs-on: ubuntu-latest
     container: debian:bullseye
@@ -109,14 +109,14 @@ jobs:
       - name: Pull latest code
         run: >
           ssh
-          -i /root/.ssh/id_ed25519 
+          -i /root/.ssh/id_ed25519
           -p ${{ secrets.SSH_PORT }}
-          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} 
+          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
           'ssh captcha "cd ${{ secrets.SSH_WORKDIR }}/captcha && git pull" '
 
       - name: Build Docker images
         run: >
-          ssh 
+          ssh
           -i /root/.ssh/id_ed25519
           -p ${{ secrets.SSH_PORT }}
           -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
@@ -125,7 +125,7 @@ jobs:
 
       - name: Clean up docker artifacts
         run: >
-          ssh 
+          ssh
           -i /root/.ssh/id_ed25519
           -p ${{ secrets.SSH_PORT }}
           -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
