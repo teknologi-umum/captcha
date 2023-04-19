@@ -1,7 +1,10 @@
 package captcha
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"github.com/allegro/bigcache/v3"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,8 +43,8 @@ const (
 
 // DefaultQuestion contains the default captcha questions.
 var DefaultQuestion = "Halo, {user}!\n\n" +
-	"Sebelum lanjut, selesaikan captcha ini dulu ya. Semuanya angka. Kamu punya waktu 1 menit dari sekarang!\n\n" +
-	"Kalau angkanya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
+	"Sebelum lanjut, selesaikan captcha ini dulu ya. Kombinasi angka dengan huruf V, W, X, dan Y. Kamu punya waktu 1 menit dari sekarang!\n\n" +
+	"Kalau tulisannya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
 	"<pre>{captcha}</pre>"
 
 // CaptchaUserJoin is the most frustrating function that I've written
@@ -56,11 +59,46 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
 	// If they're not, continue to execute the captcha.
-	admins, err := d.Bot.AdminsOf(m.Chat)
+	var admins []tb.ChatMember
+	groupAdmins, err := d.Memory.Get("group-admins:" + strconv.FormatInt(m.Chat.ID, 10))
 	if err != nil {
-		if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
+		if errors.Is(err, bigcache.ErrEntryNotFound) {
+			// Find and set
+			admins, err = d.Bot.AdminsOf(m.Chat)
+			if err != nil {
+				if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
+					shared.HandleBotError(err, d.Logger, d.Bot, m)
+					return
+				}
+
+				shared.HandleBotError(err, d.Logger, d.Bot, m)
+				return
+			}
+
+			var adminIDs []string
+			for _, admin := range admins {
+				adminIDs = append(adminIDs, strconv.FormatInt(admin.User.ID, 10))
+			}
+
+			groupAdmins = []byte(strings.Join(adminIDs, ","))
+
+			err = d.Memory.Set("group-admins:"+strconv.FormatInt(m.Chat.ID, 10), groupAdmins)
+			if err != nil {
+				shared.HandleBotError(err, d.Logger, d.Bot, m)
+				// DO NOT return, continue the captcha process.
+			}
+		} else {
 			shared.HandleBotError(err, d.Logger, d.Bot, m)
 			return
+		}
+	} else {
+		var adminIDs = bytes.Split(groupAdmins, []byte(","))
+		for _, id := range adminIDs {
+			parsedId, err := strconv.ParseInt(string(id), 10, 64)
+			if err != nil {
+				continue
+			}
+			admins = append(admins, tb.ChatMember{User: &tb.User{ID: parsedId}})
 		}
 	}
 

@@ -61,54 +61,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 	// we will trim the spaces down. This is because I'm lazy to not let
 	// the user pass if they're actually answering the right answer
 	// but got spaces on their answer. You get the idea.
-	answer := removeSpaces(m.Text)
-
-	// Check if the answer is not a number
-	if _, err := strconv.Atoi(answer); errors.Is(err, strconv.ErrSyntax) {
-		remainingTime := time.Until(captcha.Expiry)
-		wrongMsg, err := d.Bot.Send(
-			m.Chat,
-			"Jawaban captcha salah, hanya terdiri dari angka kok. Kamu punya "+
-				strconv.Itoa(int(remainingTime.Seconds()))+
-				" detik lagi untuk menyelesaikan captcha.",
-			&tb.SendOptions{
-				ParseMode: tb.ModeHTML,
-				ReplyTo:   m,
-			},
-		)
-		if err != nil {
-			if strings.Contains(err.Error(), "replied message not found") {
-				// Don't retry to send the message if the user won't know
-				// which message we're replying to.
-				return
-			}
-
-			if strings.Contains(err.Error(), "retry after") {
-				// If this happen, probably we're in a spam bot surge and would
-				// probably doesn't care with the user captcha after all.
-				// If they're human, they'll complete the captcha anyway,
-				// or would ask to be unbanned later.
-				// So, we'll just put a return here.
-				return
-			}
-
-			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
-				// Yep, including this one.
-				return
-			}
-
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
-			return
-		}
-
-		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
-		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
-			return
-		}
-
-		return
-	}
+	answer := strings.ToUpper(removeSpaces(m.Text))
 
 	// Check if the answer is correct or not
 	if answer != captcha.Answer {
