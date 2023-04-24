@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"teknologi-umum-bot/shared"
@@ -14,13 +15,13 @@ import (
 // captcha or not.
 //
 // If it is, the captcha will be deleted.
-func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
+func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
 	// If they're not, continue to execute the captcha.
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -32,7 +33,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	// or not.
 	check, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -44,20 +45,20 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 	// all the message that we've sent before.
 	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -67,7 +68,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 		MessageID: captcha.QuestionID,
 	})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -81,7 +82,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}
@@ -96,7 +97,7 @@ func (d *Dependencies) CaptchaUserLeave(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}

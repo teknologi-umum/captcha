@@ -2,15 +2,17 @@ package captcha
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-	"github.com/allegro/bigcache/v3"
 	"strconv"
 	"strings"
 	"sync"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
+
+	"github.com/allegro/bigcache/v3"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -55,7 +57,7 @@ var DefaultQuestion = "Halo, {user}!\n\n" +
 //
 // At the end of the function, it will create 2 goroutines in which
 // both of them are responsible for kicking the user out of the group.
-func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
+func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
 	// If they're not, continue to execute the captcha.
@@ -67,11 +69,11 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 			admins, err = d.Bot.AdminsOf(m.Chat)
 			if err != nil {
 				if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
-					shared.HandleBotError(err, d.Logger, d.Bot, m)
+					shared.HandleBotError(ctx, err, d.Bot, m)
 					return
 				}
 
-				shared.HandleBotError(err, d.Logger, d.Bot, m)
+				shared.HandleBotError(ctx, err, d.Bot, m)
 				return
 			}
 
@@ -84,11 +86,11 @@ func (d *Dependencies) CaptchaUserJoin(m *tb.Message) {
 
 			err = d.Memory.Set("group-admins:"+strconv.FormatInt(m.Chat.ID, 10), groupAdmins)
 			if err != nil {
-				shared.HandleBotError(err, d.Logger, d.Bot, m)
+				shared.HandleBotError(ctx, err, d.Bot, m)
 				// DO NOT return, continue the captcha process.
 			}
 		} else {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	} else {
@@ -168,7 +170,7 @@ SENDMSG_RETRY:
 			)
 			if err != nil {
 				if !strings.Contains(err.Error(), "retry after") && !strings.Contains(err.Error(), "Gateway Timeout (504)") {
-					shared.HandleBotError(err, d.Logger, d.Bot, m)
+					shared.HandleBotError(ctx, err, d.Bot, m)
 					return
 				}
 			}
@@ -176,7 +178,7 @@ SENDMSG_RETRY:
 
 		// err could possibly be nil at this point, so we better check it out.
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}
@@ -194,25 +196,25 @@ SENDMSG_RETRY:
 		AdditionalMessages: []string{strconv.Itoa(m.ID)},
 	})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	// Yes, the cache key is their User ID in string format.
 	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), captchaData)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	err = d.Memory.Append("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10), []byte(";"+strconv.FormatInt(m.Sender.ID, 10)))
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	cond := sync.NewCond(&sync.Mutex{})
-	go d.waitOrDelete(m, cond)
+	go d.waitOrDelete(ctx, m, cond)
 }
 
 func sanitizeInput(inp string) string {

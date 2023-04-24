@@ -22,14 +22,14 @@ func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool
 
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
-		shared.HandleError(fmt.Errorf("connection pool: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("connection pool: %w", err))
 		return
 	}
 	defer c.Close()
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadUncommitted, ReadOnly: false})
 	if err != nil {
-		shared.HandleError(fmt.Errorf("begin transaction: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("begin transaction: %w", err))
 		return
 	}
 
@@ -49,21 +49,21 @@ func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool
 	)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("insert: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("insert: %w", err))
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("commit: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("commit: %w", err))
 		return
 	}
 }
@@ -78,14 +78,14 @@ func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha b
 
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
-		shared.HandleError(fmt.Errorf("connection pool: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("connection pool: %w", err))
 		return
 	}
 	defer c.Close()
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadUncommitted, ReadOnly: false})
 	if err != nil {
-		shared.HandleError(fmt.Errorf("begin transaction: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("begin transaction: %w", err))
 		return
 	}
 
@@ -105,29 +105,29 @@ func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha b
 	)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("insert: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("insert: %w", err))
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("commit: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("commit: %w", err))
 		return
 	}
 }
 
-func (d *Dependency) PurgeBots(m *tb.Message) {
+func (d *Dependency) PurgeBots(ctx context.Context, m *tb.Message) {
 	admins, err := d.Bot.AdminsOf(m.Chat)
 	if err != nil {
-		shared.HandleError(fmt.Errorf("get admins: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("get admins: %w", err))
 		return
 	}
 
@@ -140,14 +140,14 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
-		shared.HandleError(fmt.Errorf("connection pool: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("connection pool: %w", err))
 		return
 	}
 	defer c.Close()
 
 	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
-		shared.HandleError(fmt.Errorf("begin transaction: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("begin transaction: %w", err))
 		return
 	}
 
@@ -164,11 +164,11 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 	)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("query: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("query: %w", err))
 		return
 	}
 	defer rows.Close()
@@ -178,11 +178,11 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 		var userID int64
 		if err := rows.Scan(&userID); err != nil {
 			if e := tx.Rollback(); e != nil {
-				shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+				shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 				return
 			}
 
-			shared.HandleError(fmt.Errorf("scan: %w", err), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("scan: %w", err))
 			return
 		}
 
@@ -195,11 +195,11 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 		if err != nil {
 			// TODO: do a continue loop if user was already banned
 			if e := tx.Rollback(); e != nil {
-				shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+				shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 				return
 			}
 
-			shared.HandleError(fmt.Errorf("ban: %w", err), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("ban: %w", err))
 			return
 		}
 
@@ -218,28 +218,28 @@ func (d *Dependency) PurgeBots(m *tb.Message) {
 		)
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+				shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 				return
 			}
 
-			shared.HandleError(fmt.Errorf("delete: %w", err), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("delete: %w", err))
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		if e := tx.Rollback(); e != nil {
-			shared.HandleError(fmt.Errorf("rollback: %w", e), d.Logger)
+			shared.HandleError(ctx, fmt.Errorf("rollback: %w", e))
 			return
 		}
 
-		shared.HandleError(fmt.Errorf("commit: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("commit: %w", err))
 		return
 	}
 
 	_, err = d.Bot.Send(m.Chat, fmt.Sprintf("%d bots have been banned", len(userIDs)))
 	if err != nil {
-		shared.HandleError(fmt.Errorf("send: %w", err), d.Logger)
+		shared.HandleError(ctx, fmt.Errorf("send: %w", err))
 		return
 	}
 }

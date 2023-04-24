@@ -16,8 +16,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"math/rand"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -82,7 +84,17 @@ func init() {
 }
 
 func main() {
-	rand.Seed(time.Now().Unix())
+	// Setup Sentry for error handling.
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DSN"),
+		AttachStacktrace: true,
+		Debug:            os.Getenv("ENVIRONMENT") == "development",
+		Environment:      os.Getenv("ENVIRONMENT"),
+	})
+	if err != nil {
+		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
+	}
+	defer sentry.Flush(30 * time.Second)
 
 	// Connect to PostgreSQL
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -99,6 +111,7 @@ func main() {
 	// Context for initiating database connection.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 
 	// Setup mongodb connection
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
@@ -127,7 +140,7 @@ func main() {
 	mongoDBName := parsedURL.Path[1:]
 
 	// Setup in memory cache
-	cache, err := bigcache.NewBigCache(bigcache.Config{
+	cache, err := bigcache.New(context.Background(), bigcache.Config{
 		Shards:             1024,
 		LifeWindow:         time.Minute * 5,
 		CleanWindow:        time.Minute * 1,
@@ -145,18 +158,6 @@ func main() {
 			log.Print(errors.WithStack(err))
 		}
 	}(cache)
-
-	// Setup Sentry for error handling.
-	logger, err := sentry.NewClient(sentry.ClientOptions{
-		Dsn:              os.Getenv("SENTRY_DSN"),
-		AttachStacktrace: true,
-		Debug:            os.Getenv("ENVIRONMENT") == "development",
-		Environment:      os.Getenv("ENVIRONMENT"),
-	})
-	if err != nil {
-		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
-	}
-	defer logger.Flush(30 * time.Second)
 
 	// Running migration on database first.
 	err = analytics.MustMigrate(db)
@@ -179,19 +180,31 @@ func main() {
 				return
 			}
 
-			_ = logger.CaptureException(
-				err,
-				&sentry.EventHint{OriginalException: err},
-				nil,
-			)
+			sentry.CaptureException(err)
+		},
+		Client: &http.Client{
+			Timeout: time.Hour,
+			Transport: &http.Transport{
+				Proxy:                 http.ProxyFromEnvironment,
+				TLSHandshakeTimeout:   time.Minute * 3,
+				ForceAttemptHTTP2:     true,
+				IdleConnTimeout:       time.Minute * 3,
+				ExpectContinueTimeout: time.Minute,
+				DialContext: (&net.Dialer{
+					Timeout:   time.Minute * 3,
+					KeepAlive: time.Minute,
+				}).DialContext,
+			},
 		},
 	})
 	if err != nil {
+		sentry.CaptureException(fmt.Errorf("initializing bot client: %w", err))
 		log.Fatal("during init of bot client:", errors.WithStack(err))
 	}
 	defer func() {
 		_, err := b.Close()
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Print(errors.WithStack(err))
 		}
 	}()
@@ -201,9 +214,7 @@ func main() {
 	defer func() {
 		r := recover()
 		if r != nil {
-			_ = logger.CaptureException(r.(error), &sentry.EventHint{
-				OriginalException: r.(error),
-			}, nil)
+			sentry.CaptureException(r.(error))
 			log.Println(r.(error))
 		}
 	}()
@@ -211,7 +222,6 @@ func main() {
 	deps := cmd.New(cmd.Dependency{
 		Memory:      cache,
 		Bot:         b,
-		Logger:      logger,
 		DB:          db,
 		Mongo:       mongoClient,
 		MongoDBName: mongoDBName,
@@ -222,7 +232,6 @@ func main() {
 		DB:          db,
 		Memory:      cache,
 		Mongo:       mongoClient,
-		Logger:      logger,
 		MongoDBName: mongoDBName,
 		Port:        os.Getenv("PORT"),
 	})
@@ -232,7 +241,7 @@ func main() {
 		if c.Message().FromGroup() {
 			_, err := c.Bot().Send(c.Message().Chat, "ok")
 			if err != nil {
-				shared.HandleBotError(err, logger, b, c.Message())
+				shared.HandleBotError(ctx, err, b, c.Message())
 				return nil
 			}
 		}
@@ -263,10 +272,8 @@ func main() {
 	// <redacted>
 	b.Handle("/setir", deps.SetirHandler)
 
-	go func() {
-		log.Println("Bot started!")
-		b.Start()
-	}()
+	exitSignal := make(chan os.Signal, 1)
+	signal.Notify(exitSignal, os.Interrupt)
 
 	go func() {
 		// Start a HTTP server instance
@@ -277,16 +284,21 @@ func main() {
 		}
 	}()
 
-	exitSignal := make(chan os.Signal, 1)
-	signal.Notify(exitSignal, os.Interrupt)
-	<-exitSignal
-	log.Println("Shutdown signal received, exiting...")
+	go func() {
+		<-exitSignal
+		log.Println("Shutdown signal received, exiting...")
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer shutdownCancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer shutdownCancel()
 
-	err = httpServer.Shutdown(shutdownCtx)
-	if err != nil {
-		log.Printf("Shutting down HTTP server: %s", err.Error())
-	}
+		err = httpServer.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Printf("Shutting down HTTP server: %s", err.Error())
+			sentry.CaptureException(err)
+		}
+	}()
+
+	// Lesson learned: do not start bot on a goroutine
+	log.Println("Bot started!")
+	b.Start()
 }

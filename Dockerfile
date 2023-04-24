@@ -16,8 +16,8 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y curl ca-certificates openssl
 
-COPY --from=builder /app/teknologi-umum-bot .
+COPY --from=builder /app/ .
 
 EXPOSE ${PORT}
 
-CMD [ "./teknologi-umum-bot" ]
+CMD [ "/app/teknologi-umum-bot" ]

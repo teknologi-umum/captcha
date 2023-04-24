@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -33,7 +34,9 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	memory, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
+	_ = sentry.Init(sentry.ClientOptions{})
+
+	memory, err := bigcache.New(context.Background(), bigcache.DefaultConfig(time.Hour*1))
 	if err != nil {
 		log.Fatal(err)
 	}

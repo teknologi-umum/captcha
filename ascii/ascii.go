@@ -1,6 +1,7 @@
 package ascii
 
 import (
+	"context"
 	"errors"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
@@ -17,7 +18,7 @@ type Dependencies struct {
 }
 
 // Ascii simply sends ASCII art message for fun.
-func (d *Dependencies) Ascii(m *tb.Message) {
+func (d *Dependencies) Ascii(ctx context.Context, m *tb.Message) {
 	if m.Payload == "" {
 		return
 	}
@@ -41,11 +42,11 @@ func (d *Dependencies) Ascii(m *tb.Message) {
 				},
 			)
 			if err != nil {
-				shared.HandleBotError(err, d.Logger, d.Bot, m)
+				shared.HandleBotError(ctx, err, d.Bot, m)
 				return
 			}
 		} else {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}

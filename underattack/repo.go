@@ -17,7 +17,7 @@ func (d *Dependency) GetUnderAttackEntry(ctx context.Context, groupID int64) (un
 	defer func() {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}()
 
@@ -46,7 +46,7 @@ func (d *Dependency) GetUnderAttackEntry(ctx context.Context, groupID int64) (un
 
 				err := d.CreateNewEntry(ctx, groupID)
 				if err != nil {
-					shared.HandleError(err, d.Logger)
+					shared.HandleError(ctx, err)
 				}
 			}(groupID)
 
@@ -79,7 +79,7 @@ func (d *Dependency) CreateNewEntry(ctx context.Context, groupID int64) error {
 	defer func() {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}()
 
@@ -133,7 +133,7 @@ func (d *Dependency) SetUnderAttackStatus(ctx context.Context, groupID int64, un
 	defer func() {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}()
 

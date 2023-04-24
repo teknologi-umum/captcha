@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -15,7 +16,7 @@ import (
 )
 
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.
-func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
+func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message, cond *sync.Cond) {
 	// Let's start the timer, shall we?
 	t := time.NewTimer(Timeout)
 
@@ -35,13 +36,13 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			var captcha Captcha
 			user, err := d.Memory.Get(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))
 			if err != nil {
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
 			err = json.Unmarshal(user, &captcha)
 			if err != nil {
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
@@ -76,7 +77,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					goto KICKMSG_RETRY
 				}
 
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
@@ -107,7 +108,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 					goto BAN_RETRY
 				}
 
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
@@ -118,7 +119,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 			}
 			err = d.deleteMessageBlocking(&msgToBeDeleted)
 			if err != nil {
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
@@ -129,12 +130,13 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 				}
 				err = d.deleteMessageBlocking(&msgToBeDeleted)
 				if err != nil {
-					shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+					shared.HandleBotError(ctx, err, d.Bot, msgUser)
 					break
 				}
 			}
 
 			go d.deleteMessage(
+				ctx,
 				&tb.StoredMessage{
 					MessageID: strconv.Itoa(kickMsg.ID),
 					ChatID:    kickMsg.Chat.ID,
@@ -143,7 +145,7 @@ func (d *Dependencies) waitOrDelete(msgUser *tb.Message, cond *sync.Cond) {
 
 			err = d.Memory.Delete(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))
 			if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
-				shared.HandleBotError(err, d.Logger, d.Bot, msgUser)
+				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 

@@ -19,28 +19,28 @@ import (
 // If the user has joined before, meaning he left the group for some
 // reason, their data should still be here. But, their joined date
 // will be updated to their newest join date.
-func (d *Dependency) NewUser(m *tb.Message, user *tb.User) {
+func (d *Dependency) NewUser(ctx context.Context, m *tb.Message, user *tb.User) {
 	if !m.FromGroup() || strconv.FormatInt(m.Chat.ID, 10) != d.TeknumID {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 	}
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(c)
 
 	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: false})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 	}
 
 	now := time.Now()
@@ -68,16 +68,16 @@ func (d *Dependency) NewUser(m *tb.Message, user *tb.User) {
 	)
 	if err != nil {
 		if r := t.Rollback(); r != nil {
-			shared.HandleError(r, d.Logger)
+			shared.HandleError(ctx, r)
 		}
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 	}
 
 	err = t.Commit()
 	if err != nil {
 		if r := t.Rollback(); r != nil {
-			shared.HandleError(r, d.Logger)
+			shared.HandleError(ctx, r)
 		}
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 	}
 }

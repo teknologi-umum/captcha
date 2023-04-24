@@ -29,7 +29,7 @@ func (d *Dependency) Migrate(ctx context.Context) error {
 	defer func() {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}()
 

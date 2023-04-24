@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	memory, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
+	memory, err := bigcache.New(context.Background(), bigcache.DefaultConfig(time.Hour*1))
 	if err != nil {
 		log.Fatal(err)
 	}

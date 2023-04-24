@@ -1,11 +1,13 @@
 package captcha
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
 	"teknologi-umum-bot/utils"
+	"time"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -20,7 +22,7 @@ var currentWelcomeMessages = [11]string{
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
 		"Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.",
 	"Hai {user}! \n\n" +
-		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
+		"Selamat 1datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. " +
 		"Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.",
 	"Welcome {user}!\n\n" +
@@ -50,52 +52,74 @@ var currentWelcomeMessages = [11]string{
 		"nggak banyak orang tau boleh banget. Ini grup untuk bahas hal-hal yang dianggap OOT di grup lain.\n\n" +
 		"Semoga hidupmu di grup ini menyenangkan!",
 	"Halo, {user}!\n\n" +
-		"Grup ini sempat request untuk ikut dibikinkan Mastodon (decentralized social media), mirip-mirip twitter " +
-		"gitu deh. Tapi sayang banget, sedikit sekali yang pakai.\n\n" +
-		"Kalau kamu mau coba, bisa mampir ke https://mastodon.teknologiumum.com/\n\n" +
-		"Kalau notification group ini nyala, matiin dulu ya, kita berisik banget. Enjoy the group!",
-	"Halo, {user}!\n\n" +
 		"Kalau kamu lagi senggang, dan kebetulan kamu adalah programmer, coba cek pinned message dan coba kerjakan " +
 		"kuis-kuis yang ada. Kebanyakan kuisnya anonim kok, jadi kamu nggak perlu takut salah-benar.\n\n" +
 		"Semoga harimu menyenangkan!",
+	"Hai {user}!\n\n" +
+		"Saya nggak tau mau ngomong apa, jadi saya kasih quotes aja:\n\n" +
+		"\"Learn to light a candle in the darkest moments of someone's life. Be the light that helps others see; " +
+		"it is what gives life its deepest significance\" - Roy T. Bennet",
 }
 
 var regularWelcomeMessage = "Halo, {user}!\n\n" +
 	"Selamat datang di {groupname}. Jangan lupa untuk baca pinned message, ya. Semoga hari mu menyenangkan."
 
 // sendWelcomeMessage literally does what it's written.
-func (d *Dependencies) sendWelcomeMessage(m *tb.Message) error {
+func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) error {
 	var msgToSend string = regularWelcomeMessage
 
 	if strconv.FormatInt(m.Chat.ID, 10) == d.TeknumID {
 		msgToSend = currentWelcomeMessages[randomNum()]
 	}
 
-	msg, err := d.Bot.Send(
-		m.Chat,
-		strings.NewReplacer(
-			"{user}",
-			"<a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
-				sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
-				"</a>",
-			"{groupname}",
-			sanitizeInput(m.Chat.Title),
-		).Replace(msgToSend),
-		&tb.SendOptions{
-			ReplyTo:               m,
-			ParseMode:             tb.ModeHTML,
-			DisableWebPagePreview: true,
-			DisableNotification:   false,
-			AllowWithoutReply:     true,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to send welcome message: %w", err)
+	for {
+		msg, err := d.Bot.Send(
+			m.Chat,
+			strings.NewReplacer(
+				"{user}",
+				"<a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
+					sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
+					"</a>",
+				"{groupname}",
+				sanitizeInput(m.Chat.Title),
+			).Replace(msgToSend),
+			&tb.SendOptions{
+				ReplyTo:               m,
+				ParseMode:             tb.ModeHTML,
+				DisableWebPagePreview: true,
+				DisableNotification:   false,
+				AllowWithoutReply:     true,
+			},
+		)
+		if err != nil {
+			if strings.Contains(err.Error(), "retry after") {
+				// Acquire the retry number
+				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
+				if err != nil {
+					// If there's an error, we'll just retry after 15 second
+					retry = 15
+				}
+
+				// Let's wait a bit and retry
+				time.Sleep(time.Second * time.Duration(retry))
+				continue
+			}
+
+			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				time.Sleep(time.Second * 10)
+				continue
+			}
+			return fmt.Errorf("failed to send welcome message: %w", err)
+		}
+
+		go d.deleteMessage(
+			ctx,
+			&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
+		)
+
+		break
 	}
 
-	go d.deleteMessage(
-		&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
-	)
 	return nil
 }
 

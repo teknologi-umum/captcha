@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 )
 
 // HandleError handles common errors.
-func HandleError(e error, logger *sentry.Client) {
+func HandleError(ctx context.Context, e error) {
 	if e == nil {
 		return
 	}
@@ -21,11 +22,12 @@ func HandleError(e error, logger *sentry.Client) {
 		log.Println(e)
 	}
 
-	_ = logger.CaptureException(
-		errors.WithStack(e),
-		&sentry.EventHint{OriginalException: e},
-		nil,
-	)
+	hub := sentry.GetHubFromContext(ctx)
+	if hub != nil {
+		hub.CaptureException(errors.WithStack(e))
+	} else {
+		sentry.CaptureException(errors.WithStack(e))
+	}
 }
 
 // HandleBotError is the handler for an error which a function has a
@@ -33,7 +35,7 @@ func HandleError(e error, logger *sentry.Client) {
 //
 // For other errors that don't have one of those struct instance, use
 // HandleError instead.
-func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) {
+func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 	if e == nil {
 		return
 	}
@@ -48,7 +50,13 @@ func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) 
 		&tb.SendOptions{ParseMode: tb.ModeHTML},
 	)
 
-	scope := sentry.NewScope()
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		sentry.CaptureException(errors.WithStack(e))
+		return
+	}
+
+	scope := hub.Scope()
 	scope.SetContext("tg:sender", map[string]interface{}{
 		"id":       m.Sender.ID,
 		"name":     m.Sender.FirstName + " " + m.Sender.LastName,
@@ -62,22 +70,14 @@ func HandleBotError(e error, logger *sentry.Client, bot *tb.Bot, m *tb.Message) 
 
 	if err != nil {
 		// Come on? Another error?
-		_ = logger.CaptureException(
-			errors.WithStack(err),
-			&sentry.EventHint{OriginalException: err},
-			scope,
-		)
+		hub.CaptureException(errors.WithStack(err))
 	}
 
-	_ = logger.CaptureException(
-		errors.WithStack(e),
-		&sentry.EventHint{OriginalException: e},
-		scope,
-	)
+	hub.CaptureException(errors.WithStack(e))
 }
 
 // HandleHttpError handles error that has a http.Request struct instance
-func HandleHttpError(e error, logger *sentry.Client, r *http.Request) {
+func HandleHttpError(ctx context.Context, e error, r *http.Request) {
 	if e == nil {
 		return
 	}
@@ -86,15 +86,17 @@ func HandleHttpError(e error, logger *sentry.Client, r *http.Request) {
 		log.Println(e)
 	}
 
-	scope := sentry.NewScope()
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		sentry.CaptureException(errors.WithStack(e))
+		return
+	}
+	
+	scope := hub.Scope()
 	scope.SetContext("http:request", map[string]interface{}{
 		"method": r.Method,
 		"url":    r.URL.String(),
 	})
 
-	_ = logger.CaptureException(
-		errors.WithStack(e),
-		&sentry.EventHint{OriginalException: e},
-		scope,
-	)
+	hub.CaptureException(errors.WithStack(e))
 }

@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"teknologi-umum-bot/shared"
@@ -12,13 +13,13 @@ import (
 
 // NonTextListener is the handler for every incoming payload that
 // is not a text format.
-func (d *Dependencies) NonTextListener(m *tb.Message) {
+func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
 	exists, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -34,14 +35,14 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 	// this specific user ID from the cache.
 	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(data, &captcha)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -63,7 +64,7 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		},
 	)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -72,13 +73,13 @@ func (d *Dependencies) NonTextListener(m *tb.Message) {
 		MessageID: strconv.Itoa(m.ID),
 	})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 }

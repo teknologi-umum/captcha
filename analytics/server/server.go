@@ -5,12 +5,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
+
 	"teknologi-umum-bot/analytics"
 	"teknologi-umum-bot/shared"
-	"time"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
@@ -94,7 +96,10 @@ func New(config Config) *http.Server {
 		AllowedMethods: []string{"GET", "OPTIONS"},
 	})
 
+	sentryMiddleware := sentryhttp.New(sentryhttp.Options{Repanic: false})
+
 	r := chi.NewRouter()
+	r.Use(sentryMiddleware.Handle)
 	r.Use(secureMiddleware.Handler)
 	r.Use(corsMiddleware.Handler)
 
@@ -103,7 +108,7 @@ func New(config Config) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Available routes:\n\n- GET /users\n- GET /hourly\n- GET /total"))
 		if err != nil {
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 	})
@@ -112,14 +117,14 @@ func New(config Config) *http.Server {
 		data, err := deps.GetAll(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(UserEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
@@ -129,7 +134,7 @@ func New(config Config) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(data)
 		if err != nil {
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 	})
@@ -138,14 +143,14 @@ func New(config Config) *http.Server {
 		data, err := deps.GetHourly(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(HourlyEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
@@ -155,7 +160,7 @@ func New(config Config) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(data)
 		if err != nil {
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 	})
@@ -164,14 +169,14 @@ func New(config Config) *http.Server {
 		data, err := deps.GetTotal(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
@@ -181,7 +186,7 @@ func New(config Config) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(data)
 		if err != nil {
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 	})
@@ -190,14 +195,14 @@ func New(config Config) *http.Server {
 		data, err := deps.GetDukunPoints(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
 		lastUpdated, err := deps.LastUpdated(DukunEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 
@@ -207,7 +212,7 @@ func New(config Config) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(data)
 		if err != nil {
-			shared.HandleHttpError(err, deps.Logger, r)
+			shared.HandleHttpError(r.Context(), err, r)
 			return
 		}
 	})

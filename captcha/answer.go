@@ -1,11 +1,14 @@
 package captcha
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
-	"teknologi-umum-bot/shared"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"teknologi-umum-bot/shared"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
@@ -14,13 +17,13 @@ import (
 
 // WaitForAnswer is the handler for listening to incoming user message.
 // It will uh... do a pretty long task of validating the input message.
-func (d *Dependencies) WaitForAnswer(m *tb.Message) {
+func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	// Check if the message author is in the captcha:users list or not
 	// If not, return
 	// If yes, check if the answer is correct or not
 	exists, err := d.userExists(m.Sender.ID, m.Chat.ID)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -40,20 +43,20 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			return
 		}
 
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	var captcha Captcha
 	err = json.Unmarshal(captchaData, &captcha)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
 	err = d.collectUserMessageAndCache(&captcha, m)
 	if err != nil {
-		shared.HandleBotError(errors.Wrap(err, "collecting user message"), d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, errors.Wrap(err, "collecting user message"), d.Bot, m)
 		return
 	}
 
@@ -85,8 +88,8 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			}
 
 			if strings.Contains(err.Error(), "retry after") {
-				// If this happen, probably we're in a spam bot surge and would
-				// probably doesn't care with the user captcha after all.
+				// If this happens, probably we're in a spam bot surge and would
+				// probably don't care with the user captcha after all.
 				// If they're human, they'll complete the captcha anyway,
 				// or would ask to be unbanned later.
 				// So, we'll just put a return here.
@@ -98,13 +101,13 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 				return
 			}
 
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 
 		err = d.collectAdditionalAndCache(&captcha, m, wrongMsg)
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 
@@ -113,15 +116,27 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 
 	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
+	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
+		Type:     "debug",
+		Category: "captcha.accepted",
+		Message:  "User completed a captcha",
+		Data: map[string]interface{}{
+			"user": m.Sender,
+			"chat": m.Chat,
+		},
+		Level:     sentry.LevelDebug,
+		Timestamp: time.Now(),
+	}, &sentry.BreadcrumbHint{})
+
 	// Congratulate the user, delete the message, then delete user from captcha:users
 	// Send the welcome message to the user.
-	err = d.sendWelcomeMessage(m)
+	err = d.sendWelcomeMessage(ctx, m)
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 
@@ -137,7 +152,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}
@@ -152,7 +167,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 			MessageID: msgID,
 		})
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, m)
+			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
 	}
@@ -163,7 +178,7 @@ func (d *Dependencies) WaitForAnswer(m *tb.Message) {
 		MessageID: captcha.QuestionID,
 	})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, d.Bot, m)
+		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
 }

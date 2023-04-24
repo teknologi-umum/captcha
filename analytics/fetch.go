@@ -18,7 +18,7 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, erro
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(c)
 
@@ -37,7 +37,7 @@ func (d *Dependency) GetUserDataFromDB(ctx context.Context) ([]GroupMember, erro
 	defer func(rows *sqlx.Rows) {
 		err := rows.Close()
 		if err != nil {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(rows)
 
@@ -74,7 +74,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(c)
 
@@ -93,7 +93,7 @@ func (d *Dependency) GetHourlyDataFromDB(ctx context.Context) ([]HourlyMap, erro
 	defer func(rows *sqlx.Rows) {
 		err := rows.Close()
 		if err != nil {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(rows)
 

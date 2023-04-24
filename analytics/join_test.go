@@ -1,8 +1,10 @@
 package analytics_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/telebot.v3"
 )
 
@@ -20,5 +22,7 @@ func TestNewUser(t *testing.T) {
 		}
 	}()
 
-	dependency.NewUser(&tb.Message{Chat: &tb.Chat{ID: 10}}, user)
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	dependency.NewUser(ctx, &tb.Message{Chat: &tb.Chat{ID: 10}}, user)
 }

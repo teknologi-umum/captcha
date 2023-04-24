@@ -1,6 +1,7 @@
 package captcha
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 )
 
 // deleteMessage creates a timer of one minute to delete a certain message.
-func (d *Dependencies) deleteMessage(message *tb.StoredMessage) {
+func (d *Dependencies) deleteMessage(ctx context.Context, message *tb.StoredMessage) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		for {
@@ -35,7 +36,7 @@ func (d *Dependencies) deleteMessage(message *tb.StoredMessage) {
 					continue
 				}
 
-				shared.HandleError(err, d.Logger)
+				shared.HandleError(ctx, err)
 			}
 
 			break

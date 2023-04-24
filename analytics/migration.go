@@ -37,7 +37,7 @@ func (d *Dependency) Migrate(ctx context.Context) error {
 	defer func(c *sqlx.Conn) {
 		err := c.Close()
 		if err != nil && !errors.Is(err, sql.ErrConnDone) {
-			shared.HandleError(err, d.Logger)
+			shared.HandleError(ctx, err)
 		}
 	}(c)
 

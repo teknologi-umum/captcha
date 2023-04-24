@@ -30,7 +30,6 @@ import (
 type Dependency struct {
 	Memory      *bigcache.BigCache
 	Bot         *tb.Bot
-	Logger      *sentry.Client
 	DB          *sqlx.DB
 	Mongo       *mongo.Client
 	MongoDBName string
@@ -49,13 +48,11 @@ func New(deps Dependency) *Dependency {
 	analyticsDeps := &analytics.Dependency{
 		Memory:   deps.Memory,
 		Bot:      deps.Bot,
-		Logger:   deps.Logger,
 		DB:       deps.DB,
 		TeknumID: deps.TeknumID,
 	}
 	return &Dependency{
 		Bot:         deps.Bot,
-		Logger:      deps.Logger,
 		Memory:      deps.Memory,
 		DB:          deps.DB,
 		Mongo:       deps.Mongo,
@@ -64,7 +61,6 @@ func New(deps Dependency) *Dependency {
 		captcha: &captcha.Dependencies{
 			Memory:    deps.Memory,
 			Bot:       deps.Bot,
-			Logger:    deps.Logger,
 			Analytics: analyticsDeps,
 			TeknumID:  deps.TeknumID,
 		},
@@ -80,18 +76,19 @@ func New(deps Dependency) *Dependency {
 			Memory: deps.Memory,
 			DB:     deps.DB,
 			Bot:    deps.Bot,
-			Logger: deps.Logger,
 		},
 	}
 }
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
-	d.captcha.WaitForAnswer(c.Message())
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	d.captcha.WaitForAnswer(ctx, c.Message())
 
 	err := d.analytics.NewMessage(c.Message())
 	if err != nil {
-		shared.HandleError(err, d.Logger)
+		shared.HandleError(ctx, err)
 	}
 
 	return nil
@@ -105,15 +102,17 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+
 	underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
 	if err != nil {
-		shared.HandleError(err, d.Logger)
+		shared.HandleError(ctx, err)
 	}
 
 	if underAttack {
 		err := d.underAttack.Kicker(c)
 		if err != nil {
-			shared.HandleBotError(err, d.Logger, d.Bot, c.Message())
+			shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		}
 		return nil
 	}
@@ -125,9 +124,9 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		tempSender = c.Message().Sender
 	}
 
-	go d.analytics.NewUser(c.Message(), tempSender)
+	go d.analytics.NewUser(ctx, c.Message(), tempSender)
 
-	d.captcha.CaptchaUserJoin(c.Message())
+	d.captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil
 }
@@ -135,11 +134,13 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 // OnNonTextHandler meant to handle anything else
 // than an incoming text message.
 func (d *Dependency) OnNonTextHandler(c tb.Context) error {
-	d.captcha.NonTextListener(c.Message())
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	d.captcha.NonTextListener(ctx, c.Message())
 
 	err := d.analytics.NewMessage(c.Message())
 	if err != nil {
-		shared.HandleError(err, d.Logger)
+		shared.HandleError(ctx, err)
 	}
 
 	return nil
@@ -148,13 +149,17 @@ func (d *Dependency) OnNonTextHandler(c tb.Context) error {
 // OnUserLeftHandler handles during an event in which
 // a user left the group.
 func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
-	d.captcha.CaptchaUserLeave(c.Message())
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	d.captcha.CaptchaUserLeave(ctx, c.Message())
 	return nil
 }
 
 // AsciiCmdHandler handle the /ascii command.
 func (d *Dependency) AsciiCmdHandler(c tb.Context) error {
-	d.ascii.Ascii(c.Message())
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	d.ascii.Ascii(ctx, c.Message())
 	return nil
 }
 
@@ -173,15 +178,17 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+
 	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
 	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
-		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
+		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 		return nil
 	}
 
 	_, err = c.Bot().Send(c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
+		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 	}
 
 	return nil
@@ -193,9 +200,11 @@ func (d *Dependency) CukupHandler(c tb.Context) error {
 		return nil
 	}
 
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
 	_, err := c.Bot().Send(c.Chat(), &tb.Photo{File: tb.FromURL("https://i.ibb.co/WvynnPb/ezgif-4-13e23b17f1.jpg")})
 	if err != nil {
-		shared.HandleBotError(err, d.Logger, c.Bot(), c.Message())
+		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 	}
 
 	return nil
@@ -203,12 +212,16 @@ func (d *Dependency) CukupHandler(c tb.Context) error {
 
 // EnableUnderAttackModeHandler provides a handler for /underattack command.
 func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
-	return d.underAttack.EnableUnderAttackModeHandler(c)
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	return d.underAttack.EnableUnderAttackModeHandler(ctx, c)
 }
 
 // DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
 func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
-	return d.underAttack.DisableUnderAttackModeHandler(c)
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	return d.underAttack.DisableUnderAttackModeHandler(ctx, c)
 }
 
 func (d *Dependency) SetirHandler(c tb.Context) error {
