@@ -6,8 +6,9 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"teknologi-umum-bot/utils"
 	"time"
+
+	"teknologi-umum-bot/utils"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -22,7 +23,7 @@ var currentWelcomeMessages = [11]string{
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
 		"Ngga perlu pasang profile picture dan username kayak grup-grup sebelah.",
 	"Hai {user}! \n\n" +
-		"Selamat 1datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
+		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. " +
 		"Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.",
 	"Welcome {user}!\n\n" +
