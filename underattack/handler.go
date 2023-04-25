@@ -38,7 +38,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 	}
 
 	if !utils.IsAdmin(admins, c.Sender()) {
-		// It turns out, for contigency reasons, people should be aware that the command and bot
+		// It turns out, for contingency reasons, people should be aware that the command and bot
 		// is working, yet the bot is rate limited by Telegram because of sending too many messages
 		// at one. Hence, we should retry every enabling command for under attack.
 		for {
@@ -76,6 +76,12 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 			break
 		}
 
+		return nil
+	}
+
+	// Rate limit per group. Drop if limited
+	allowedThrough := RateLimitCall(c.Chat().ID, time.Second*10)
+	if !allowedThrough {
 		return nil
 	}
 
@@ -253,6 +259,12 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 			return nil
 		}
 
+		return nil
+	}
+
+	// Rate limit per group. Drop if limited
+	allowedThrough := RateLimitCall(c.Chat().ID, time.Second*10)
+	if !allowedThrough {
 		return nil
 	}
 
