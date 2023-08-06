@@ -1,6 +1,4 @@
-FROM golang:1.20-bullseye AS builder
-
-ARG PORT=8080
+FROM golang:1.20-bookworm AS builder
 
 WORKDIR /app
 
@@ -8,7 +6,9 @@ COPY . .
 
 RUN go build .
 
-FROM debian:bullseye AS runtime
+FROM debian:bookworm-slim AS runtime
+
+ARG PORT=8080
 
 WORKDIR /app
 

@@ -74,12 +74,4 @@ jobs:
           MONGO_DBNAME: captcha
           TZ: UTC
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: go
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
       - uses: codecov/codecov-action@v3
