@@ -57,9 +57,8 @@ var currentWelcomeMessages = [11]string{
 		"kuis-kuis yang ada. Kebanyakan kuisnya anonim kok, jadi kamu nggak perlu takut salah-benar.\n\n" +
 		"Semoga harimu menyenangkan!",
 	"Hai {user}!\n\n" +
-		"Saya nggak tau mau ngomong apa, jadi saya kasih quotes aja:\n\n" +
-		"\"Learn to light a candle in the darkest moments of someone's life. Be the light that helps others see; " +
-		"it is what gives life its deepest significance\" - Roy T. Bennet",
+		"Yeay! Kamu bisa menyelesaikan captcha super aneh itu. Selamat datang di {groupname} ya.\n\n" +
+		"Cerita sedikit soal diri kamu dong, sekarang kerjaannya apa dan suka melakukan apa pas senggang?",
 }
 
 var regularWelcomeMessage = "Halo, {user}!\n\n" +
