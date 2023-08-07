@@ -45,7 +45,7 @@ const (
 
 // DefaultQuestion contains the default captcha questions.
 var DefaultQuestion = "Halo, {user}!\n\n" +
-	"Sebelum lanjut, selesaikan captcha ini dulu agar bisa chat di grup ini. Kirim pesan ke grup ini seperti teks besar yang kamu lihat di bawah pesan ini. Teks tersebut hanya berupa kombinasi angka 1-9 dengan huruf V, W, X, dan Y, jangan salah ketik ya!\n\n" +
+	"Sebelum lanjut, selesaikan captcha ini dulu agar bisa chat di grup ini. Ubah teks besar yang kamu lihat dibawah pesan ini jadi teks biasa. Teks tersebut hanya berupa kombinasi angka 1-9 dengan huruf V, W, X, dan Y, jangan salah ketik ya!\n\n" +
 	"Ini teksnya 👇, kamu punya waktu 1 menit dari sekarang! Kalau tulisannya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
 	"<pre>{captcha}</pre>"
 
