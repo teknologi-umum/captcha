@@ -38,7 +38,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
       MONGO_INITDB_DATABASE: captcha
     healthcheck:
-      test: "echo 'db.runCommand({serverStatus:1}).ok' | mongosh --nodb mongodb://root@password:mongo:27017/test --quiet"
+      test: "echo 'db.runCommand(\"ping\").ok' | mongosh mongodb://localhost:27017/test --quiet"
       interval: 30s
       timeout: 20s
       retries: 5
