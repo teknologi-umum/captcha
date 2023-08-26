@@ -156,7 +156,7 @@ func Cleanup() {
 		log.Fatal(err)
 	}
 
-	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("dukun")
+	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("suhu")
 	err = collection.Drop(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -346,7 +346,7 @@ func Seed(ctx context.Context) error {
 	}
 
 	// Feed some dukun
-	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("dukun")
+	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("suhu")
 	_, err = collection.InsertOne(ctx, dukun.Dukun{
 		UserID:    1,
 		FirstName: "Jason",

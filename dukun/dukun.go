@@ -22,7 +22,7 @@ import (
 // 	  createdAt: Date,
 // 	  updatedAt: Date
 // 	},
-// 	{ collection: "dukun" }
+// 	{ collection: "suhu" }
 // );
 
 type Dependency struct {
