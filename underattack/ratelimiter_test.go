@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"teknologi-umum-bot/underattack"
+	"teknologi-umum-captcha/underattack"
 )
 
 func TestRateLimitCall(t *testing.T) {

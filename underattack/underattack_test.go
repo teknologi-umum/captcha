@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"teknologi-umum-bot/underattack"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/underattack"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"

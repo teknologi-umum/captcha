@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"teknologi-umum-bot/shared"
+
+	"teknologi-umum-captcha/shared"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"

@@ -91,7 +91,7 @@ func HandleHttpError(ctx context.Context, e error, r *http.Request) {
 		sentry.CaptureException(errors.WithStack(e))
 		return
 	}
-	
+
 	scope := hub.Scope()
 	scope.SetContext("http:request", map[string]interface{}{
 		"method": r.Method,

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"teknologi-umum-bot/utils"
+	"teknologi-umum-captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )

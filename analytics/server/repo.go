@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
-	"teknologi-umum-bot/analytics"
-	"teknologi-umum-bot/dukun"
 	"time"
+
+	"teknologi-umum-captcha/analytics"
+	"teknologi-umum-captcha/dukun"
 
 	"github.com/allegro/bigcache/v3"
 )

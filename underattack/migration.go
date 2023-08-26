@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"teknologi-umum-bot/shared"
 	"time"
+
+	"teknologi-umum-captcha/shared"
 
 	"github.com/jmoiron/sqlx"
 )

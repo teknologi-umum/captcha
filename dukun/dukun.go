@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// MongoDB collection schema as taken from
+// MongoDB's collection schema as taken from
 // https://github.com/teknologi-umum/bot/blob/5b6df1e179b878f597efde10e20612d04ba0df02/src/services/dukun/index.js#L19-L31
 //
 // const dukunSchema = new mongoose.Schema(
@@ -22,7 +22,7 @@ import (
 // 	  createdAt: Date,
 // 	  updatedAt: Date
 // 	},
-// 	{ collection: "dukun" }
+// 	{ collection: "suhu" }
 // );
 
 type Dependency struct {
@@ -42,7 +42,7 @@ type Dukun struct {
 }
 
 func (d *Dependency) GetAllDukun(ctx context.Context) ([]Dukun, error) {
-	collection := d.Mongo.Database(d.DBName).Collection("dukun")
+	collection := d.Mongo.Database(d.DBName).Collection("suhu")
 	cols, err := collection.Find(ctx, bson.D{{}})
 	if err != nil {
 		return []Dukun{}, err

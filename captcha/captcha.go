@@ -1,7 +1,7 @@
 package captcha
 
 import (
-	"teknologi-umum-bot/analytics"
+	"teknologi-umum-captcha/analytics"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"

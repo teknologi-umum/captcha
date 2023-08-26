@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"teknologi-umum-bot/dukun"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/dukun"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -53,7 +54,7 @@ func TestMain(m *testing.M) {
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cleanupCancel()
 
-	collection := db.Database(dependency.DBName).Collection("dukun")
+	collection := db.Database(dependency.DBName).Collection("suhu")
 	err = collection.Drop(cleanupCtx)
 	if err != nil {
 		log.Fatal(err)
@@ -72,7 +73,7 @@ func seed() error {
 	defer cancel()
 
 	// Feed some dukun
-	collection := dependency.Mongo.Database(dependency.DBName).Collection("dukun")
+	collection := dependency.Mongo.Database(dependency.DBName).Collection("suhu")
 	_, err := collection.InsertOne(ctx, dukun.Dukun{
 		UserID:    1,
 		FirstName: "Jason",

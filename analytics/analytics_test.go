@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"teknologi-umum-bot/analytics"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/analytics"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"

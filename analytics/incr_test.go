@@ -2,9 +2,10 @@ package analytics_test
 
 import (
 	"context"
-	"teknologi-umum-bot/analytics"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/analytics"
 )
 
 func TestIncrementUsrDB(t *testing.T) {

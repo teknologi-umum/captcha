@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"teknologi-umum-bot/analytics/server"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/analytics/server"
 )
 
 func TestGetAll(t *testing.T) {
