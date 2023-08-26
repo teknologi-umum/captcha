@@ -22,8 +22,8 @@ jobs:
           POSTGRES_DB: captcha
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       cache:
         image: redis:7
@@ -31,8 +31,8 @@ jobs:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       mongo:
         image: mongo:6
@@ -44,8 +44,8 @@ jobs:
           MONGO_INITDB_DATABASE: captcha
         options: >-
           --health-cmd "echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p password --quiet"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
     steps:
       - name: Checkout code
