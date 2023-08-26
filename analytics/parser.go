@@ -5,8 +5,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"reflect"
-	"teknologi-umum-bot/utils"
 	"time"
+
+	"teknologi-umum-captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )

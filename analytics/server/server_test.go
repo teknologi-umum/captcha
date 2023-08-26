@@ -6,11 +6,12 @@ import (
 	"errors"
 	"log"
 	"os"
-	"teknologi-umum-bot/analytics"
-	"teknologi-umum-bot/analytics/server"
-	"teknologi-umum-bot/dukun"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/analytics"
+	"teknologi-umum-captcha/analytics/server"
+	"teknologi-umum-captcha/dukun"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"

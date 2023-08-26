@@ -3,8 +3,9 @@ package ascii
 import (
 	"context"
 	"errors"
-	"teknologi-umum-bot/shared"
-	"teknologi-umum-bot/utils"
+
+	"teknologi-umum-captcha/shared"
+	"teknologi-umum-captcha/utils"
 
 	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/telebot.v3"

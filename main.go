@@ -27,11 +27,11 @@ import (
 	"time"
 
 	// Internals
-	"teknologi-umum-bot/analytics"
-	"teknologi-umum-bot/analytics/server"
-	"teknologi-umum-bot/cmd"
-	"teknologi-umum-bot/shared"
-	"teknologi-umum-bot/underattack"
+	"teknologi-umum-captcha/analytics"
+	"teknologi-umum-captcha/analytics/server"
+	"teknologi-umum-captcha/cmd"
+	"teknologi-umum-captcha/shared"
+	"teknologi-umum-captcha/underattack"
 
 	// Database and cache
 	"github.com/allegro/bigcache/v3"
@@ -265,7 +265,7 @@ func main() {
 	b.Handle("/underattack", deps.EnableUnderAttackModeHandler)
 	b.Handle("/disableunderattack", deps.DisableUnderAttackModeHandler)
 
-	// Badword handlers
+	// Bad word handlers
 	b.Handle("/badwords", deps.BadWordHandler)
 	b.Handle("/cukup", deps.CukupHandler)
 

@@ -2,8 +2,9 @@ package utils_test
 
 import (
 	"strings"
-	"teknologi-umum-bot/utils"
 	"testing"
+
+	"teknologi-umum-captcha/utils"
 )
 
 func TestGenerateAscii(t *testing.T) {

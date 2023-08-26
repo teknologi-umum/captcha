@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"teknologi-umum-bot/shared"
 	"time"
+
+	"teknologi-umum-captcha/shared"
 
 	tb "gopkg.in/telebot.v3"
 )
