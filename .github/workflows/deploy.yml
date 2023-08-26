@@ -9,8 +9,8 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    container: golang:1.20
+    timeout-minutes: 15
+    container: golang:1
     services:
       db:
         image: postgres:15
@@ -26,7 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       cache:
-        image: redis:6
+        image: redis:7
         ports:
           - 6379:6379
         options: >-
@@ -35,7 +35,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       mongo:
-        image: mongo:5
+        image: mongo:6
         ports:
           - 27017:27017
         env:
@@ -117,7 +117,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1
