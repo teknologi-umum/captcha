@@ -43,7 +43,7 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: password
           MONGO_INITDB_DATABASE: captcha
         options: >-
-          --health-cmd "echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p password --quiet"
+          --health-cmd "echo 'db.runCommand({serverStatus:1}).ok' | mongosh --nodb mongodb://root@password:mongo:27017/test --quiet"
           --health-interval 30s
           --health-timeout 20s
           --health-retries 5
