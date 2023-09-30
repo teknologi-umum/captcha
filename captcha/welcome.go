@@ -17,7 +17,7 @@ import (
 // that have a dynamic user value, written as {user}.
 //
 // This should be sent to the user with a random pick.
-var currentWelcomeMessages = [11]string{
+var currentWelcomeMessages = [13]string{
 	"Halo, {user}\n\n" +
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
@@ -26,11 +26,13 @@ var currentWelcomeMessages = [11]string{
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. " +
 		"Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.",
-	"Welcome {user}!\n\n" +
-		"Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.",
+	"Hi {user}!\n\n" +
+		"Bulan Oktober ini adalah bulan untuk merayakan <a href=\"https://hacktoberfest.com\">Hacktoberfest</a>. " +
+		"Kalau kamu programmer juga, ayo ikut berpartisipasi! Bisa mulai dengan browsing https://hacktoberfest.teknologiumum.com untuk " +
+		"cari hal-hal mudah yang bisa dikerjakan.\n\n" +
+		"Jangan takut untuk kasih liat kodemu ke orang lain! Kalau kamu kesulitan, tanyakan saja di grup ini. Orangnya baik-baik kok!",
 	"Haloo {user}!\n\n" +
-		"Selamat datang di grup {groupname}, yuk langsung matiin notification biar hidup kamu ngga sengsara. " +
-		"Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!",
+		"Agar silaturahmi tidak terputus, bolehkah pinjam seratus?",
 	"Hai, {user}!\n\n" +
 		"Selamat datang di grup {groupname}!\n\n" +
 		"Coba ketik (dan kirim) /joke@TeknologiUmumBot deh, nanti grup ini tiba-tiba hidup.\n\n" +
@@ -48,6 +50,11 @@ var currentWelcomeMessages = [11]string{
 	"您好 {user}! \n\n" +
 		"欢迎您在 {groupname}, 我们每天都很嘈杂, 请把你的筒子声音关掉, " +
 		"您要问什么, 请问吧. 希望您很高兴在这里",
+	"Hi {user}!\n\n" +
+		"Bulan Oktober ini adalah bulan untuk merayakan <a href=\"https://hacktoberfest.com\">Hacktoberfest</a>. " +
+		"Kalau kamu programmer juga, ayo ikut berpartisipasi! Bisa mulai dengan browsing https://hacktoberfest.teknologiumum.com untuk " +
+		"cari hal-hal mudah yang bisa dikerjakan.\n\n" +
+		"Jangan takut untuk kasih liat kodemu ke orang lain! Kalau kamu kesulitan, tanyakan saja di grup ini. Orangnya baik-baik kok!",
 	"こんにちは！\n\n" +
 		"Tenang, ini bukan grup jejepangan kok. Tapi kalau mau ngomongin topik apapun, dari Jepang, Korea, sampe negara yang " +
 		"nggak banyak orang tau boleh banget. Ini grup untuk bahas hal-hal yang dianggap OOT di grup lain.\n\n" +
@@ -56,6 +63,11 @@ var currentWelcomeMessages = [11]string{
 		"Kalau kamu lagi senggang, dan kebetulan kamu adalah programmer, coba cek pinned message dan coba kerjakan " +
 		"kuis-kuis yang ada. Kebanyakan kuisnya anonim kok, jadi kamu nggak perlu takut salah-benar.\n\n" +
 		"Semoga harimu menyenangkan!",
+	"Hi {user}!\n\n" +
+		"Bulan Oktober ini adalah bulan untuk merayakan <a href=\"https://hacktoberfest.com\">Hacktoberfest</a>. " +
+		"Kalau kamu programmer juga, ayo ikut berpartisipasi! Bisa mulai dengan browsing https://hacktoberfest.teknologiumum.com untuk " +
+		"cari hal-hal mudah yang bisa dikerjakan.\n\n" +
+		"Jangan takut untuk kasih liat kodemu ke orang lain! Kalau kamu kesulitan, tanyakan saja di grup ini. Orangnya baik-baik kok!",
 	"Hai {user}!\n\n" +
 		"Yeay! Kamu bisa menyelesaikan captcha super aneh itu. Selamat datang di {groupname} ya.\n\n" +
 		"Cerita sedikit soal diri kamu dong, sekarang kerjaannya apa dan suka melakukan apa pas senggang?",
