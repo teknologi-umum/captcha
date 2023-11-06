@@ -22,7 +22,7 @@ import (
 // 	  createdAt: Date,
 // 	  updatedAt: Date
 // 	},
-// 	{ collection: "suhu" }
+// 	{ collection: "dukun" }
 // );
 
 type Dependency struct {
@@ -42,7 +42,7 @@ type Dukun struct {
 }
 
 func (d *Dependency) GetAllDukun(ctx context.Context) ([]Dukun, error) {
-	collection := d.Mongo.Database(d.DBName).Collection("suhu")
+	collection := d.Mongo.Database(d.DBName).Collection("dukun")
 	cols, err := collection.Find(ctx, bson.D{{}})
 	if err != nil {
 		return []Dukun{}, err

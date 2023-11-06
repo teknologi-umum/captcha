@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cleanupCancel()
 
-	collection := db.Database(dependency.DBName).Collection("suhu")
+	collection := db.Database(dependency.DBName).Collection("dukun")
 	err = collection.Drop(cleanupCtx)
 	if err != nil {
 		log.Fatal(err)
@@ -73,7 +73,7 @@ func seed() error {
 	defer cancel()
 
 	// Feed some dukun
-	collection := dependency.Mongo.Database(dependency.DBName).Collection("suhu")
+	collection := dependency.Mongo.Database(dependency.DBName).Collection("dukun")
 	_, err := collection.InsertOne(ctx, dukun.Dukun{
 		UserID:    1,
 		FirstName: "Jason",
