@@ -3,6 +3,7 @@ package underattack_test
 import (
 	"context"
 	"database/sql"
+	"github.com/getsentry/sentry-go"
 	"log"
 	"os"
 	"testing"
@@ -42,6 +43,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	_ = sentry.Init(sentry.ClientOptions{})
 
 	dependency = &underattack.Dependency{
 		Memory: memory,

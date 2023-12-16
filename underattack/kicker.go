@@ -1,7 +1,9 @@
 package underattack
 
 import (
+	"context"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"strconv"
 	"strings"
 	"time"
@@ -9,7 +11,10 @@ import (
 	tb "gopkg.in/telebot.v3"
 )
 
-func (d *Dependency) Kicker(c tb.Context) error {
+func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
+	span := sentry.StartSpan(ctx, "underattack.kicker")
+	defer span.Finish()
+	
 	for {
 		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
 		if err != nil {

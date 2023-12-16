@@ -19,6 +19,11 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 		return nil
 	}
 
+	span := sentry.StartSpan(ctx, "bot.enable_under_attack_mode_handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha EnableUnderAttackModeHandler"))
+	defer span.Finish()
+	ctx = span.Context()
+
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "user",
 		Category: "command.triggered",
@@ -238,6 +243,11 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 	if c.Message().Private() || c.Sender().IsBot {
 		return nil
 	}
+
+	span := sentry.StartSpan(ctx, "bot.disable_under_attack_mode_handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha DisableUnderAttackModeHandler"))
+	defer span.Finish()
+	ctx = span.Context()
 
 	admins, err := c.Bot().AdminsOf(c.Chat())
 	if err != nil {

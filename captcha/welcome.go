@@ -3,6 +3,7 @@ package captcha
 import (
 	"context"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -63,6 +64,9 @@ var regularWelcomeMessage = "Halo, {user}!\n\n" +
 
 // sendWelcomeMessage literally does what it's written.
 func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) error {
+	span := sentry.StartSpan(ctx, "captcha.send_welcome_message")
+	defer span.Finish()
+	
 	var msgToSend string = regularWelcomeMessage
 
 	if strconv.FormatInt(m.Chat.ID, 10) == d.TeknumID {

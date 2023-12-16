@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"teknologi-umum-captcha/shared"
@@ -17,12 +16,9 @@ import (
 )
 
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.
-func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message, cond *sync.Cond) {
+func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 	// Let's start the timer, shall we?
 	t := time.NewTimer(Timeout)
-
-	// We need to wait for the timer to expire.
-	cond.L.Lock()
 
 	for _, ok := <-t.C; ok; {
 		// Now, when the timer is already finished, we want to check
@@ -149,12 +145,8 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message, co
 				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
-
-			// We're done here. Let's send the value to the done channel.
 		}
 
 		break
 	}
-	cond.Broadcast()
-	cond.L.Unlock()
 }

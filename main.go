@@ -86,10 +86,12 @@ func init() {
 func main() {
 	// Setup Sentry for error handling.
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              os.Getenv("SENTRY_DSN"),
-		AttachStacktrace: true,
-		Debug:            os.Getenv("ENVIRONMENT") == "development",
-		Environment:      os.Getenv("ENVIRONMENT"),
+		Dsn:                os.Getenv("SENTRY_DSN"),
+		Debug:              os.Getenv("ENVIRONMENT") == "development",
+		Environment:        os.Getenv("ENVIRONMENT"),
+		SampleRate:         1.0,
+		TracesSampleRate:   0.2,
+		ProfilesSampleRate: 0.1,
 	})
 	if err != nil {
 		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))

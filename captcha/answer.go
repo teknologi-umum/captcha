@@ -32,6 +32,11 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		return
 	}
 
+	span := sentry.StartSpan(ctx, "captcha.wait_for_answer", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha WaitForAnswer"))
+	defer span.Finish()
+	ctx = span.Context()
+
 	// Check if the answer is correct or not.
 	// If not, ask them to give the correct answer and time remaining.
 	// If yes, delete the message and remove the user from the captcha:users list.

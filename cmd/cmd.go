@@ -105,13 +105,18 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 
+	span := sentry.StartSpan(ctx, "bot.on_user_join_handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha OnUserJoinHandler"))
+	defer span.Finish()
+	ctx = span.Context()
+
 	underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
 	if err != nil {
 		shared.HandleError(ctx, err)
 	}
 
 	if underAttack {
-		err := d.underAttack.Kicker(c)
+		err := d.underAttack.Kicker(ctx, c)
 		if err != nil {
 			shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		}
@@ -164,7 +169,7 @@ func (d *Dependency) AsciiCmdHandler(c tb.Context) error {
 	return nil
 }
 
-// BadWordsCmdHandler handle the /badwords command.
+// BadWordHandler handle the /badwords command.
 // This can only be accessed by some users on Telegram
 // and only valid for private chats.
 func (d *Dependency) BadWordHandler(c tb.Context) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/getsentry/sentry-go"
 	"strconv"
 	"time"
 
@@ -12,6 +13,10 @@ import (
 
 // AreWe ...on under attack mode?
 func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
+	span := sentry.StartSpan(ctx, "underattack.are_we", sentry.WithTransactionName("Are we under attack?"))
+	defer span.Finish()
+	ctx = span.Context()
+
 	underAttackCache, err := d.Memory.Get("underattack:" + strconv.FormatInt(chatID, 10))
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		return false, err
