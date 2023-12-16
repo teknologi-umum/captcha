@@ -1,8 +1,9 @@
 package utils_test
 
 import (
-	"teknologi-umum-bot/utils"
 	"testing"
+
+	"teknologi-umum-captcha/utils"
 )
 
 func TestIsIn(t *testing.T) {

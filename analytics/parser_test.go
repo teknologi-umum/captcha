@@ -1,8 +1,9 @@
 package analytics_test
 
 import (
-	"teknologi-umum-bot/analytics"
 	"testing"
+
+	"teknologi-umum-captcha/analytics"
 
 	tb "gopkg.in/telebot.v3"
 )

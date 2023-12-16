@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// MongoDB collection schema as taken from
+// MongoDB's collection schema as taken from
 // https://github.com/teknologi-umum/bot/blob/5b6df1e179b878f597efde10e20612d04ba0df02/src/services/dukun/index.js#L19-L31
 //
 // const dukunSchema = new mongoose.Schema(

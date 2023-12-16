@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"teknologi-umum-bot/utils"
+	"teknologi-umum-captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -18,7 +18,7 @@ import (
 // that have a dynamic user value, written as {user}.
 //
 // This should be sent to the user with a random pick.
-var currentWelcomeMessages = [11]string{
+var currentWelcomeMessages = [10]string{
 	"Halo, {user}\n\n" +
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Mau ngomongin apa aja juga boleh kok. " +
@@ -27,11 +27,8 @@ var currentWelcomeMessages = [11]string{
 		"Selamat datang di grup {groupname}. Disini kita berisik banget, jadi langsung matiin notificationnya ya. " +
 		"Disini sebenernya nggak ada aturan, tapi ya wajar-wajar aja lah. Jangan bikin kita diciduk tukang bakso bawa HT. " +
 		"Kalo mau OOT juga ga perlu izin, toh ini grup buat OOT.",
-	"Welcome {user}!\n\n" +
-		"Saya ngga tau mau ngomong apa lagi selain jangan lupa matiin notification, grup ini berisik banget.",
 	"Haloo {user}!\n\n" +
-		"Selamat datang di grup {groupname}, yuk langsung matiin notification biar hidup kamu ngga sengsara. " +
-		"Tapi grup ini akur kok, sejauh ini ngga pernah ada drama. Semoga betah ya!",
+		"Agar silaturahmi tidak terputus, bolehkah pinjam seratus?",
 	"Hai, {user}!\n\n" +
 		"Selamat datang di grup {groupname}!\n\n" +
 		"Coba ketik (dan kirim) /joke@TeknologiUmumBot deh, nanti grup ini tiba-tiba hidup.\n\n" +
@@ -58,9 +55,8 @@ var currentWelcomeMessages = [11]string{
 		"kuis-kuis yang ada. Kebanyakan kuisnya anonim kok, jadi kamu nggak perlu takut salah-benar.\n\n" +
 		"Semoga harimu menyenangkan!",
 	"Hai {user}!\n\n" +
-		"Saya nggak tau mau ngomong apa, jadi saya kasih quotes aja:\n\n" +
-		"\"Learn to light a candle in the darkest moments of someone's life. Be the light that helps others see; " +
-		"it is what gives life its deepest significance\" - Roy T. Bennet",
+		"Yeay! Kamu bisa menyelesaikan captcha super aneh itu. Selamat datang di {groupname} ya.\n\n" +
+		"Cerita sedikit soal diri kamu dong, sekarang kerjaannya apa dan suka melakukan apa pas senggang?",
 }
 
 var regularWelcomeMessage = "Halo, {user}!\n\n" +

@@ -8,9 +8,10 @@ import (
 	"github.com/getsentry/sentry-go"
 	"strconv"
 	"strings"
-	"teknologi-umum-bot/shared"
-	"teknologi-umum-bot/utils"
 	"time"
+
+	"teknologi-umum-captcha/shared"
+	"teknologi-umum-captcha/utils"
 
 	"github.com/allegro/bigcache/v3"
 
@@ -45,8 +46,8 @@ const (
 
 // DefaultQuestion contains the default captcha questions.
 var DefaultQuestion = "Halo, {user}!\n\n" +
-	"Sebelum lanjut, selesaikan captcha ini dulu ya. Kombinasi angka dengan huruf V, W, X, dan Y. Kamu punya waktu 1 menit dari sekarang!\n\n" +
-	"Kalau tulisannya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
+	"Sebelum lanjut, selesaikan captcha ini dulu agar bisa chat di grup ini. Ubah teks besar yang kamu lihat dibawah pesan ini menjadi teks biasa. Teks tersebut hanya berupa kombinasi angka 1-9 dengan huruf V, W, X, dan Y, jangan salah ketik ya!\n\n" +
+	"Ini teksnya 👇, kamu punya waktu 1 menit dari sekarang! Kalau tulisannya pecah, dirotate layarnya kebentuk landscape ya.\n\n" +
 	"<pre>{captcha}</pre>"
 
 // CaptchaUserJoin is the most frustrating function that I've written

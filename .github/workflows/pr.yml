@@ -10,10 +10,10 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    container: golang:1.21-bookworm
+    container: golang:1
     services:
       db:
-        image: postgres:15-bookworm
+        image: postgres:15
         ports:
           - 5432:5432
         env:
@@ -22,20 +22,20 @@ jobs:
           POSTGRES_DB: captcha
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       cache:
-        image: redis:7-bookworm
+        image: redis:7
         ports:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       mongo:
-        image: mongo:5
+        image: mongo:6
         ports:
           - 27017:27017
         env:
@@ -43,9 +43,9 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: password
           MONGO_INITDB_DATABASE: captcha
         options: >-
-          --health-cmd "echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p password --quiet"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh mongodb://localhost:27017/test --quiet"
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
     steps:
       - name: Checkout code
@@ -73,13 +73,5 @@ jobs:
           MONGO_URL: mongodb://root:password@mongo:27017/captcha?useNewUrlParser=true&useUnifiedTopology=true&authSource=admin
           MONGO_DBNAME: captcha
           TZ: UTC
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: go
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
 
       - uses: codecov/codecov-action@v3

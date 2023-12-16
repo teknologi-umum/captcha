@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"github.com/getsentry/sentry-go"
 	"strconv"
-	"teknologi-umum-bot/shared"
-	"teknologi-umum-bot/utils"
 	"time"
+
+	"teknologi-umum-captcha/shared"
+	"teknologi-umum-captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )

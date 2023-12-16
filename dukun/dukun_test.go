@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"teknologi-umum-bot/dukun"
 	"testing"
 	"time"
+
+	"teknologi-umum-captcha/dukun"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

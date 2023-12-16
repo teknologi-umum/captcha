@@ -1,23 +1,25 @@
 FROM golang:1.21-bookworm AS builder
 
-ARG PORT=8080
-
 WORKDIR /app
 
 COPY . .
 
-RUN go build .
+RUN go build -o teknologi-umum-captcha .
 
-FROM debian:bookworm AS runtime
+FROM debian:bookworm-slim AS runtime
 
 WORKDIR /app
+
+ARG PORT=8080
 
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y curl ca-certificates openssl
 
-COPY --from=builder /app/ .
+COPY . .
+
+COPY --from=builder /app/teknologi-umum-captcha .
 
 EXPOSE ${PORT}
 
-CMD [ "/app/teknologi-umum-bot" ]
+CMD [ "/app/teknologi-umum-captcha" ]

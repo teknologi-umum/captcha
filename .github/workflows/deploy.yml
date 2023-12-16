@@ -9,11 +9,11 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    container: golang:1.21-bookworm
+    timeout-minutes: 15
+    container: golang:1
     services:
       db:
-        image: postgres:15-bookworm
+        image: postgres:15
         ports:
           - 5432:5432
         env:
@@ -22,20 +22,20 @@ jobs:
           POSTGRES_DB: captcha
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       cache:
-        image: redis:7-bookworm
+        image: redis:7
         ports:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
       mongo:
-        image: mongo:5
+        image: mongo:6
         ports:
           - 27017:27017
         env:
@@ -43,9 +43,9 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: password
           MONGO_INITDB_DATABASE: captcha
         options: >-
-          --health-cmd "echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p password --quiet"
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh mongodb://localhost:27017/test --quiet"
+          --health-interval 30s
+          --health-timeout 20s
           --health-retries 5
     steps:
       - name: Checkout code
@@ -74,64 +74,49 @@ jobs:
           MONGO_DBNAME: captcha
           TZ: UTC
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: go
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
       - uses: codecov/codecov-action@v3
 
   cd:
     name: CD
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       - ci
-    runs-on: ubuntu-latest
-    container: debian:bookworm
-    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Install required packages
-        run: apt-get update && apt-get upgrade -y && apt-get install -y tar gzip curl ssh
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Register SSH key
-        uses: shimataro/ssh-key-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
         with:
-          key: ${{ secrets.SSH_KEY }}
-          name: id_ed25519
-          known_hosts: ${{ secrets.SSH_IP }}
-          if_key_exists: replace
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: SSH Keyscan
-        run: ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_IP }} >> /root/.ssh/known_hosts
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: |
+            latest=false
+          tags: |
+            type=edge
+            type=sha
 
-      - name: Pull latest code
-        run: >
-          ssh
-          -i /root/.ssh/id_ed25519
-          -p ${{ secrets.SSH_PORT }}
-          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
-          'ssh captcha "cd ${{ secrets.SSH_WORKDIR }}/captcha && git pull" '
-
-      - name: Build Docker images
-        run: >
-          ssh
-          -i /root/.ssh/id_ed25519
-          -p ${{ secrets.SSH_PORT }}
-          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
-          "ssh captcha 'echo ${{ secrets.SSH_PASSWORD }} | sudo -S bash -c '\"'cd ${{ secrets.SSH_WORKDIR }}/captcha &&
-          docker compose up -d --build'\"' ' "
-
-      - name: Clean up docker artifacts
-        run: >
-          ssh
-          -i /root/.ssh/id_ed25519
-          -p ${{ secrets.SSH_PORT }}
-          -t ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}
-          "ssh captcha 'echo ${{ secrets.SSH_PASSWORD }} | sudo -S bash -c '\"'docker container prune -f &&
-          docker image prune -f &&
-          docker builder prune -f '\"' ' "
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: "{{defaultContext}}"
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1

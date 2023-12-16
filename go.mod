@@ -1,4 +1,4 @@
-module teknologi-umum-bot
+module teknologi-umum-captcha
 
 go 1.20
 
