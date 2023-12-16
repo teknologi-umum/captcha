@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/getsentry/sentry-go"
 	"strconv"
 	"strings"
-	"sync"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
 	"time"
@@ -58,6 +58,10 @@ var DefaultQuestion = "Halo, {user}!\n\n" +
 // At the end of the function, it will create 2 goroutines in which
 // both of them are responsible for kicking the user out of the group.
 func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
+	span := sentry.StartSpan(ctx, "captcha.user_join")
+	defer span.Finish()
+	ctx = span.Context()
+
 	// Check if the user is an admin or bot first.
 	// If they are, return.
 	// If they're not, continue to execute the captcha.
@@ -213,8 +217,7 @@ SENDMSG_RETRY:
 		return
 	}
 
-	cond := sync.NewCond(&sync.Mutex{})
-	go d.waitOrDelete(ctx, m, cond)
+	d.waitOrDelete(ctx, m)
 }
 
 func sanitizeInput(inp string) string {

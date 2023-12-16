@@ -10,10 +10,10 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    container: golang:1.20-bullseye
+    container: golang:1.21-bookworm
     services:
       db:
-        image: postgres:15-bullseye
+        image: postgres:15-bookworm
         ports:
           - 5432:5432
         env:
@@ -26,7 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       cache:
-        image: redis:6-bullseye
+        image: redis:7-bookworm
         ports:
           - 6379:6379
         options: >-
@@ -49,7 +49,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -89,7 +89,7 @@ jobs:
     needs:
       - ci
     runs-on: ubuntu-latest
-    container: debian:bullseye
+    container: debian:bookworm
     timeout-minutes: 120
     steps:
       - name: Install required packages

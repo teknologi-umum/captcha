@@ -4,12 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/getsentry/sentry-go"
 	"teknologi-umum-bot/shared"
 	"time"
 )
 
 // GetUnderAttackEntry will acquire under attack entry for specified groupID.
 func (d *Dependency) GetUnderAttackEntry(ctx context.Context, groupID int64) (underattack, error) {
+	span := sentry.StartSpan(ctx, "underattack.get_under_attack_entry")
+	defer span.Finish()
+
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return underattack{}, err
@@ -126,6 +130,9 @@ func (d *Dependency) CreateNewEntry(ctx context.Context, groupID int64) error {
 // SetUnderAttackStatus will update the given groupID entry to the given parameters.
 // If the groupID entry does not exists, it will create a new one.
 func (d *Dependency) SetUnderAttackStatus(ctx context.Context, groupID int64, underAttack bool, expiresAt time.Time, notificationMessageID int64) error {
+	span := sentry.StartSpan(ctx, "underattack.set_under_attack_status")
+	defer span.Finish()
+	
 	c, err := d.DB.Connx(ctx)
 	if err != nil {
 		return err

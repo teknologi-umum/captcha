@@ -3,6 +3,7 @@ package captcha
 import (
 	"context"
 	"encoding/json"
+	"github.com/getsentry/sentry-go"
 	"strconv"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
@@ -40,6 +41,11 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 	if !check {
 		return
 	}
+
+	span := sentry.StartSpan(ctx, "captcha.captcha_user_leave", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha CaptchaUserLeave"))
+	defer span.Finish()
+	ctx = span.Context()
 
 	// OK, they exist in the cache. Now we've got to delete
 	// all the message that we've sent before.

@@ -3,6 +3,7 @@ package captcha
 import (
 	"context"
 	"encoding/json"
+	"github.com/getsentry/sentry-go"
 	"strconv"
 	"teknologi-umum-bot/shared"
 	"teknologi-umum-bot/utils"
@@ -26,6 +27,11 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	if !exists {
 		return
 	}
+
+	span := sentry.StartSpan(ctx, "captcha.non_text_listener", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha NonTextListener"))
+	defer span.Finish()
+	ctx = span.Context()
 
 	// Check if the answer is correct or not.
 	// If not, ask them to give the correct answer and time remaining.
