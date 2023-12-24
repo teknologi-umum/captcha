@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o teknologi-umum-captcha .
+RUN go build -o captcha-bot -ldflags="-X main.version=$(git rev-parse HEAD)"  ./cmd/captcha
 
 FROM debian:bookworm-slim AS runtime
 
@@ -14,12 +14,16 @@ ARG PORT=8080
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y curl ca-certificates openssl
+    apt-get install -y curl ca-certificates openssl --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-COPY --from=builder /app/teknologi-umum-captcha .
+COPY --from=builder /app/captcha-bot /usr/local/bin/captcha
+
+ENV ENVIRONMENT=production
 
 EXPOSE ${PORT}
 
-CMD [ "/app/teknologi-umum-captcha" ]
+CMD [ "/usr/local/bin/captcha" ]

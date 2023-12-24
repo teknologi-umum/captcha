@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/utils"
 )
 
 func TestGenerateAscii(t *testing.T) {

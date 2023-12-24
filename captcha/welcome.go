@@ -3,13 +3,14 @@ package captcha
 import (
 	"context"
 	"fmt"
-	"github.com/getsentry/sentry-go"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
-	"teknologi-umum-captcha/utils"
+	"github.com/getsentry/sentry-go"
+
+	"github.com/teknologi-umum/captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )
@@ -66,7 +67,7 @@ var regularWelcomeMessage = "Halo, {user}!\n\n" +
 func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) error {
 	span := sentry.StartSpan(ctx, "captcha.send_welcome_message")
 	defer span.Finish()
-	
+
 	var msgToSend string = regularWelcomeMessage
 
 	if strconv.FormatInt(m.Chat.ID, 10) == d.TeknumID {

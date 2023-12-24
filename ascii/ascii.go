@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"teknologi-umum-captcha/shared"
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/shared"
+	"github.com/teknologi-umum/captcha/utils"
 
 	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/telebot.v3"

@@ -1,6 +1,6 @@
 #
 
-app = "teknologi-umum-captcha"
+app = "captcha-bot"
 
 kill_signal = "SIGINT"
 kill_timeout = 5

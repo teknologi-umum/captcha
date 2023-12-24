@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"teknologi-umum-captcha/shared"
+	"github.com/teknologi-umum/captcha/shared"
 
 	"github.com/jmoiron/sqlx"
 

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"teknologi-umum-captcha/shared"
+	"github.com/teknologi-umum/captcha/shared"
 )
 
 // GetUnderAttackEntry will acquire under attack entry for specified groupID.

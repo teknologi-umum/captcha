@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"teknologi-umum-captcha/shared"
+	"github.com/teknologi-umum/captcha/shared"
 
 	tb "gopkg.in/telebot.v3"
 )

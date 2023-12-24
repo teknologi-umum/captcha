@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"teknologi-umum-captcha/analytics"
+	"github.com/teknologi-umum/captcha/analytics"
 )
 
 func TestIncrementUsrDB(t *testing.T) {
