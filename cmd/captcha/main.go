@@ -27,11 +27,10 @@ import (
 	"time"
 
 	// Internals
-	"teknologi-umum-captcha/analytics"
-	"teknologi-umum-captcha/analytics/server"
-	"teknologi-umum-captcha/cmd"
-	"teknologi-umum-captcha/shared"
-	"teknologi-umum-captcha/underattack"
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/analytics/server"
+	"github.com/teknologi-umum/captcha/shared"
+	"github.com/teknologi-umum/captcha/underattack"
 
 	// Database and cache
 	"github.com/allegro/bigcache/v3"
@@ -47,6 +46,8 @@ import (
 	"github.com/pkg/errors"
 	tb "gopkg.in/telebot.v3"
 )
+
+var version string
 
 // This init function checks if there's any configuration
 // missing from the .env file.
@@ -92,6 +93,7 @@ func main() {
 		SampleRate:         1.0,
 		TracesSampleRate:   0.2,
 		ProfilesSampleRate: 0.1,
+		Release:            version,
 	})
 	if err != nil {
 		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
@@ -221,7 +223,7 @@ func main() {
 		}
 	}()
 
-	deps := cmd.New(cmd.Dependency{
+	deps := New(Dependency{
 		Memory:      cache,
 		Bot:         b,
 		DB:          db,

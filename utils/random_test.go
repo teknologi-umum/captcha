@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/utils"
 )
 
 func TestGenerateRandomNumber(t *testing.T) {

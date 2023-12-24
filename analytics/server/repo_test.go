@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"teknologi-umum-captcha/analytics/server"
+	"github.com/teknologi-umum/captcha/analytics/server"
 )
 
 func TestGetAll(t *testing.T) {

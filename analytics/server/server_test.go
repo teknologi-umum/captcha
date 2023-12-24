@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"teknologi-umum-captcha/analytics"
-	"teknologi-umum-captcha/analytics/server"
-	"teknologi-umum-captcha/dukun"
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/analytics/server"
+	"github.com/teknologi-umum/captcha/dukun"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"

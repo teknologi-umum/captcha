@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"teknologi-umum-captcha/underattack"
+	"github.com/teknologi-umum/captcha/underattack"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"

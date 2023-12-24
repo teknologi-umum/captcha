@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )

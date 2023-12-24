@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"teknologi-umum-captcha/analytics"
-	"teknologi-umum-captcha/ascii"
-	"teknologi-umum-captcha/badwords"
-	"teknologi-umum-captcha/captcha"
-	"teknologi-umum-captcha/shared"
-	"teknologi-umum-captcha/underattack"
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/ascii"
+	"github.com/teknologi-umum/captcha/badwords"
+	"github.com/teknologi-umum/captcha/captcha"
+	"github.com/teknologi-umum/captcha/shared"
+	"github.com/teknologi-umum/captcha/underattack"
+	"github.com/teknologi-umum/captcha/utils"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"

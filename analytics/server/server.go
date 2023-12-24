@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"teknologi-umum-captcha/analytics"
-	"teknologi-umum-captcha/shared"
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/shared"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"

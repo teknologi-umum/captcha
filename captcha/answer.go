@@ -9,7 +9,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 
-	"teknologi-umum-captcha/shared"
+	"github.com/teknologi-umum/captcha/shared"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"

@@ -6,8 +6,8 @@ import (
 	"github.com/getsentry/sentry-go"
 	"strconv"
 
-	"teknologi-umum-captcha/shared"
-	"teknologi-umum-captcha/utils"
+	"github.com/teknologi-umum/captcha/shared"
+	"github.com/teknologi-umum/captcha/utils"
 
 	tb "gopkg.in/telebot.v3"
 )

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"teknologi-umum-captcha/analytics"
-	"teknologi-umum-captcha/dukun"
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/dukun"
 
 	"github.com/allegro/bigcache/v3"
 )

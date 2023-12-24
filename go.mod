@@ -1,4 +1,4 @@
-module teknologi-umum-captcha
+module github.com/teknologi-umum/captcha
 
 go 1.20
 
@@ -6,7 +6,7 @@ require (
 	github.com/aldy505/asciitxt v0.0.2
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/getsentry/sentry-go v0.25.0
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
