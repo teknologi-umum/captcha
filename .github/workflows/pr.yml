@@ -73,7 +73,7 @@ jobs:
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
         env:
           ENVIRONMENT: development
-          DATABASE_URL: postgres://postgres:password@db:5432/captcha?sslmode=disable
+          POSTGRES_URL: postgres://postgres:password@db:5432/captcha?sslmode=disable
           REDIS_URL: redis://@cache:6379/
           MONGO_URL: mongodb://root:password@mongo:27017/captcha?useNewUrlParser=true&useUnifiedTopology=true&authSource=admin
           MONGO_DBNAME: captcha

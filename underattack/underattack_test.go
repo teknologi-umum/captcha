@@ -19,7 +19,7 @@ import (
 var dependency *underattack.Dependency
 
 func TestMain(m *testing.M) {
-	databaseUrl, ok := os.LookupEnv("DATABASE_URL")
+	databaseUrl, ok := os.LookupEnv("POSTGRES_URL")
 	if !ok {
 		databaseUrl = "postgresql://postgres:password@localhost:5432/captcha?sslmode=disable"
 	}
