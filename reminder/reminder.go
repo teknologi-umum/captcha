@@ -23,3 +23,5 @@ type Reminder struct {
 	Time    time.Time
 	Object  string
 }
+
+var ErrExceeds24Hours = fmt.Errorf("exceeds 24 hours")
