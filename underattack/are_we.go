@@ -13,17 +13,17 @@ import (
 
 // AreWe ...on under attack mode?
 func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
-	span := sentry.StartSpan(ctx, "underattack.are_we", sentry.WithTransactionName("Are we under attack?"))
+	span := sentry.StartSpan(ctx, "UnderAttack.are_we", sentry.WithTransactionName("Are we under attack?"))
 	defer span.Finish()
 	ctx = span.Context()
 
-	underAttackCache, err := d.Memory.Get("underattack:" + strconv.FormatInt(chatID, 10))
+	underAttackCache, err := d.Memory.Get("UnderAttack:" + strconv.FormatInt(chatID, 10))
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		return false, err
 	}
 
 	if err == nil {
-		var entry underattack
+		var entry UnderAttack
 		err := json.Unmarshal(underAttackCache, &entry)
 		if err != nil {
 			return false, err
@@ -32,7 +32,7 @@ func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
 		return entry.IsUnderAttack && entry.ExpiresAt.After(time.Now()), nil
 	}
 
-	underAttackEntry, err := d.GetUnderAttackEntry(ctx, chatID)
+	underAttackEntry, err := d.Datastore.GetUnderAttackEntry(ctx, chatID)
 	if err != nil {
 		return false, err
 	}
@@ -42,7 +42,7 @@ func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
 		return false, err
 	}
 
-	err = d.Memory.Set("underattack:"+strconv.FormatInt(chatID, 10), marshaledEntry)
+	err = d.Memory.Set("UnderAttack:"+strconv.FormatInt(chatID, 10), marshaledEntry)
 	if err != nil {
 		return false, err
 	}

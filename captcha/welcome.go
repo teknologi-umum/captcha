@@ -70,7 +70,7 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 
 	var msgToSend string = regularWelcomeMessage
 
-	if strconv.FormatInt(m.Chat.ID, 10) == d.TeknumID {
+	if m.Chat.ID == d.TeknumGroupID {
 		msgToSend = currentWelcomeMessages[randomNum()]
 	}
 

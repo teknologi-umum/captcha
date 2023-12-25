@@ -17,6 +17,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/teknologi-umum/captcha/ascii"
+	"github.com/teknologi-umum/captcha/badwords"
+	"github.com/teknologi-umum/captcha/captcha"
+	"github.com/teknologi-umum/captcha/setir"
+	"github.com/teknologi-umum/captcha/underattack"
+	"github.com/teknologi-umum/captcha/underattack/datastore"
 	"log"
 	"net"
 	"net/http"
@@ -30,8 +36,6 @@ import (
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/shared"
-	"github.com/teknologi-umum/captcha/underattack"
-
 	// Database and cache
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
@@ -64,7 +68,7 @@ func main() {
 		SampleRate:         1.0,
 		EnableTracing:      true,
 		TracesSampleRate:   0.2,
-		ProfilesSampleRate: 0.1,
+		ProfilesSampleRate: 0.05,
 		Release:            version,
 	})
 	if err != nil {
@@ -73,7 +77,7 @@ func main() {
 	defer sentry.Flush(30 * time.Second)
 
 	var db *sqlx.DB
-	if configuration.FeatureFlag.Analytics || configuration.FeatureFlag.UnderAttack {
+	if configuration.FeatureFlag.Analytics || (configuration.FeatureFlag.UnderAttack && configuration.UnderAttack.DatastoreProvider == "postgres") {
 		// Connect to PostgreSQL
 		db, err = sqlx.Open("postgres", configuration.Database.PostgresUrl)
 		if err != nil {
@@ -137,7 +141,7 @@ func main() {
 		MaxEntriesInWindow: 50,
 	})
 	if err != nil {
-		log.Fatal("during creating a in memory cache:", errors.WithStack(err))
+		log.Fatal("during creating a in memory cache: ", errors.WithStack(err))
 	}
 	defer func(cache *bigcache.BigCache) {
 		err := cache.Close()
@@ -145,18 +149,6 @@ func main() {
 			log.Print(errors.WithStack(err))
 		}
 	}(cache)
-
-	if db != nil {
-		// Running migration on database first.
-		err = analytics.MustMigrate(db)
-		if err != nil {
-			log.Fatal("during initial database migration:", errors.WithStack(err))
-		}
-		err = underattack.MustMigrate(db)
-		if err != nil {
-			log.Fatal("during initial database migration:", errors.WithStack(err))
-		}
-	}
 
 	// Setup Telegram Bot
 	b, err := tb.NewBot(tb.Settings{
@@ -208,14 +200,103 @@ func main() {
 		}
 	}()
 
-	deps := New(Dependency{
-		Memory:      cache,
-		Bot:         b,
-		DB:          db,
-		Mongo:       mongoClient,
-		MongoDBName: mongoDBName,
-		TeknumID:    configuration.TeknumId,
+	var analyticsDependency *analytics.Dependency
+	if configuration.FeatureFlag.Analytics {
+		// Check if database is initialized
+		if db == nil {
+			log.Println("To enable analytics, database must been set")
+			return
+		}
+		err = analytics.MustMigrate(db)
+		if err != nil {
+			sentry.CaptureException(err)
+			log.Fatal("during initial database migration: ", errors.WithStack(err))
+		}
+
+		analyticsDependency = &analytics.Dependency{
+			Memory:      cache,
+			Bot:         b,
+			DB:          db,
+			HomeGroupID: configuration.HomeGroupID,
+		}
+	}
+
+	var badwordsDependency *badwords.Dependency
+	if configuration.FeatureFlag.BadwordsInsertion {
+		// Check if mongodb is initialized
+		if mongoClient == nil && mongoDBName == "" {
+			log.Println("To enable badwords insertion, mongodb mnust been set")
+			return
+		}
+
+		badwordsDependency = &badwords.Dependency{
+			Mongo:       mongoClient,
+			MongoDBName: mongoDBName,
+			AdminIDs:    configuration.AdminIds,
+		}
+	}
+
+	var underAttackDependency *underattack.Dependency
+	if configuration.FeatureFlag.UnderAttack {
+		var underAttackDatastore underattack.Datastore
+		switch configuration.UnderAttack.DatastoreProvider {
+		case "postgres":
+			underAttackDatastore, err = datastore.NewPostgresDatastore(db.DB)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+		case "memory":
+			fallthrough
+		default:
+			underAttackDatastore, err = datastore.NewInMemoryDatastore(cache)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+		}
+
+		// Migrate datastore while we're here
+		err = underAttackDatastore.Migrate(context.Background())
+		if err != nil {
+			sentry.CaptureException(err)
+			log.Fatal(err)
+			return
+		}
+
+		underAttackDependency = &underattack.Dependency{
+			Datastore: underAttackDatastore,
+			Memory:    cache,
+			Bot:       b,
+		}
+	}
+
+	var setirDependency *setir.Dependency
+	setirDependency, err = setir.New(b, configuration.AdminIds, configuration.HomeGroupID)
+	if err != nil {
+		sentry.CaptureException(err)
+		log.Fatal(err)
+		return
+	}
+
+	program, err := New(Dependency{
+		FeatureFlag: configuration.FeatureFlag,
+		Captcha: &captcha.Dependencies{
+			Memory:        cache,
+			Bot:           b,
+			TeknumGroupID: configuration.HomeGroupID,
+		},
+		Ascii:       &ascii.Dependencies{Bot: b},
+		Analytics:   analyticsDependency,
+		Badwords:    badwordsDependency,
+		UnderAttack: underAttackDependency,
+		Setir:       setirDependency,
 	})
+	if err != nil {
+		sentry.CaptureException(err)
+		log.Fatal(err)
+		return
+	}
 
 	httpServer := server.New(server.Config{
 		DB:               db,
@@ -239,26 +320,26 @@ func main() {
 	})
 
 	// Captcha handlers
-	b.Handle(tb.OnUserJoined, deps.OnUserJoinHandler)
-	b.Handle(tb.OnText, deps.OnTextHandler)
-	b.Handle(tb.OnPhoto, deps.OnNonTextHandler)
-	b.Handle(tb.OnAnimation, deps.OnNonTextHandler)
-	b.Handle(tb.OnVideo, deps.OnNonTextHandler)
-	b.Handle(tb.OnDocument, deps.OnNonTextHandler)
-	b.Handle(tb.OnSticker, deps.OnNonTextHandler)
-	b.Handle(tb.OnVoice, deps.OnNonTextHandler)
-	b.Handle(tb.OnVideoNote, deps.OnNonTextHandler)
-	b.Handle(tb.OnUserLeft, deps.OnUserLeftHandler)
+	b.Handle(tb.OnUserJoined, program.OnUserJoinHandler)
+	b.Handle(tb.OnText, program.OnTextHandler)
+	b.Handle(tb.OnPhoto, program.OnNonTextHandler)
+	b.Handle(tb.OnAnimation, program.OnNonTextHandler)
+	b.Handle(tb.OnVideo, program.OnNonTextHandler)
+	b.Handle(tb.OnDocument, program.OnNonTextHandler)
+	b.Handle(tb.OnSticker, program.OnNonTextHandler)
+	b.Handle(tb.OnVoice, program.OnNonTextHandler)
+	b.Handle(tb.OnVideoNote, program.OnNonTextHandler)
+	b.Handle(tb.OnUserLeft, program.OnUserLeftHandler)
 
 	// Under attack handlers
-	b.Handle("/underattack", deps.EnableUnderAttackModeHandler)
-	b.Handle("/disableunderattack", deps.DisableUnderAttackModeHandler)
+	b.Handle("/underattack", program.EnableUnderAttackModeHandler)
+	b.Handle("/disableunderattack", program.DisableUnderAttackModeHandler)
 
 	// Bad word handlers
-	b.Handle("/badwords", deps.BadWordHandler)
+	b.Handle("/badwords", program.BadWordHandler)
 
 	// <redacted>
-	b.Handle("/setir", deps.SetirHandler)
+	b.Handle("/setir", program.SetirHandler)
 
 	exitSignal := make(chan os.Signal, 1)
 	signal.Notify(exitSignal, os.Interrupt)

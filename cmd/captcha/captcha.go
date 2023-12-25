@@ -3,22 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/teknologi-umum/captcha/setir"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/underattack"
-	"github.com/teknologi-umum/captcha/utils"
-
-	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
-	"github.com/jmoiron/sqlx"
-	"go.mongodb.org/mongo-driver/mongo"
 	tb "gopkg.in/telebot.v3"
 )
 
@@ -28,71 +24,47 @@ import (
 // It will spread and use the correct dependencies for
 // each packages on the captcha project.
 type Dependency struct {
-	Memory      *bigcache.BigCache
-	Bot         *tb.Bot
-	DB          *sqlx.DB
-	Mongo       *mongo.Client
-	MongoDBName string
-	TeknumID    string
-	AdminIDs    []string
 	FeatureFlag FeatureFlag
-	captcha     *captcha.Dependencies
-	ascii       *ascii.Dependencies
-	analytics   *analytics.Dependency
-	badwords    *badwords.Dependency
-	underAttack *underattack.Dependency
+	Captcha     *captcha.Dependencies
+	Ascii       *ascii.Dependencies
+	Analytics   *analytics.Dependency
+	Badwords    *badwords.Dependency
+	UnderAttack *underattack.Dependency
+	Setir       *setir.Dependency
 }
 
 // New returns a pointer struct of Dependency
 // which map the incoming dependencies provided
 // into what's needed by each domain.
-func New(deps Dependency) *Dependency {
-	analyticsDeps := &analytics.Dependency{
-		Memory:   deps.Memory,
-		Bot:      deps.Bot,
-		DB:       deps.DB,
-		TeknumID: deps.TeknumID,
+func New(deps Dependency) (*Dependency, error) {
+	// Validate dependencies
+	if deps.Captcha == nil {
+		return nil, fmt.Errorf("captcha dependency is nil")
 	}
-	return &Dependency{
-		Memory:      deps.Memory,
-		Bot:         deps.Bot,
-		DB:          deps.DB,
-		Mongo:       deps.Mongo,
-		MongoDBName: deps.MongoDBName,
-		TeknumID:    deps.TeknumID,
-		AdminIDs:    deps.AdminIDs,
-		FeatureFlag: deps.FeatureFlag,
-		captcha: &captcha.Dependencies{
-			Memory:    deps.Memory,
-			Bot:       deps.Bot,
-			Analytics: analyticsDeps,
-			TeknumID:  deps.TeknumID,
-		},
-		ascii: &ascii.Dependencies{
-			Bot: deps.Bot,
-		},
-		analytics: analyticsDeps,
-		badwords: &badwords.Dependency{
-			Mongo:       deps.Mongo,
-			MongoDBName: deps.MongoDBName,
-			AdminIDs:    deps.AdminIDs,
-		},
-		underAttack: &underattack.Dependency{
-			Memory: deps.Memory,
-			DB:     deps.DB,
-			Bot:    deps.Bot,
-		},
+
+	if deps.FeatureFlag.UnderAttack && deps.UnderAttack == nil {
+		return nil, fmt.Errorf("under attack feature is enabled, but underattack dependency is nil")
 	}
+
+	if deps.FeatureFlag.Analytics && deps.Analytics == nil {
+		return nil, fmt.Errorf("analytics feature is enabled, but analytics dependency is nil")
+	}
+
+	if deps.FeatureFlag.BadwordsInsertion && deps.Badwords == nil {
+		return nil, fmt.Errorf("badwords insertion feature is enabled, but badwords dependency is nil")
+	}
+
+	return &deps, nil
 }
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	d.captcha.WaitForAnswer(ctx, c.Message())
+	d.Captcha.WaitForAnswer(ctx, c.Message())
 
 	if d.FeatureFlag.Analytics {
-		err := d.analytics.NewMessage(c.Message())
+		err := d.Analytics.NewMessage(c.Message())
 		if err != nil {
 			shared.HandleError(ctx, err)
 		}
@@ -117,15 +89,15 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	ctx = span.Context()
 
 	if d.FeatureFlag.UnderAttack {
-		underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
+		underAttack, err := d.UnderAttack.AreWe(ctx, c.Chat().ID)
 		if err != nil {
 			shared.HandleError(ctx, err)
 		}
 
 		if underAttack {
-			err := d.underAttack.Kicker(ctx, c)
+			err := d.UnderAttack.Kicker(ctx, c)
 			if err != nil {
-				shared.HandleBotError(ctx, err, d.Bot, c.Message())
+				shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 			}
 			return nil
 		}
@@ -139,10 +111,10 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	}
 
 	if d.FeatureFlag.Analytics {
-		go d.analytics.NewUser(ctx, c.Message(), tempSender)
+		go d.Analytics.NewUser(ctx, c.Message(), tempSender)
 	}
 
-	d.captcha.CaptchaUserJoin(ctx, c.Message())
+	d.Captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil
 }
@@ -152,10 +124,10 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 func (d *Dependency) OnNonTextHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	d.captcha.NonTextListener(ctx, c.Message())
+	d.Captcha.NonTextListener(ctx, c.Message())
 
 	if d.FeatureFlag.Analytics {
-		err := d.analytics.NewMessage(c.Message())
+		err := d.Analytics.NewMessage(c.Message())
 		if err != nil {
 			shared.HandleError(ctx, err)
 		}
@@ -169,7 +141,7 @@ func (d *Dependency) OnNonTextHandler(c tb.Context) error {
 func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	d.captcha.CaptchaUserLeave(ctx, c.Message())
+	d.Captcha.CaptchaUserLeave(ctx, c.Message())
 	return nil
 }
 
@@ -184,7 +156,7 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 	if !c.Message().Private() {
 		return nil
 	}
-	ok := d.badwords.Authenticate(strconv.FormatInt(c.Sender().ID, 10))
+	ok := d.Badwords.Authenticate(strconv.FormatInt(c.Sender().ID, 10))
 	if !ok {
 		return nil
 	}
@@ -194,7 +166,7 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 
-	err := d.badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
+	err := d.Badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
 	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
 		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 		return nil
@@ -216,7 +188,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	return d.underAttack.EnableUnderAttackModeHandler(ctx, c)
+	return d.UnderAttack.EnableUnderAttackModeHandler(ctx, c)
 }
 
 // DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
@@ -227,102 +199,11 @@ func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	return d.underAttack.DisableUnderAttackModeHandler(ctx, c)
+	return d.UnderAttack.DisableUnderAttackModeHandler(ctx, c)
 }
 
 func (d *Dependency) SetirHandler(c tb.Context) error {
-	admin := d.AdminIDs
-	if !utils.IsIn(admin, strconv.FormatInt(c.Sender().ID, 10)) || c.Chat().Type != tb.ChatPrivate {
-		return nil
-	}
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
-	home, err := strconv.ParseInt(d.TeknumID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("parsing teknum id: %w", err)
-	}
-
-	if c.Message().IsReply() {
-		var replyToID int
-
-		if strings.HasPrefix(c.Message().Payload, "https://t.me/") {
-			replyToID, err = strconv.Atoi(strings.Split(c.Message().Payload, "/")[4])
-			if err != nil {
-				return err
-			}
-		} else {
-			replyToID, err = strconv.Atoi(c.Message().Payload)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = d.Bot.Send(tb.ChatID(home), c.Message().ReplyTo.Text, &tb.SendOptions{
-			ParseMode:         tb.ModeHTML,
-			AllowWithoutReply: true,
-			ReplyTo: &tb.Message{
-				ID: replyToID,
-				Chat: &tb.Chat{
-					ID: int64(home),
-				},
-			},
-		})
-		if err != nil {
-			_, err = d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
-			if err != nil {
-				return fmt.Errorf("failed sending that message: %w", err)
-			}
-		} else {
-			_, err = d.Bot.Send(c.Chat(), "Message sent")
-			if err != nil {
-				return fmt.Errorf("sending message: %w", err)
-			}
-		}
-
-		return nil
-	}
-
-	if strings.HasPrefix(c.Message().Payload, "https://") {
-		var toBeSent interface{}
-		if strings.HasSuffix(c.Message().Payload, ".jpg") || strings.HasSuffix(c.Message().Payload, ".png") || strings.HasSuffix(c.Message().Payload, ".jpeg") {
-			toBeSent = &tb.Photo{File: tb.FromURL(c.Message().Payload)}
-		} else if strings.HasSuffix(c.Message().Payload, ".gif") {
-			toBeSent = &tb.Animation{File: tb.FromURL(c.Message().Payload)}
-		} else {
-			return nil
-		}
-
-		_, err = d.Bot.Send(tb.ChatID(home), toBeSent, &tb.SendOptions{AllowWithoutReply: true})
-		if err != nil {
-			_, e := d.Bot.Send(c.Message().Chat, "Failed sending that photo: "+err.Error())
-			if e != nil {
-				return fmt.Errorf("sending message: %w", e)
-			}
-
-			return fmt.Errorf("sending photo: %w", err)
-		}
-
-		_, err = d.Bot.Send(c.Chat(), "Photo sent")
-		if err != nil {
-			return fmt.Errorf("sending message that says 'photo sent': %w", err)
-		}
-		return nil
-
-	}
-
-	_, err = d.Bot.Send(tb.ChatID(home), c.Message().Payload, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
-	if err != nil {
-		_, e := d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
-		if e != nil {
-			return fmt.Errorf("sending message: %w", e)
-		}
-
-		return fmt.Errorf("sending message: %w", err)
-	}
-
-	_, err = d.Bot.Send(c.Chat(), "Message sent")
-	if err != nil {
-		return fmt.Errorf("sending message: %w", err)
-	}
-
-	return nil
+	return d.Setir.Handler(ctx, c)
 }

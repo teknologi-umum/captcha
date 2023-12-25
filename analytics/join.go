@@ -3,7 +3,6 @@ package analytics
 import (
 	"context"
 	"database/sql"
-	"strconv"
 	"time"
 
 	"github.com/teknologi-umum/captcha/shared"
@@ -21,7 +20,7 @@ import (
 // reason, their data should still be here. But, their joined date
 // will be updated to their newest join date.
 func (d *Dependency) NewUser(ctx context.Context, m *tb.Message, user *tb.User) {
-	if !m.FromGroup() || strconv.FormatInt(m.Chat.ID, 10) != d.TeknumID {
+	if !m.FromGroup() || m.Chat.ID != d.HomeGroupID {
 		return
 	}
 
