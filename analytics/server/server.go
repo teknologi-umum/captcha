@@ -9,7 +9,6 @@ import (
 	"github.com/teknologi-umum/captcha/shared"
 
 	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -23,7 +22,6 @@ import (
 type Dependency struct {
 	DB          *sqlx.DB
 	Memory      *bigcache.BigCache
-	Logger      *sentry.Client
 	Mongo       *mongo.Client
 	MongoDBName string
 }
