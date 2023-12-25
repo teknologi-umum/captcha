@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/teknologi-umum/captcha/shared"
@@ -14,7 +13,7 @@ import (
 )
 
 func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool) {
-	if strconv.FormatInt(groupID, 10) != d.HomeGroupID {
+	if groupID != d.HomeGroupID {
 		return
 	}
 
@@ -70,7 +69,7 @@ func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool
 }
 
 func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha bool) {
-	if strconv.FormatInt(groupID, 10) != d.HomeGroupID {
+	if groupID != d.HomeGroupID {
 		return
 	}
 
