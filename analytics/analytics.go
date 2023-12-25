@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	tb "gopkg.in/telebot.v3"
 )
@@ -12,7 +11,6 @@ import (
 type Dependency struct {
 	Memory   *bigcache.BigCache
 	Bot      *tb.Bot
-	Logger   *sentry.Client
 	DB       *sqlx.DB
 	TeknumID string
 }

@@ -49,48 +49,20 @@ import (
 
 var version string
 
-// This init function checks if there's any configuration
-// missing from the .env file.
-func init() {
-	env := os.Getenv("ENVIRONMENT")
-	if env == "" {
-		log.Fatal("Please provide the ENVIRONMENT value on the .env file")
-	}
-
-	token := os.Getenv("BOT_TOKEN")
-	if token == "" {
-		log.Fatal("Please provide the BOT_TOKEN value on the .env file")
-	}
-
-	sentryDSN := os.Getenv("SENTRY_DSN")
-	if env == "production" && sentryDSN == "" {
-		log.Fatal("Please provide the SENTRY_DSN value on the .env file")
-	}
-
-	if dbURL := os.Getenv("DATABASE_URL"); dbURL == "" || !strings.HasPrefix(dbURL, "postgres") {
-		log.Fatal("Please provide the correct DATABASE_URL value on the .env file")
-	}
-
-	if mongoURL := os.Getenv("MONGO_URL"); mongoURL == "" || !strings.HasPrefix(mongoURL, "mongodb") {
-		log.Fatal("Please provide the correct MONGO_URL value on the .env file")
-	}
-	if os.Getenv("TZ") == "" {
-		err := os.Setenv("TZ", "UTC")
-		if err != nil {
-			log.Fatalln("during setting TZ environment variable:", err)
-		}
-	}
-
-	log.Println("Passed the environment variable check")
-}
-
 func main() {
+	configuration, err := ParseConfiguration("")
+	if err != nil {
+		log.Fatalf("Parsing configuration: %s", err.Error())
+		return
+	}
+
 	// Setup Sentry for error handling.
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:                os.Getenv("SENTRY_DSN"),
-		Debug:              os.Getenv("ENVIRONMENT") == "development",
-		Environment:        os.Getenv("ENVIRONMENT"),
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn:                configuration.SentryDSN,
+		Debug:              configuration.Environment == "development",
+		Environment:        configuration.Environment,
 		SampleRate:         1.0,
+		EnableTracing:      true,
 		TracesSampleRate:   0.2,
 		ProfilesSampleRate: 0.1,
 		Release:            version,
@@ -100,15 +72,20 @@ func main() {
 	}
 	defer sentry.Flush(30 * time.Second)
 
-	// Connect to PostgreSQL
-	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal("during opening a postgres client:", errors.WithStack(err))
+	var db *sqlx.DB
+	if configuration.FeatureFlag.Analytics || configuration.FeatureFlag.UnderAttack {
+		// Connect to PostgreSQL
+		db, err = sqlx.Open("postgres", configuration.Database.PostgresUrl)
+		if err != nil {
+			log.Fatal("during opening a postgres client:", errors.WithStack(err))
+		}
 	}
 	defer func(db *sqlx.DB) {
-		err := db.Close()
-		if err != nil {
-			log.Print("during closing the postgres client:", errors.WithStack(err))
+		if db != nil {
+			err := db.Close()
+			if err != nil {
+				log.Print("during closing the postgres client:", errors.WithStack(err))
+			}
 		}
 	}(db)
 
@@ -117,31 +94,37 @@ func main() {
 	defer cancel()
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 
-	// Setup mongodb connection
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
-	if err != nil {
-		log.Fatal("during connecting to mongo client:", errors.WithStack(err))
+	var mongoClient *mongo.Client
+	var mongoDBName string
+	if configuration.FeatureFlag.BadwordsInsertion || configuration.FeatureFlag.Dukun {
+		// Setup mongodb connection
+		mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(configuration.Database.MongoUrl))
+		if err != nil {
+			log.Fatal("during connecting to mongo client:", errors.WithStack(err))
+		}
+
+		// Mongo health check
+		if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
+			log.Fatal("during mongodb ping:", err)
+		}
+
+		// Get the MongoDB database name from the given MONGO_URL environment variable.
+		parsedURL, err := url.Parse(configuration.Database.MongoUrl)
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
+		}
+		mongoDBName = parsedURL.Path[1:]
 	}
 	defer func(client *mongo.Client) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel()
-		err := client.Disconnect(ctx)
-		if err != nil {
-			log.Print("during closing the mongo connection:", errors.WithStack(err))
+		if client != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+			defer cancel()
+			err := client.Disconnect(ctx)
+			if err != nil {
+				log.Print("during closing the mongo connection:", errors.WithStack(err))
+			}
 		}
 	}(mongoClient)
-
-	// Mongo health check
-	if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
-		log.Fatal("during mongodb ping:", err)
-	}
-
-	// Get the MongoDB database name from the given MONGO_URL environment variable.
-	parsedURL, err := url.Parse(os.Getenv("MONGO_URL"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
-	}
-	mongoDBName := parsedURL.Path[1:]
 
 	// Setup in memory cache
 	cache, err := bigcache.New(context.Background(), bigcache.Config{
@@ -163,19 +146,21 @@ func main() {
 		}
 	}(cache)
 
-	// Running migration on database first.
-	err = analytics.MustMigrate(db)
-	if err != nil {
-		log.Fatal("during initial database migration:", errors.WithStack(err))
-	}
-	err = underattack.MustMigrate(db)
-	if err != nil {
-		log.Fatal("during initial database migration:", errors.WithStack(err))
+	if db != nil {
+		// Running migration on database first.
+		err = analytics.MustMigrate(db)
+		if err != nil {
+			log.Fatal("during initial database migration:", errors.WithStack(err))
+		}
+		err = underattack.MustMigrate(db)
+		if err != nil {
+			log.Fatal("during initial database migration:", errors.WithStack(err))
+		}
 	}
 
 	// Setup Telegram Bot
 	b, err := tb.NewBot(tb.Settings{
-		Token:       os.Getenv("BOT_TOKEN"),
+		Token:       configuration.BotToken,
 		Poller:      &tb.LongPoller{Timeout: 10 * time.Second},
 		Synchronous: false,
 		OnError: func(err error, ctx tb.Context) {
@@ -229,15 +214,15 @@ func main() {
 		DB:          db,
 		Mongo:       mongoClient,
 		MongoDBName: mongoDBName,
-		TeknumID:    os.Getenv("TEKNUM_ID"),
+		TeknumID:    configuration.TeknumId,
 	})
 
 	httpServer := server.New(server.Config{
-		DB:          db,
-		Memory:      cache,
-		Mongo:       mongoClient,
-		MongoDBName: mongoDBName,
-		Port:        os.Getenv("PORT"),
+		DB:               db,
+		Memory:           cache,
+		Mongo:            mongoClient,
+		MongoDBName:      mongoDBName,
+		ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
 	})
 
 	// This is basically just for health check.
@@ -271,7 +256,6 @@ func main() {
 
 	// Bad word handlers
 	b.Handle("/badwords", deps.BadWordHandler)
-	b.Handle("/cukup", deps.CukupHandler)
 
 	// <redacted>
 	b.Handle("/setir", deps.SetirHandler)
@@ -280,7 +264,7 @@ func main() {
 	signal.Notify(exitSignal, os.Interrupt)
 
 	go func() {
-		// Start a HTTP server instance
+		// Start an HTTP server instance
 		log.Printf("Starting http server on %s", httpServer.Addr)
 		err := httpServer.ListenAndServe()
 		if err != nil {

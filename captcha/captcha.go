@@ -4,7 +4,6 @@ import (
 	"github.com/teknologi-umum/captcha/analytics"
 
 	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/telebot.v3"
 )
 
@@ -13,7 +12,6 @@ import (
 type Dependencies struct {
 	Memory    *bigcache.BigCache
 	Bot       *tb.Bot
-	Logger    *sentry.Client
 	Analytics *analytics.Dependency
 	TeknumID  string
 }

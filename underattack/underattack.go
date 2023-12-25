@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
-	"github.com/getsentry/sentry-go"
 	"github.com/jmoiron/sqlx"
 	tb "gopkg.in/telebot.v3"
 )
@@ -15,7 +14,6 @@ type Dependency struct {
 	Memory *bigcache.BigCache
 	DB     *sqlx.DB
 	Bot    *tb.Bot
-	Logger *sentry.Client
 }
 
 // underattack provides a data struct to interact with

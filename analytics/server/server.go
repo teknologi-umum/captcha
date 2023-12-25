@@ -2,9 +2,7 @@ package server
 
 import (
 	"errors"
-	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/teknologi-umum/captcha/analytics"
@@ -58,12 +56,12 @@ var ErrInvalidValue = errors.New("invalid value")
 // Config is the configuration struct for the server package.
 // Only the Port field is optional. It will be set to 8080 if not set.
 type Config struct {
-	DB          *sqlx.DB
-	Mongo       *mongo.Client
-	MongoDBName string
-	Memory      *bigcache.BigCache
-	Logger      *sentry.Client
-	Port        string
+	DB               *sqlx.DB
+	Mongo            *mongo.Client
+	MongoDBName      string
+	Memory           *bigcache.BigCache
+	Environment      string
+	ListeningAddress string
 }
 
 // New creates and runs an HTTP server instance for fetching analytics data
@@ -72,14 +70,13 @@ type Config struct {
 // Requires 3 parameter that should be sent from the main goroutine.
 func New(config Config) *http.Server {
 	// Give default port
-	if config.Port == "" {
-		config.Port = "8080"
+	if config.ListeningAddress == "" {
+		config.ListeningAddress = ":8080"
 	}
 
 	deps := &Dependency{
 		DB:          config.DB,
 		Memory:      config.Memory,
-		Logger:      config.Logger,
 		Mongo:       config.Mongo,
 		MongoDBName: config.MongoDBName,
 	}
@@ -87,11 +84,11 @@ func New(config Config) *http.Server {
 	secureMiddleware := secure.New(secure.Options{
 		BrowserXssFilter:   true,
 		ContentTypeNosniff: true,
-		SSLRedirect:        os.Getenv("ENV") == "production",
-		IsDevelopment:      os.Getenv("ENV") == "development",
+		SSLRedirect:        config.Environment == "production",
+		IsDevelopment:      config.Environment == "development",
 	})
 	corsMiddleware := cors.New(cors.Options{
-		Debug:          os.Getenv("ENV") == "development",
+		Debug:          config.Environment == "development",
 		AllowedOrigins: []string{},
 		AllowedMethods: []string{"GET", "OPTIONS"},
 	})
@@ -114,6 +111,11 @@ func New(config Config) *http.Server {
 	})
 
 	r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+		if deps.DB == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		data, err := deps.GetAll(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -140,6 +142,10 @@ func New(config Config) *http.Server {
 	})
 
 	r.Get("/hourly", func(w http.ResponseWriter, r *http.Request) {
+		if deps.DB == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		data, err := deps.GetHourly(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -166,6 +172,10 @@ func New(config Config) *http.Server {
 	})
 
 	r.Get("/total", func(w http.ResponseWriter, r *http.Request) {
+		if deps.DB == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		data, err := deps.GetTotal(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -192,6 +202,10 @@ func New(config Config) *http.Server {
 	})
 
 	r.Get("/dukun", func(w http.ResponseWriter, r *http.Request) {
+		if deps.Mongo == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		data, err := deps.GetDukunPoints(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -219,7 +233,7 @@ func New(config Config) *http.Server {
 
 	return &http.Server{
 		Handler:           r,
-		Addr:              net.JoinHostPort("", config.Port),
+		Addr:              config.ListeningAddress,
 		ReadTimeout:       time.Minute,
 		WriteTimeout:      time.Minute,
 		ReadHeaderTimeout: time.Minute,
