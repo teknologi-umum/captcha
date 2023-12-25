@@ -14,7 +14,7 @@ import (
 )
 
 func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool) {
-	if strconv.FormatInt(groupID, 10) != d.TeknumID {
+	if strconv.FormatInt(groupID, 10) != d.HomeGroupID {
 		return
 	}
 
@@ -70,7 +70,7 @@ func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool
 }
 
 func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha bool) {
-	if strconv.FormatInt(groupID, 10) != d.TeknumID {
+	if strconv.FormatInt(groupID, 10) != d.HomeGroupID {
 		return
 	}
 

@@ -48,9 +48,9 @@ func TestMain(m *testing.M) {
 	}
 
 	dependency = &analytics.Dependency{
-		DB:       db,
-		Memory:   memory,
-		TeknumID: "123456789",
+		DB:          db,
+		Memory:      memory,
+		HomeGroupID: 123456789,
 	}
 
 	setupCtx, setupCancel := context.WithTimeout(context.Background(), time.Second*30)

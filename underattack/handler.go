@@ -13,7 +13,7 @@ import (
 	tb "gopkg.in/telebot.v3"
 )
 
-// EnableUnderAttackModeHandler provides a handler for /underattack command.
+// EnableUnderAttackModeHandler provides a handler for /UnderAttack command.
 func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Context) error {
 	if c.Message().Private() || c.Sender().IsBot {
 		return nil
@@ -27,7 +27,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "user",
 		Category: "command.triggered",
-		Message:  "/underattack",
+		Message:  "/UnderAttack",
 		Data: map[string]interface{}{
 			"user": c.Sender(),
 			"chat": c.Chat(),
@@ -183,13 +183,13 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 		break
 	}
 
-	err = d.SetUnderAttackStatus(ctx, c.Chat().ID, true, time.Now().Add(time.Minute*30), int64(notificationMessage.ID))
+	err = d.Datastore.SetUnderAttackStatus(ctx, c.Chat().ID, true, time.Now().Add(time.Minute*30), int64(notificationMessage.ID))
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
 	}
 
-	err = d.Memory.Delete("underattack:" + strconv.FormatInt(c.Chat().ID, 10))
+	err = d.Memory.Delete("UnderAttack:" + strconv.FormatInt(c.Chat().ID, 10))
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
@@ -203,7 +203,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "debug",
-		Category: "underattack.state",
+		Category: "UnderAttack.state",
 		Message:  "Under attack mode is enabled",
 		Data: map[string]interface{}{
 			"user": c.Sender(),
@@ -219,7 +219,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 
 		sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 			Type:     "debug",
-			Category: "underattack.state",
+			Category: "UnderAttack.state",
 			Message:  "Under attack mode ends",
 			Data: map[string]interface{}{
 				"user": c.Sender(),
@@ -293,19 +293,19 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 		return nil
 	}
 
-	underAttackEntry, err := d.GetUnderAttackEntry(ctx, c.Chat().ID)
+	underAttackEntry, err := d.Datastore.GetUnderAttackEntry(ctx, c.Chat().ID)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
 	}
 
-	err = d.SetUnderAttackStatus(ctx, c.Chat().ID, false, time.Now(), 0)
+	err = d.Datastore.SetUnderAttackStatus(ctx, c.Chat().ID, false, time.Now(), 0)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
 	}
 
-	err = d.Memory.Delete("underattack:" + strconv.FormatInt(c.Chat().ID, 10))
+	err = d.Memory.Delete("UnderAttack:" + strconv.FormatInt(c.Chat().ID, 10))
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
@@ -319,7 +319,7 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "debug",
-		Category: "underattack.state",
+		Category: "UnderAttack.state",
 		Message:  "Under attack mode is disabled",
 		Data: map[string]interface{}{
 			"user": c.Sender(),

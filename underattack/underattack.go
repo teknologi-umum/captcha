@@ -4,21 +4,20 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
-	"github.com/jmoiron/sqlx"
 	tb "gopkg.in/telebot.v3"
 )
 
 // Dependency contains the dependency injection struct
-// for methods in the underattack package
+// for methods in the UnderAttack package
 type Dependency struct {
-	Memory *bigcache.BigCache
-	DB     *sqlx.DB
-	Bot    *tb.Bot
+	Datastore Datastore
+	Memory    *bigcache.BigCache
+	Bot       *tb.Bot
 }
 
-// underattack provides a data struct to interact with
+// UnderAttack provides a data struct to interact with
 // the database table.
-type underattack struct {
+type UnderAttack struct {
 	GroupID               int64     `db:"group_id"`
 	IsUnderAttack         bool      `db:"is_under_attack"`
 	NotificationMessageID int64     `db:"notification_message_id"`

@@ -44,12 +44,6 @@ func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 		log.Println(e)
 	}
 
-	_, err := bot.Send(
-		m.Chat,
-		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
-		&tb.SendOptions{ParseMode: tb.ModeHTML},
-	)
-
 	hub := sentry.GetHubFromContext(ctx)
 	if hub == nil {
 		sentry.CaptureException(errors.WithStack(e))
@@ -68,12 +62,17 @@ func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 		"unix": m.Unixtime,
 	})
 
+	hub.CaptureException(errors.WithStack(e))
+
+	_, err := bot.Send(
+		m.Chat,
+		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
+		&tb.SendOptions{ParseMode: tb.ModeHTML},
+	)
 	if err != nil {
 		// Come on? Another error?
 		hub.CaptureException(errors.WithStack(err))
 	}
-
-	hub.CaptureException(errors.WithStack(e))
 }
 
 // HandleHttpError handles error that has a http.Request struct instance

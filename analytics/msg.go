@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	tb "gopkg.in/telebot.v3"
@@ -16,7 +15,7 @@ func (d *Dependency) NewMessage(m *tb.Message) error {
 		return nil
 	}
 
-	if strconv.FormatInt(m.Chat.ID, 10) != d.TeknumID {
+	if m.Chat.ID != d.HomeGroupID {
 		return nil
 	}
 

@@ -2,8 +2,8 @@ package underattack_test
 
 import (
 	"context"
-	"database/sql"
 	"github.com/getsentry/sentry-go"
+	"github.com/teknologi-umum/captcha/underattack/datastore"
 	"log"
 	"os"
 	"testing"
@@ -39,23 +39,23 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	err = underattack.MustMigrate(db)
+	_ = sentry.Init(sentry.ClientOptions{})
+
+	memoryDatastore, err := datastore.NewInMemoryDatastore(memory)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_ = sentry.Init(sentry.ClientOptions{})
-
 	dependency = &underattack.Dependency{
-		Memory: memory,
-		DB:     db,
-		Bot:    nil,
+		Memory:    memory,
+		Datastore: memoryDatastore,
+		Bot:       nil,
 	}
 
 	setupCtx, setupCancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer setupCancel()
 
-	err = Seed(setupCtx)
+	err = dependency.Datastore.Migrate(setupCtx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,54 +73,4 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(exitCode)
-}
-
-func Seed(ctx context.Context) error {
-	c, err := dependency.DB.Conn(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		err := c.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(
-		ctx,
-		`INSERT INTO
-			under_attack
-			(group_id, is_under_attack, expires_at, notification_message_id, updated_at)
-			VALUES
-			($1, $2, $3, $4, $5)`,
-		1,
-		true,
-		time.Now().Add(time.Hour*1),
-		1002,
-		time.Now(),
-	)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return e
-		}
-
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return e
-		}
-
-		return err
-	}
-
-	return nil
 }

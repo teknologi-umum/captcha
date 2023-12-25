@@ -12,9 +12,9 @@ import (
 )
 
 func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
-	span := sentry.StartSpan(ctx, "underattack.kicker")
+	span := sentry.StartSpan(ctx, "UnderAttack.kicker")
 	defer span.Finish()
-	
+
 	for {
 		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
 		if err != nil {
