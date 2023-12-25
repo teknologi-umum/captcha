@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +34,8 @@ type Dependency struct {
 	Mongo       *mongo.Client
 	MongoDBName string
 	TeknumID    string
+	AdminIDs    []string
+	FeatureFlag FeatureFlag
 	captcha     *captcha.Dependencies
 	ascii       *ascii.Dependencies
 	analytics   *analytics.Dependency
@@ -53,12 +54,14 @@ func New(deps Dependency) *Dependency {
 		TeknumID: deps.TeknumID,
 	}
 	return &Dependency{
-		Bot:         deps.Bot,
 		Memory:      deps.Memory,
+		Bot:         deps.Bot,
 		DB:          deps.DB,
 		Mongo:       deps.Mongo,
 		MongoDBName: deps.MongoDBName,
 		TeknumID:    deps.TeknumID,
+		AdminIDs:    deps.AdminIDs,
+		FeatureFlag: deps.FeatureFlag,
 		captcha: &captcha.Dependencies{
 			Memory:    deps.Memory,
 			Bot:       deps.Bot,
@@ -72,6 +75,7 @@ func New(deps Dependency) *Dependency {
 		badwords: &badwords.Dependency{
 			Mongo:       deps.Mongo,
 			MongoDBName: deps.MongoDBName,
+			AdminIDs:    deps.AdminIDs,
 		},
 		underAttack: &underattack.Dependency{
 			Memory: deps.Memory,
@@ -87,9 +91,11 @@ func (d *Dependency) OnTextHandler(c tb.Context) error {
 
 	d.captcha.WaitForAnswer(ctx, c.Message())
 
-	err := d.analytics.NewMessage(c.Message())
-	if err != nil {
-		shared.HandleError(ctx, err)
+	if d.FeatureFlag.Analytics {
+		err := d.analytics.NewMessage(c.Message())
+		if err != nil {
+			shared.HandleError(ctx, err)
+		}
 	}
 
 	return nil
@@ -110,17 +116,19 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	defer span.Finish()
 	ctx = span.Context()
 
-	underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
-	if err != nil {
-		shared.HandleError(ctx, err)
-	}
-
-	if underAttack {
-		err := d.underAttack.Kicker(ctx, c)
+	if d.FeatureFlag.UnderAttack {
+		underAttack, err := d.underAttack.AreWe(ctx, c.Chat().ID)
 		if err != nil {
-			shared.HandleBotError(ctx, err, d.Bot, c.Message())
+			shared.HandleError(ctx, err)
 		}
-		return nil
+
+		if underAttack {
+			err := d.underAttack.Kicker(ctx, c)
+			if err != nil {
+				shared.HandleBotError(ctx, err, d.Bot, c.Message())
+			}
+			return nil
+		}
 	}
 
 	var tempSender *tb.User
@@ -130,7 +138,9 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		tempSender = c.Message().Sender
 	}
 
-	go d.analytics.NewUser(ctx, c.Message(), tempSender)
+	if d.FeatureFlag.Analytics {
+		go d.analytics.NewUser(ctx, c.Message(), tempSender)
+	}
 
 	d.captcha.CaptchaUserJoin(ctx, c.Message())
 
@@ -144,9 +154,11 @@ func (d *Dependency) OnNonTextHandler(c tb.Context) error {
 
 	d.captcha.NonTextListener(ctx, c.Message())
 
-	err := d.analytics.NewMessage(c.Message())
-	if err != nil {
-		shared.HandleError(ctx, err)
+	if d.FeatureFlag.Analytics {
+		err := d.analytics.NewMessage(c.Message())
+		if err != nil {
+			shared.HandleError(ctx, err)
+		}
 	}
 
 	return nil
@@ -161,18 +173,14 @@ func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
 	return nil
 }
 
-// AsciiCmdHandler handle the /ascii command.
-func (d *Dependency) AsciiCmdHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
-
-	d.ascii.Ascii(ctx, c.Message())
-	return nil
-}
-
 // BadWordHandler handle the /badwords command.
 // This can only be accessed by some users on Telegram
 // and only valid for private chats.
 func (d *Dependency) BadWordHandler(c tb.Context) error {
+	if d.FeatureFlag.BadwordsInsertion {
+		return nil
+	}
+
 	if !c.Message().Private() {
 		return nil
 	}
@@ -200,24 +208,12 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 	return nil
 }
 
-// CukupHandler was created just to mock laode.
-func (d *Dependency) CukupHandler(c tb.Context) error {
-	if c.Message().Private() {
+// EnableUnderAttackModeHandler provides a handler for /underattack command.
+func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
+	if !d.FeatureFlag.UnderAttack {
 		return nil
 	}
 
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
-
-	_, err := c.Bot().Send(c.Chat(), &tb.Photo{File: tb.FromURL("https://i.ibb.co/WvynnPb/ezgif-4-13e23b17f1.jpg")})
-	if err != nil {
-		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
-	}
-
-	return nil
-}
-
-// EnableUnderAttackModeHandler provides a handler for /underattack command.
-func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	return d.underAttack.EnableUnderAttackModeHandler(ctx, c)
@@ -225,13 +221,17 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 
 // DisableUnderAttackModeHandler provides a handler for /disableunderattack command.
 func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
+	if !d.FeatureFlag.UnderAttack {
+		return nil
+	}
+
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	return d.underAttack.DisableUnderAttackModeHandler(ctx, c)
 }
 
 func (d *Dependency) SetirHandler(c tb.Context) error {
-	admin := strings.Split(os.Getenv("ADMIN_ID"), ",")
+	admin := d.AdminIDs
 	if !utils.IsIn(admin, strconv.FormatInt(c.Sender().ID, 10)) || c.Chat().Type != tb.ChatPrivate {
 		return nil
 	}

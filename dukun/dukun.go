@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -47,17 +48,25 @@ func (d *Dependency) GetAllDukun(ctx context.Context) ([]Dukun, error) {
 	if err != nil {
 		return []Dukun{}, err
 	}
-	defer cols.Close(ctx)
+	defer func(cols *mongo.Cursor, ctx context.Context) {
+		err := cols.Close(ctx)
+		if err != nil {
+			hub := sentry.GetHubFromContext(ctx)
+			if hub != nil {
+				hub.CaptureException(err)
+			}
+		}
+	}(cols, ctx)
 
-	var dukuns []Dukun
+	var manyDukun []Dukun
 	for cols.Next(ctx) {
 		var dukun Dukun
 		err := cols.Decode(&dukun)
 		if err != nil {
 			return []Dukun{}, err
 		}
-		dukuns = append(dukuns, dukun)
+		manyDukun = append(manyDukun, dukun)
 	}
 
-	return dukuns, nil
+	return manyDukun, nil
 }

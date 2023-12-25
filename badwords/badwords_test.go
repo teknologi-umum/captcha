@@ -42,6 +42,7 @@ func TestMain(m *testing.M) {
 	dependency = &badwords.Dependency{
 		Mongo:       db,
 		MongoDBName: dbName,
+		AdminIDs:    []string{"30", "40", "50", "60"},
 	}
 
 	exitCode := m.Run()
@@ -64,11 +65,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	err := os.Setenv("ADMIN_ID", "30,40,50,60")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	ok := dependency.Authenticate("30")
 	if !ok {
 		t.Errorf("failed to authenticate with the value of %d", 30)

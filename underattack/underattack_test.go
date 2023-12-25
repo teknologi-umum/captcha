@@ -50,7 +50,6 @@ func TestMain(m *testing.M) {
 		Memory: memory,
 		DB:     db,
 		Bot:    nil,
-		Logger: nil,
 	}
 
 	setupCtx, setupCancel := context.WithTimeout(context.Background(), time.Second*30)

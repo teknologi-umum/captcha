@@ -7,15 +7,13 @@ import (
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"
 
-	"github.com/getsentry/sentry-go"
 	tb "gopkg.in/telebot.v3"
 )
 
 // Dependencies contains dependency injection struct
 // to be used for the Ascii package.
 type Dependencies struct {
-	Bot    *tb.Bot
-	Logger *sentry.Client
+	Bot *tb.Bot
 }
 
 // Ascii simply sends ASCII art message for fun.

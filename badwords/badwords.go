@@ -2,8 +2,6 @@ package badwords
 
 import (
 	"context"
-	"os"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,6 +12,7 @@ import (
 type Dependency struct {
 	Mongo       *mongo.Client
 	MongoDBName string
+	AdminIDs    []string
 }
 
 // AddBadWords will add a new word into the MongoDB database.
@@ -29,7 +28,7 @@ func (d *Dependency) AddBadWord(ctx context.Context, word string) error {
 // Authenticate will check if the user is allowed to add a new
 // badword into the database.
 func (d *Dependency) Authenticate(id string) bool {
-	admins := strings.Split(os.Getenv("ADMIN_ID"), ",")
+	admins := d.AdminIDs
 
 	for _, admin := range admins {
 		if admin == id {
