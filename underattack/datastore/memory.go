@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/getsentry/sentry-go"
-	"github.com/teknologi-umum/captcha/underattack"
 	"strconv"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/teknologi-umum/captcha/underattack"
 
 	"github.com/allegro/bigcache/v3"
 )

@@ -3,10 +3,11 @@ package underattack
 import (
 	"context"
 	"fmt"
-	"github.com/getsentry/sentry-go"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 
 	tb "gopkg.in/telebot.v3"
 )

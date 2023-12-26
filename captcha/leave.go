@@ -3,8 +3,9 @@ package captcha
 import (
 	"context"
 	"encoding/json"
-	"github.com/getsentry/sentry-go"
 	"strconv"
+
+	"github.com/getsentry/sentry-go"
 
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"

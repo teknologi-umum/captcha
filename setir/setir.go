@@ -3,10 +3,11 @@ package setir
 import (
 	"context"
 	"fmt"
-	"github.com/getsentry/sentry-go"
-	tb "gopkg.in/telebot.v3"
 	"strconv"
 	"strings"
+
+	"github.com/getsentry/sentry-go"
+	tb "gopkg.in/telebot.v3"
 )
 
 type Dependency struct {

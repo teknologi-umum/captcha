@@ -2,12 +2,13 @@ package underattack_test
 
 import (
 	"context"
-	"github.com/getsentry/sentry-go"
-	"github.com/teknologi-umum/captcha/underattack/datastore"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/teknologi-umum/captcha/underattack/datastore"
 
 	"github.com/teknologi-umum/captcha/underattack"
 

@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/getsentry/sentry-go"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"
@@ -129,7 +130,7 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 		strings.Replace(DefaultQuestion, "{captcha}", captcha, 1),
 		"{user}",
 		"<a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
-			sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
+			utils.SanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+utils.SanitizeInput(m.Sender.LastName)+
 			"</a>",
 		1,
 	)
@@ -219,11 +220,4 @@ SENDMSG_RETRY:
 	}
 
 	d.waitOrDelete(ctx, m)
-}
-
-func sanitizeInput(inp string) string {
-	var str string
-	str = strings.ReplaceAll(inp, ">", "&gt;")
-	str = strings.ReplaceAll(str, "<", "&lt;")
-	return str
 }

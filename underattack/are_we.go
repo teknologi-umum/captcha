@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/getsentry/sentry-go"
 	"strconv"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 
 	"github.com/allegro/bigcache/v3"
 )
