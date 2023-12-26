@@ -132,6 +132,11 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 	go func(c tb.Context, reminder Reminder) {
 		time.Sleep(time.Until(reminder.Time))
 
+		ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub())
+		span := sentry.StartSpan(ctx, "reminder.trigger", sentry.WithTransactionName("Reminder Trigger"), sentry.WithTransactionSource(sentry.SourceTask))
+		defer span.Finish()
+		ctx = span.Context()
+
 		template := fmt.Sprintf(
 			"Hi %s! I'm reminding you to %s. Have a great day!",
 			strings.Join(reminder.Subject, ", "),
@@ -141,9 +146,14 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		if err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		}
+
+		err = d.DecrementUserLimit(ctx, c.Sender().ID)
+		if err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+		}
 	}(c, reminder)
 
-	err = d.IncrementUserLimit(ctx, c.Sender().ID, reminderCount+1)
+	err = d.IncrementUserLimit(ctx, c.Sender().ID)
 	if err != nil {
 		sentry.GetHubFromContext(ctx).CaptureException(err)
 	}
