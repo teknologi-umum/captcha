@@ -26,17 +26,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/teknologi-umum/captcha/analytics"
+	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
+	"github.com/teknologi-umum/captcha/reminder"
 	"github.com/teknologi-umum/captcha/setir"
+	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/underattack"
 	"github.com/teknologi-umum/captcha/underattack/datastore"
-
-	// Internals
-	"github.com/teknologi-umum/captcha/analytics"
-	"github.com/teknologi-umum/captcha/analytics/server"
-	"github.com/teknologi-umum/captcha/shared"
 
 	// Database and cache
 	"github.com/allegro/bigcache/v3"
@@ -281,6 +280,16 @@ func main() {
 		return
 	}
 
+	var reminderDependency *reminder.Dependency
+	if configuration.FeatureFlag.Reminder {
+		reminderDependency, err = reminder.New(cache)
+		if err != nil {
+			sentry.CaptureException(err)
+			log.Fatal(err)
+			return
+		}
+	}
+
 	program, err := New(Dependency{
 		FeatureFlag: configuration.FeatureFlag,
 		Captcha: &captcha.Dependencies{
@@ -293,6 +302,7 @@ func main() {
 		Badwords:    badwordsDependency,
 		UnderAttack: underAttackDependency,
 		Setir:       setirDependency,
+		Reminder:    reminderDependency,
 	})
 	if err != nil {
 		sentry.CaptureException(err)

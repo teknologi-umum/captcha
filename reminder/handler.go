@@ -17,7 +17,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 	input := strings.TrimPrefix(c.Text(), "/remind")
 	if input == "" {
 		err := c.Reply(
-			"To use /reminder properly, you should add with the remaining text including the normal human grammatical that I can understand.\n\n"+
+			"To use /remind properly, you should add with the remaining text including the normal human grammatical that I can understand.\n\n"+
 				"For English, see this <a href=\"https://www.grammarly.com/blog/sentence-structure/\">Grammarly article about sentence structure</a>.\n"+
 				"Untuk Indonesia, pakai SPO + Keterangan Waktu yang baik dan benar, <a href=\"https://tambahpinter.com/bentuk-kalimat-spok/\">belajar lagi biar tambah pinter</a>.",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
@@ -110,7 +110,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 
 	if reminder.Time.IsZero() || len(reminder.Subject) == 0 || reminder.Object == "" {
 		err := c.Reply(
-			"Sorry, I'm unable to parse the reminder text that you just sent. Send /reminder and see the guide for this command.",
+			"Sorry, I'm unable to parse the reminder text that you just sent. Send /remind and see the guide for this command.",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 		)
 		if err != nil {
