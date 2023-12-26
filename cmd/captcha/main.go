@@ -63,12 +63,18 @@ func main() {
 
 	// Setup Sentry for error handling.
 	err = sentry.Init(sentry.ClientOptions{
-		Dsn:                configuration.SentryDSN,
-		Debug:              configuration.Environment == "development",
-		Environment:        configuration.Environment,
-		SampleRate:         1.0,
-		EnableTracing:      true,
-		TracesSampleRate:   0.2,
+		Dsn:           configuration.SentryDSN,
+		Debug:         configuration.Environment == "development",
+		Environment:   configuration.Environment,
+		SampleRate:    1.0,
+		EnableTracing: true,
+		TracesSampler: func(ctx sentry.SamplingContext) float64 {
+			if ctx.Span.Name == "GET /" {
+				return 0
+			}
+
+			return 0.2
+		},
 		ProfilesSampleRate: 0.05,
 		Release:            version,
 	})

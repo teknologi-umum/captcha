@@ -203,7 +203,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "debug",
-		Category: "UnderAttack.state",
+		Category: "underattack.state",
 		Message:  "Under attack mode is enabled",
 		Data: map[string]interface{}{
 			"user": c.Sender(),
@@ -219,7 +219,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 
 		sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 			Type:     "debug",
-			Category: "UnderAttack.state",
+			Category: "underattack.state",
 			Message:  "Under attack mode ends",
 			Data: map[string]interface{}{
 				"user": c.Sender(),
@@ -319,7 +319,7 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{
 		Type:     "debug",
-		Category: "UnderAttack.state",
+		Category: "underattack.state",
 		Message:  "Under attack mode is disabled",
 		Data: map[string]interface{}{
 			"user": c.Sender(),
