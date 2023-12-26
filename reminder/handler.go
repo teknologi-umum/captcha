@@ -135,7 +135,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		template := fmt.Sprintf(
 			"Hi %s! I'm reminding you to %s. Have a great day!",
 			strings.Join(reminder.Subject, ", "),
-			reminder.Object,
+			utils.SanitizeInput(reminder.Object),
 		)
 		_, err := c.Bot().Send(c.Chat(), template, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 		if err != nil {
