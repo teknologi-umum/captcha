@@ -44,7 +44,7 @@ func TestParseText(t *testing.T) {
 			input: "me in 5 minutes for assigning task for Jake on Jira",
 			expect: reminder.Reminder{
 				Subject: []string{"me"},
-				Time:    time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute()+5, now.Second(), now.Nanosecond(), time.FixedZone("UTC+7", 7*60*60)).Round(time.Second),
+				Time:    now.Add(time.Minute * 5).In(time.FixedZone("UTC+7", 7*60*60)).Round(time.Second),
 				Object:  "assigning task for Jake on Jira",
 			},
 		},

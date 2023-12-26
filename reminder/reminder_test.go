@@ -12,6 +12,8 @@ import (
 func TestMain(m *testing.M) {
 	_ = sentry.Init(sentry.ClientOptions{})
 
+	_ = os.Setenv("TZ", "UTC")
+
 	os.Exit(m.Run())
 }
 
