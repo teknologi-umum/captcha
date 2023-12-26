@@ -35,7 +35,7 @@ func TestUserLimit(t *testing.T) {
 		t.Errorf("expecting userLimit to be 0, instead got %d", userLimit)
 	}
 
-	err = dependency.IncrementUserLimit(ctx, 123)
+	err = dependency.IncrementUserLimit(ctx, 123, 1)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
