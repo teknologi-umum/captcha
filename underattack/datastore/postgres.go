@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/underattack"
-	"time"
 )
 
 type postgresDatastore struct {

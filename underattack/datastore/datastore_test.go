@@ -1,9 +1,10 @@
 package datastore_test
 
 import (
-	"github.com/getsentry/sentry-go"
 	"os"
 	"testing"
+
+	"github.com/getsentry/sentry-go"
 )
 
 func TestMain(m *testing.M) {

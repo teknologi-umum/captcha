@@ -3,10 +3,11 @@ package datastore_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/teknologi-umum/captcha/underattack"
-	"github.com/teknologi-umum/captcha/underattack/datastore"
 	"testing"
 	"time"
+
+	"github.com/teknologi-umum/captcha/underattack"
+	"github.com/teknologi-umum/captcha/underattack/datastore"
 
 	"github.com/allegro/bigcache/v3"
 )

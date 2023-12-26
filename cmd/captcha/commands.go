@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/teknologi-umum/captcha/setir"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/teknologi-umum/captcha/reminder"
+	"github.com/teknologi-umum/captcha/setir"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/analytics"
@@ -31,6 +33,7 @@ type Dependency struct {
 	Badwords    *badwords.Dependency
 	UnderAttack *underattack.Dependency
 	Setir       *setir.Dependency
+	Reminder    *reminder.Dependency
 }
 
 // New returns a pointer struct of Dependency
@@ -52,6 +55,10 @@ func New(deps Dependency) (*Dependency, error) {
 
 	if deps.FeatureFlag.BadwordsInsertion && deps.Badwords == nil {
 		return nil, fmt.Errorf("badwords insertion feature is enabled, but badwords dependency is nil")
+	}
+
+	if deps.FeatureFlag.Reminder && deps.Reminder == nil {
+		return nil, fmt.Errorf("reminder feature is enabled, but reminder dependency is nil")
 	}
 
 	return &deps, nil
@@ -200,6 +207,17 @@ func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	return d.UnderAttack.DisableUnderAttackModeHandler(ctx, c)
+}
+
+func (d *Dependency) ReminderHandler(c tb.Context) error {
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+
+	span := sentry.StartSpan(ctx, "bot.reminder_handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha ReminderHandler"))
+	defer span.Finish()
+	ctx = span.Context()
+
+	return d.Reminder.Handler(ctx, c)
 }
 
 func (d *Dependency) SetirHandler(c tb.Context) error {

@@ -2,8 +2,9 @@ package reminder
 
 import (
 	"fmt"
-	"github.com/allegro/bigcache/v3"
 	"time"
+
+	"github.com/allegro/bigcache/v3"
 )
 
 type Dependency struct {

@@ -3,12 +3,15 @@ package reminder
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type SentenceElement uint8
@@ -45,13 +48,16 @@ func isNumber(s string) bool {
 }
 
 var verbPreposition = []string{"for", "untuk", "buat", "to", "about", "tentang", "soal", "regarding"}
-var timePreposition = []string{"at", "in", "on", "di", "jam", "pada"}
+var timePreposition = []string{"at", "in", "on", "di", "jam", "pada", "dalam"}
 var conjunction = []string{"and", "or", "dan", "&", "atau"}
 var validSubjects = []string{"me", "aku", "saya", "gw", "gua", "gue", "gweh"}
 
 var clockRegex = regexp.MustCompile("[0-9]{1,2}:[0-9]{2}")
 
-func ParseText(text string) (Reminder, error) {
+func ParseText(ctx context.Context, text string) (Reminder, error) {
+	span := sentry.StartSpan(ctx, "reminder.parse_text")
+	defer span.Finish()
+
 	scanner := bufio.NewScanner(strings.NewReader(text))
 	scanner.Split(ScanSpace)
 
@@ -68,13 +74,15 @@ func ParseText(text string) (Reminder, error) {
 		if len(reminder.Subject) == 0 || expectedNextPartCategory == Subject {
 			//ValidateSubject:
 			if len(reminder.Subject) == 3 {
+				lastPartCategory = Subject
+				expectedNextPartCategory = None
 				continue
 			}
 
 			// does this part contain valid subject?
-			if slices.Contains(validSubjects, part) {
+			if slices.Contains(validSubjects, strings.ToLower(part)) {
 				// it is subject indeed
-				reminder.Subject = append(reminder.Subject, part)
+				reminder.Subject = append(reminder.Subject, "me")
 				lastPartCategory = Subject
 				expectedNextPartCategory = None
 				continue
@@ -132,7 +140,7 @@ func ParseText(text string) (Reminder, error) {
 
 				// switch case is faster rather than doing slices.Contains like this
 				//if slices.Contains(timeDuration, part) {}
-				switch part {
+				switch strings.ToLower(part) {
 				case "minute", "minutes", "menit":
 					partialTimeString += "m"
 					duration, err := time.ParseDuration(partialTimeString)

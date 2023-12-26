@@ -2,10 +2,14 @@ package reminder_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"github.com/teknologi-umum/captcha/reminder"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/teknologi-umum/captcha/reminder"
 )
 
 func TestParseText(t *testing.T) {
@@ -53,6 +57,42 @@ func TestParseText(t *testing.T) {
 				Object:  "submit the math assignment",
 			},
 		},
+		{
+			name:  "3 person subject",
+			input: "me and @Carl and @Eugene to do math homework in 1 minute",
+			expect: reminder.Reminder{
+				Subject: []string{"me", "@Carl", "@Eugene"},
+				Time:    now.Add(time.Minute).In(time.FixedZone("UTC+7", 7*60*60)).Round(time.Second),
+				Object:  "do math homework",
+			},
+		},
+		{
+			name:  "more than 3 person",
+			input: "@Jake and @Jones and @Carl and @August to attend the bachelor party in 3 hours",
+			expect: reminder.Reminder{
+				Subject: []string{"@Jake", "@Jones", "@Carl"},
+				Time:    now.Add(time.Hour * 3).In(time.FixedZone("UTC+7", 7*60*60)).Round(time.Second),
+				Object:  "attend the bachelor party",
+			},
+		},
+		{
+			name:  "happy case indonesian",
+			input: "saya dalam 5 menit untuk mematikan TV",
+			expect: reminder.Reminder{
+				Subject: []string{"me"},
+				Time:    now.Add(time.Minute * 5).In(time.FixedZone("UTC+7", 7*60*60)).Round(time.Second),
+				Object:  "mematikan TV",
+			},
+		},
+		{
+			name:  "invalid time and object",
+			input: "saya in 3 weeks on having a child",
+			expect: reminder.Reminder{
+				Subject: []string{"me"},
+				Time:    time.Time{},
+				Object:  "",
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
@@ -62,7 +102,9 @@ func TestParseText(t *testing.T) {
 				testCase.expect.Time = testCase.expect.Time.Add(time.Hour * 24)
 			}
 
-			got, err := reminder.ParseText(testCase.input)
+			ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub())
+
+			got, err := reminder.ParseText(ctx, testCase.input)
 			if err != nil {
 				t.Errorf("[%d] %s", i, err)
 			}
@@ -77,4 +119,19 @@ func TestParseText(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Duration exceeds 24 hours", func(t *testing.T) {
+		ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub())
+
+		testInputs := []string{
+			"me in 60 hours about something",
+			"me in 7200 minutes about something",
+		}
+		for i, testInput := range testInputs {
+			_, err := reminder.ParseText(ctx, testInput)
+			if !errors.Is(err, reminder.ErrExceeds24Hours) {
+				t.Errorf("[%d] expecting an error of ErrExceeds24Hours, instead got %v", i, err)
+			}
+		}
+	})
 }

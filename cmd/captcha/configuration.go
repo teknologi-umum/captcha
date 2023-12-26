@@ -12,6 +12,7 @@ type FeatureFlag struct {
 	BadwordsInsertion bool `yaml:"badwords_insertion" json:"badwords_insertion" env:"FEATURE_FLAG_BADWORDS_INSERTION"`
 	Dukun             bool `yaml:"dukun" json:"dukun" env:"FEATURE_FLAG_DUKUN"`
 	UnderAttack       bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
+	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER"`
 }
 
 type Configuration struct {

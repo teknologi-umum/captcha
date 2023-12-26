@@ -48,9 +48,9 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			kickMsg, err := d.Bot.Send(
 				msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.FormatInt(msgUser.Sender.ID, 10)+"\">"+
-					sanitizeInput(msgUser.Sender.FirstName)+
+					utils.SanitizeInput(msgUser.Sender.FirstName)+
 					utils.ShouldAddSpace(msgUser.Sender)+
-					sanitizeInput(msgUser.Sender.LastName)+
+					utils.SanitizeInput(msgUser.Sender.LastName)+
 					"</a> nggak nyelesain captcha, mari kita kick!",
 				&tb.SendOptions{
 					ParseMode: tb.ModeHTML,

@@ -2,9 +2,10 @@ package reminder_test
 
 import (
 	"errors"
-	"github.com/teknologi-umum/captcha/reminder"
 	"strconv"
 	"testing"
+
+	"github.com/teknologi-umum/captcha/reminder"
 )
 
 func TestParseClock(t *testing.T) {
@@ -56,6 +57,34 @@ func TestParseClock(t *testing.T) {
 			expectHour:   15,
 			expectMinute: 0,
 			expectError:  strconv.ErrSyntax,
+		},
+		{
+			name:         "hour exceeds 24",
+			input:        "30:20",
+			expectHour:   30,
+			expectMinute: 20,
+			expectError:  reminder.ErrParseClock,
+		},
+		{
+			name:         "hour negative number",
+			input:        "-12:20",
+			expectHour:   -12,
+			expectMinute: 20,
+			expectError:  reminder.ErrParseClock,
+		},
+		{
+			name:         "minute exceeds 60",
+			input:        "20:90",
+			expectHour:   20,
+			expectMinute: 90,
+			expectError:  reminder.ErrParseClock,
+		},
+		{
+			name:         "minute negative number",
+			input:        "00:-123",
+			expectHour:   0,
+			expectMinute: -123,
+			expectError:  reminder.ErrParseClock,
 		},
 	}
 

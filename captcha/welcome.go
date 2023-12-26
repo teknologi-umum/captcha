@@ -80,10 +80,10 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 			strings.NewReplacer(
 				"{user}",
 				"<a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
-					sanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+sanitizeInput(m.Sender.LastName)+
+					utils.SanitizeInput(m.Sender.FirstName)+utils.ShouldAddSpace(m.Sender)+utils.SanitizeInput(m.Sender.LastName)+
 					"</a>",
 				"{groupname}",
-				sanitizeInput(m.Chat.Title),
+				utils.SanitizeInput(m.Chat.Title),
 			).Replace(msgToSend),
 			&tb.SendOptions{
 				ReplyTo:               m,

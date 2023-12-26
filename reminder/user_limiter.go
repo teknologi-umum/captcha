@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/allegro/bigcache/v3"
 	"github.com/getsentry/sentry-go"
-	"strconv"
 )
 
 func (d *Dependency) CheckUserLimit(ctx context.Context, id int64) (n int, err error) {

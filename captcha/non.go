@@ -59,9 +59,9 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	wrongMsg, err := d.Bot.Send(
 		m.Chat,
 		"Hai, <a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
-			sanitizeInput(m.Sender.FirstName)+
+			utils.SanitizeInput(m.Sender.FirstName)+
 			utils.ShouldAddSpace(m.Sender)+
-			sanitizeInput(m.Sender.LastName)+
+			utils.SanitizeInput(m.Sender.LastName)+
 			"</a>. "+
 			"Selesain captchanya dulu yuk, baru kirim yang aneh-aneh. Kamu punya "+
 			strconv.Itoa(int(remainingTime.Seconds()))+

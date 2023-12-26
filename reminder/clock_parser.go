@@ -2,10 +2,13 @@ package reminder
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
+
+var ErrParseClock = errors.New("parse clock")
 
 func ParseClock(s string) (hour int, minute int, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(s))
@@ -38,23 +41,23 @@ func ParseClock(s string) (hour int, minute int, err error) {
 		return
 	}
 
-	if hour > 24 {
-		err = fmt.Errorf("invalid hour, exceeds 24")
+	if hour >= 24 {
+		err = fmt.Errorf("%w: invalid hour, exceeds 24", ErrParseClock)
 		return
 	}
 
 	if hour < 0 {
-		err = fmt.Errorf("invalid hour, negative number")
+		err = fmt.Errorf("%w: invalid hour, negative number", ErrParseClock)
 		return
 	}
 
-	if minute > 60 {
-		err = fmt.Errorf("invalid minute, exceeds 60")
+	if minute >= 60 {
+		err = fmt.Errorf("%w: invalid minute, exceeds 60", ErrParseClock)
 		return
 	}
 
 	if minute < 0 {
-		err = fmt.Errorf("invalid minute, negative number")
+		err = fmt.Errorf("%w: invalid minute, negative number", ErrParseClock)
 		return
 	}
 

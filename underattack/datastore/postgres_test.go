@@ -3,12 +3,13 @@ package datastore_test
 import (
 	"context"
 	"database/sql"
-	"github.com/teknologi-umum/captcha/underattack"
-	"github.com/teknologi-umum/captcha/underattack/datastore"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/teknologi-umum/captcha/underattack"
+	"github.com/teknologi-umum/captcha/underattack/datastore"
 
 	_ "github.com/lib/pq"
 )
