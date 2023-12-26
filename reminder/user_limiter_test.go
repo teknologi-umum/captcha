@@ -35,7 +35,7 @@ func TestUserLimit(t *testing.T) {
 		t.Errorf("expecting userLimit to be 0, instead got %d", userLimit)
 	}
 
-	err = dependency.IncrementUserLimit(ctx, 123, 1)
+	err = dependency.IncrementUserLimit(ctx, 123)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -47,5 +47,19 @@ func TestUserLimit(t *testing.T) {
 
 	if userLimit2 != 1 {
 		t.Errorf("expecting userLimit2 to be 1, instead got %d", userLimit2)
+	}
+
+	err = dependency.DecrementUserLimit(ctx, 123)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	userLimit3, err := dependency.CheckUserLimit(ctx, 123)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err.Error())
+	}
+
+	if userLimit3 != 0 {
+		t.Errorf("expecting userLimit3 to be 0, instead got %d", userLimit2)
 	}
 }
