@@ -13,7 +13,7 @@ import (
 )
 
 func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
-	span := sentry.StartSpan(ctx, "UnderAttack.kicker")
+	span := sentry.StartSpan(ctx, "underattack.kicker")
 	defer span.Finish()
 
 	for {

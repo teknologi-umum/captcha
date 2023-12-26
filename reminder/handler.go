@@ -14,7 +14,7 @@ import (
 )
 
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
-	input := strings.TrimPrefix(c.Text(), "/remind")
+	input := strings.TrimPrefix(strings.TrimPrefix(c.Text(), "/remind@TeknumCaptchaBot"), "/remind")
 	if input == "" {
 		err := c.Reply(
 			"To use /remind properly, you should add with the remaining text including the normal human grammatical that I can understand.\n\n"+
@@ -64,23 +64,22 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		Category: "reminder.handler",
 		Message:  "A reminder input just came in",
 		Data: map[string]interface{}{
-			"Reminder Text": input,
+			"Reminder Text":    input,
+			"Chat ID":          c.Chat().ID,
+			"Chat Username":    c.Chat().Username,
+			"Chat Full Name":   c.Chat().FirstName + " " + c.Chat().LastName,
+			"Chat Title":       c.Chat().Title,
+			"Message ID":       c.Message().ID,
+			"Sender ID":        c.Sender().ID,
+			"Sender Username":  c.Sender().Username,
+			"Sender Full Name": c.Sender().FirstName + " " + c.Sender().LastName,
+			"From Group":       c.Message().FromGroup(),
+			"From Channel":     c.Message().FromChannel(),
+			"Is Forwarded":     c.Message().IsForwarded(),
 		},
 		Level:     "debug",
 		Timestamp: time.Now(),
-	}, &sentry.BreadcrumbHint{
-		"Chat ID":          c.Chat().ID,
-		"Chat Username":    c.Chat().Username,
-		"Chat Full Name":   c.Chat().FirstName + " " + c.Chat().LastName,
-		"Chat Title":       c.Chat().Title,
-		"Message ID":       c.Message().ID,
-		"Sender ID":        c.Sender().ID,
-		"Sender Username":  c.Sender().Username,
-		"Sender Full Name": c.Sender().FirstName + " " + c.Sender().LastName,
-		"From Group":       c.Message().FromGroup(),
-		"From Channel":     c.Message().FromChannel(),
-		"Is Forwarded":     c.Message().IsForwarded(),
-	})
+	}, &sentry.BreadcrumbHint{})
 
 	// Parse text
 	reminder, err := ParseText(ctx, input)
@@ -108,7 +107,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		return nil
 	}
 
-	if reminder.Time.IsZero() || len(reminder.Subject) == 0 || reminder.Object == "" {
+	if reminder.Time.IsZero() || len(reminder.Subject) == 0 || reminder.Object == "" || reminder.Time.Unix() < time.Now().Unix() {
 		err := c.Reply(
 			"Sorry, I'm unable to parse the reminder text that you just sent. Send /remind and see the guide for this command.",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
@@ -136,7 +135,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		template := fmt.Sprintf(
 			"Hi %s! I'm reminding you to %s. Have a great day!",
 			strings.Join(reminder.Subject, ", "),
-			reminder.Object,
+			utils.SanitizeInput(reminder.Object),
 		)
 		_, err := c.Bot().Send(c.Chat(), template, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 		if err != nil {
