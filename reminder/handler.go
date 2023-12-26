@@ -148,6 +148,9 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		}
 
 		err = d.DecrementUserLimit(ctx, c.Sender().ID)
+		if err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+		}
 	}(c, reminder)
 
 	err = d.IncrementUserLimit(ctx, c.Sender().ID)

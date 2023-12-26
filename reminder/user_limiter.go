@@ -62,7 +62,8 @@ func (d *Dependency) DecrementUserLimit(ctx context.Context, id int64) error {
 	}
 
 	if value == nil || string(value) == "" {
-		value = []byte("0")
+		// Don't decrement anything that's empty
+		return nil
 	}
 
 	i, err := strconv.Atoi(string(value))
