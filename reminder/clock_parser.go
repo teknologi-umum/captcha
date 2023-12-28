@@ -20,8 +20,12 @@ func ParseClock(s string) (hour int, minute int, err error) {
 	for scanner.Scan() {
 		t := scanner.Text()
 		if t == ":" {
-			colonMark = true
-			continue
+			if !colonMark {
+				colonMark = true
+				continue
+			}
+
+			break
 		}
 
 		if !colonMark {
