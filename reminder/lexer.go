@@ -52,7 +52,7 @@ var timePreposition = []string{"at", "in", "on", "di", "jam", "pada", "dalam"}
 var conjunction = []string{"and", "or", "dan", "&", "atau"}
 var validSubjects = []string{"me", "aku", "saya", "gw", "gua", "gue", "gweh"}
 
-var clockRegex = regexp.MustCompile("[0-9]{1,2}:[0-9]{2}")
+var clockRegex = regexp.MustCompile("^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$")
 
 func ParseText(ctx context.Context, text string) (Reminder, error) {
 	span := sentry.StartSpan(ctx, "reminder.parse_text")
@@ -72,7 +72,7 @@ func ParseText(ctx context.Context, text string) (Reminder, error) {
 		// predicate = for, in, at, on
 
 		if len(reminder.Subject) == 0 || expectedNextPartCategory == Subject {
-			//ValidateSubject:
+			// ValidateSubject:
 			if len(reminder.Subject) == 3 {
 				lastPartCategory = Subject
 				expectedNextPartCategory = None
@@ -139,7 +139,7 @@ func ParseText(ctx context.Context, text string) (Reminder, error) {
 				now := time.Now()
 
 				// switch case is faster rather than doing slices.Contains like this
-				//if slices.Contains(timeDuration, part) {}
+				// if slices.Contains(timeDuration, part) {}
 				switch strings.ToLower(part) {
 				case "minute", "minutes", "menit":
 					partialTimeString += "m"

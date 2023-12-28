@@ -86,6 +86,13 @@ func TestParseClock(t *testing.T) {
 			expectMinute: -123,
 			expectError:  reminder.ErrParseClock,
 		},
+		{
+			name:         "with specify seconds",
+			input:        "22:32:00",
+			expectHour:   22,
+			expectMinute: 32,
+			expectError:  nil,
+		},
 	}
 
 	for _, testCase := range testCases {

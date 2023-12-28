@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
@@ -93,6 +95,15 @@ func TestParseText(t *testing.T) {
 				Object:  "",
 			},
 		},
+		{
+			name:  "weird case from ii64",
+			input: "me to check open PR at 22:32:00 UTC+7",
+			expect: reminder.Reminder{
+				Subject: []string{"me"},
+				Time:    time.Date(now.Year(), now.Month(), now.Day(), 22, 32, 0, 0, time.FixedZone("UTC+7", 7*60*60)),
+				Object:  "check open PR UTC+7",
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
@@ -134,4 +145,43 @@ func TestParseText(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestClockRegex(t *testing.T) {
+	var clockRegex = regexp.MustCompile("^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$")
+
+	testCases := []struct {
+		input       string
+		expectMatch bool
+	}{
+		{
+			input:       "00:00",
+			expectMatch: true,
+		},
+		{
+			input:       "123:123",
+			expectMatch: false,
+		},
+		{
+			input:       "1:10",
+			expectMatch: true,
+		},
+		{
+			input:       "00:00:01",
+			expectMatch: true,
+		},
+		{
+			input:       "00:00:",
+			expectMatch: false,
+		},
+	}
+
+	for i, testCase := range testCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			match := clockRegex.MatchString(testCase.input)
+			if match != testCase.expectMatch {
+				t.Errorf("[%d] expecting %q to be %v, got %v", i, testCase.input, testCase.expectMatch, match)
+			}
+		})
+	}
 }
