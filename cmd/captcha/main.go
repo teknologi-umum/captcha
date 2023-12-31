@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -55,7 +56,14 @@ import (
 var version string
 
 func main() {
-	configuration, err := ParseConfiguration("")
+	var configurationFilePath string
+	flag.StringVar(&configurationFilePath, "configuration-file", "", "Path to configuration file")
+	flag.Parse()
+	if value, ok := os.LookupEnv("CONFIGURATION_FILE"); ok {
+		configurationFilePath = value
+	}
+
+	configuration, err := ParseConfiguration(configurationFilePath)
 	if err != nil {
 		log.Fatalf("Parsing configuration: %s", err.Error())
 		return

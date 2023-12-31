@@ -144,6 +144,7 @@ func New(config Config) *http.Server {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		data, err := deps.GetHourly(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -174,6 +175,7 @@ func New(config Config) *http.Server {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		data, err := deps.GetTotal(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -204,6 +206,7 @@ func New(config Config) *http.Server {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		data, err := deps.GetDukunPoints(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

@@ -21,10 +21,6 @@ func New(bot *tb.Bot, adminIDs []string, homeID int64) (*Dependency, error) {
 		return nil, fmt.Errorf("bot is nil")
 	}
 
-	if len(adminIDs) == 0 {
-		return nil, fmt.Errorf("invalid admin ids, empty value")
-	}
-
 	return &Dependency{
 		AdminIDs: adminIDs,
 		HomeID:   homeID,
@@ -33,6 +29,11 @@ func New(bot *tb.Bot, adminIDs []string, homeID int64) (*Dependency, error) {
 }
 
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
+	if d.AdminIDs == nil || d.HomeID == 0 {
+		// The feature is disabled
+		return nil
+	}
+
 	if c.Message().IsReply() {
 		var replyToID int
 

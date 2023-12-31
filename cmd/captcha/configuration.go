@@ -8,11 +8,11 @@ import (
 )
 
 type FeatureFlag struct {
-	Analytics         bool `yaml:"analytics" json:"analytics" env:"FEATURE_FLAG_ANALYTICS"`
-	BadwordsInsertion bool `yaml:"badwords_insertion" json:"badwords_insertion" env:"FEATURE_FLAG_BADWORDS_INSERTION"`
-	Dukun             bool `yaml:"dukun" json:"dukun" env:"FEATURE_FLAG_DUKUN"`
+	Analytics         bool `yaml:"analytics" json:"analytics" env:"FEATURE_FLAG_ANALYTICS" env-default:"false"`
+	BadwordsInsertion bool `yaml:"badwords_insertion" json:"badwords_insertion" env:"FEATURE_FLAG_BADWORDS_INSERTION" env-default:"false"`
+	Dukun             bool `yaml:"dukun" json:"dukun" env:"FEATURE_FLAG_DUKUN" env-default:"false"`
 	UnderAttack       bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
-	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER"`
+	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER" env-default:"false"`
 }
 
 type Configuration struct {
