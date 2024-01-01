@@ -1,0 +1,20 @@
+[Unit]
+Description=Teknologi Umum Captcha Bot
+Documentation=https://github.com/teknologi-umum/captcha
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/local/bin/captcha-bot
+EnvironmentFile=-/etc/default/captcha-bot
+ExecReload=/bin/kill -SIGHUP $MAINPID
+Restart=on-failure
+RestartSec=60
+TimeoutStartSec=60s
+TimeoutStopSec=60s
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
