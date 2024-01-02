@@ -77,7 +77,7 @@ func main() {
 		SampleRate:    1.0,
 		EnableTracing: true,
 		TracesSampler: func(ctx sentry.SamplingContext) float64 {
-			if ctx.Span.Name == "GET /" {
+			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" {
 				return 0
 			}
 
