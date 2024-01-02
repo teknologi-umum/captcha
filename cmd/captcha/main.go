@@ -180,16 +180,18 @@ func main() {
 		},
 		Client: &http.Client{
 			Timeout: time.Hour,
-			Transport: &http.Transport{
-				Proxy:                 http.ProxyFromEnvironment,
-				TLSHandshakeTimeout:   time.Minute * 3,
-				ForceAttemptHTTP2:     true,
-				IdleConnTimeout:       time.Minute * 3,
-				ExpectContinueTimeout: time.Minute,
-				DialContext: (&net.Dialer{
-					Timeout:   time.Minute * 3,
-					KeepAlive: time.Minute,
-				}).DialContext,
+			Transport: &SentryTransportWrapper{
+				OriginalTransport: &http.Transport{
+					Proxy:                 http.ProxyFromEnvironment,
+					TLSHandshakeTimeout:   time.Minute * 3,
+					ForceAttemptHTTP2:     true,
+					IdleConnTimeout:       time.Minute * 3,
+					ExpectContinueTimeout: time.Minute,
+					DialContext: (&net.Dialer{
+						Timeout:   time.Minute * 3,
+						KeepAlive: time.Minute,
+					}).DialContext,
+				},
 			},
 		},
 	})
