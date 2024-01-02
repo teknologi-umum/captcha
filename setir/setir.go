@@ -34,6 +34,10 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 		return nil
 	}
 
+	if !c.Message().Private() {
+		return nil
+	}
+
 	if c.Message().IsReply() {
 		var replyToID int
 
