@@ -3,7 +3,7 @@ package analytics_test
 import (
 	"testing"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func TestNewMsg(t *testing.T) {

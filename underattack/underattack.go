@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // Dependency contains the dependency injection struct

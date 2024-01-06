@@ -9,7 +9,7 @@ import (
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func (d *Dependency) SwarmLog(user *tb.User, groupID int64, finishedCaptcha bool) {
@@ -125,7 +125,7 @@ func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha b
 }
 
 func (d *Dependency) PurgeBots(ctx context.Context, m *tb.Message) {
-	admins, err := d.Bot.AdminsOf(m.Chat)
+	admins, err := d.Bot.AdminsOf(ctx, m.Chat)
 	if err != nil {
 		shared.HandleError(ctx, fmt.Errorf("get admins: %w", err))
 		return
@@ -186,7 +186,7 @@ func (d *Dependency) PurgeBots(ctx context.Context, m *tb.Message) {
 			return
 		}
 
-		err = d.Bot.Ban(m.Chat, &tb.ChatMember{
+		err = d.Bot.Ban(ctx, m.Chat, &tb.ChatMember{
 			RestrictedUntil: tb.Forever(),
 			User: &tb.User{
 				ID: userID,
@@ -237,7 +237,7 @@ func (d *Dependency) PurgeBots(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	_, err = d.Bot.Send(m.Chat, fmt.Sprintf("%d bots have been banned", len(userIDs)))
+	_, err = d.Bot.Send(ctx, m.Chat, fmt.Sprintf("%d bots have been banned", len(userIDs)))
 	if err != nil {
 		shared.HandleError(ctx, fmt.Errorf("send: %w", err))
 		return

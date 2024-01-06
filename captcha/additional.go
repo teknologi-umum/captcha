@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // Collect AdditionalMsg that was sent because the user did something

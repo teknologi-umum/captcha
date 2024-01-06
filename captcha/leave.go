@@ -10,7 +10,7 @@ import (
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // CaptchaUserLeave handles the event when a user left the group.
@@ -22,7 +22,7 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 	// Check if the user is an admin or bot first.
 	// If they are, return.
 	// If they're not, continue to execute the captcha.
-	admins, err := d.Bot.AdminsOf(m.Chat)
+	admins, err := d.Bot.AdminsOf(ctx, m.Chat)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
@@ -71,7 +71,7 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 	}
 
 	// Delete the question message.
-	err = d.deleteMessageBlocking(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})
@@ -85,7 +85,7 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -100,7 +100,7 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})

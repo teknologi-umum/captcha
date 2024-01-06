@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/teknologi-umum/captcha/utils"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // currentWelcomeMessages is a collection of welcome messages
@@ -76,6 +77,7 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 
 	for {
 		msg, err := d.Bot.Send(
+			ctx,
 			m.Chat,
 			strings.NewReplacer(
 				"{user}",
@@ -94,16 +96,13 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 			},
 		)
 		if err != nil {
-			if strings.Contains(err.Error(), "retry after") {
-				// Acquire the retry number
-				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-				if err != nil {
-					// If there's an error, we'll just retry after 15 second
-					retry = 15
+			var floodError tb.FloodError
+			if errors.As(err, &floodError) {
+				if floodError.RetryAfter == 0 {
+					floodError.RetryAfter = 15
 				}
 
-				// Let's wait a bit and retry
-				time.Sleep(time.Second * time.Duration(retry))
+				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				continue
 			}
 

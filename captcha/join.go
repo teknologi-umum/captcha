@@ -16,7 +16,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // Captcha struct keeps all the data needed for the captcha
@@ -72,7 +72,7 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			// Find and set
-			admins, err = d.Bot.AdminsOf(m.Chat)
+			admins, err = d.Bot.AdminsOf(ctx, m.Chat)
 			if err != nil {
 				if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
 					shared.HandleBotError(ctx, err, d.Bot, m)
@@ -138,48 +138,30 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 SENDMSG_RETRY:
 	// Send the question first.
 	msgQuestion, err := d.Bot.Send(
+		ctx,
 		m.Chat,
 		question,
 		&tb.SendOptions{
 			ParseMode:             tb.ModeHTML,
 			ReplyTo:               m,
 			DisableWebPagePreview: true,
+			AllowWithoutReply:     true,
 		},
 	)
 	if err != nil {
-		if strings.Contains(err.Error(), "retry after") {
-			// Acquire the retry number
-			retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-			if err != nil {
-				// If there's an error, we'll just retry after 10 second
-				retry = 10
+		var floodError tb.FloodError
+		if errors.As(err, &floodError) {
+			if floodError.RetryAfter == 0 {
+				floodError.RetryAfter = 15
 			}
 
-			// Let's wait a bit and retry
-			time.Sleep(time.Second * time.Duration(retry))
+			time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 			goto SENDMSG_RETRY
 		}
 
 		if strings.Contains(err.Error(), "Gateway Timeout (504)") {
 			time.Sleep(time.Second * 10)
 			goto SENDMSG_RETRY
-		}
-
-		if strings.Contains(err.Error(), "replied message not found") {
-			msgQuestion, err = d.Bot.Send(
-				m.Chat,
-				question,
-				&tb.SendOptions{
-					ParseMode:             tb.ModeHTML,
-					DisableWebPagePreview: true,
-				},
-			)
-			if err != nil {
-				if !strings.Contains(err.Error(), "retry after") && !strings.Contains(err.Error(), "Gateway Timeout (504)") {
-					shared.HandleBotError(ctx, err, d.Bot, m)
-					return
-				}
-			}
 		}
 
 		// err could possibly be nil at this point, so we better check it out.

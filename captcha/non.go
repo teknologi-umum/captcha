@@ -11,7 +11,7 @@ import (
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/utils"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // NonTextListener is the handler for every incoming payload that
@@ -57,6 +57,7 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	// Check if the answer is a media
 	remainingTime := time.Until(captcha.Expiry)
 	wrongMsg, err := d.Bot.Send(
+		ctx,
 		m.Chat,
 		"Hai, <a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
 			utils.SanitizeInput(m.Sender.FirstName)+
@@ -76,7 +77,7 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	err = d.deleteMessageBlocking(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: strconv.Itoa(m.ID),
 	})

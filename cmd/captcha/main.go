@@ -50,7 +50,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 var version string
@@ -200,7 +200,7 @@ func main() {
 		log.Fatal("during init of bot client:", errors.WithStack(err))
 	}
 	defer func() {
-		_, err := b.Close()
+		_, err := b.Close(context.Background())
 		if err != nil {
 			sentry.CaptureException(err)
 			log.Print(errors.WithStack(err))
@@ -337,7 +337,7 @@ func main() {
 	// This is basically just for health check.
 	b.Handle("/start", func(c tb.Context) error {
 		if c.Message().FromGroup() {
-			_, err := c.Bot().Send(c.Message().Chat, "ok")
+			_, err := c.Bot().Send(context.Background(), c.Message().Chat, "ok")
 			if err != nil {
 				shared.HandleBotError(ctx, err, b, c.Message())
 				return nil

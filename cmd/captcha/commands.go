@@ -15,9 +15,9 @@ import (
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/underattack"
-	tb "gopkg.in/telebot.v3"
 )
 
 // Dependency contains the dependency injection struct
@@ -179,7 +179,7 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 		return nil
 	}
 
-	_, err = c.Bot().Send(c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
+	_, err = c.Bot().Send(ctx, c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
 	if err != nil {
 		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 	}

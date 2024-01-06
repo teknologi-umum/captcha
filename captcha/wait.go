@@ -12,7 +12,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.
@@ -46,6 +46,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 		KICKMSG_RETRY:
 			// Goodbye, user!
 			kickMsg, err := d.Bot.Send(
+				ctx,
 				msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.FormatInt(msgUser.Sender.ID, 10)+"\">"+
 					utils.SanitizeInput(msgUser.Sender.FirstName)+
@@ -56,16 +57,13 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 					ParseMode: tb.ModeHTML,
 				})
 			if err != nil {
-				if strings.Contains(err.Error(), "retry after") {
-					// Acquire the retry number
-					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-					if err != nil {
-						// If there's an error, we'll just retry after 15 second
-						retry = 15
+				var floodError tb.FloodError
+				if errors.As(err, &floodError) {
+					if floodError.RetryAfter == 0 {
+						floodError.RetryAfter = 15
 					}
 
-					// Let's wait a bit and retry
-					time.Sleep(time.Second * time.Duration(retry))
+					time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 					goto KICKMSG_RETRY
 				}
 
@@ -82,21 +80,18 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			// Even if the keyword is Ban, it's just kicking them.
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
-			err = d.Bot.Ban(msgUser.Chat, &tb.ChatMember{
+			err = d.Bot.Ban(ctx, msgUser.Chat, &tb.ChatMember{
 				RestrictedUntil: time.Now().Add(BanDuration).Unix(),
 				User:            msgUser.Sender,
 			}, true)
 			if err != nil {
-				if strings.Contains(err.Error(), "retry after") {
-					// Acquire the retry number
-					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-					if err != nil {
-						// If there's an error, we'll just retry after 15 second
-						retry = 15
+				var floodError tb.FloodError
+				if errors.As(err, &floodError) {
+					if floodError.RetryAfter == 0 {
+						floodError.RetryAfter = 15
 					}
 
-					// Let's wait a bit and retry
-					time.Sleep(time.Second * time.Duration(retry))
+					time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 					goto BAN_RETRY
 				}
 
@@ -114,7 +109,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 				ChatID:    msgUser.Chat.ID,
 				MessageID: captcha.QuestionID,
 			}
-			err = d.deleteMessageBlocking(&msgToBeDeleted)
+			err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
 			if err != nil {
 				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
@@ -125,7 +120,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 					ChatID:    msgUser.Chat.ID,
 					MessageID: msgID,
 				}
-				err = d.deleteMessageBlocking(&msgToBeDeleted)
+				err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
 				if err != nil {
 					shared.HandleBotError(ctx, err, d.Bot, msgUser)
 					break

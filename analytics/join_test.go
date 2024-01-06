@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/getsentry/sentry-go"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func TestNewUser(t *testing.T) {

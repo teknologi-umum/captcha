@@ -9,14 +9,15 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 	"github.com/teknologi-umum/captcha/utils"
-	tb "gopkg.in/telebot.v3"
 )
 
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 	input := strings.TrimPrefix(strings.TrimPrefix(c.Text(), "/remind@TeknumCaptchaBot"), "/remind")
 	if input == "" {
 		err := c.Reply(
+			ctx,
 			"To use /remind properly, you should add with the remaining text including the normal human grammatical that I can understand.\n\n"+
 				"For English, see this <a href=\"https://www.grammarly.com/blog/sentence-structure/\">Grammarly article about sentence structure</a>.\n"+
 				"Untuk Indonesia, pakai SPO + Keterangan Waktu yang baik dan benar, <a href=\"https://tambahpinter.com/bentuk-kalimat-spok/\">belajar lagi biar tambah pinter</a>.",
@@ -35,6 +36,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		sentry.GetHubFromContext(ctx).CaptureException(err)
 
 		err := c.Reply(
+			ctx,
 			"Sorry, a reminder can't be created because of internal error. Please contact the admin!",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 		)
@@ -47,6 +49,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 
 	if reminderCount >= 3 {
 		err := c.Reply(
+			ctx,
 			"You have exceeded your reminder quota of 3 active reminders per user. Spend your money on a real reminder app.",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 		)
@@ -86,6 +89,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 	if err != nil {
 		if errors.Is(err, ErrExceeds24Hours) {
 			err := c.Reply(
+				ctx,
 				"You are attempting to create a reminder that exceeds 24 hour from now. It's prohibited, try shorter time.. or spend your money on a real reminder app.",
 				&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 			)
@@ -98,6 +102,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		sentry.GetHubFromContext(ctx).CaptureException(err)
 
 		err := c.Reply(
+			ctx,
 			"Sorry, I can't create your reminder, something wrong happened on my end. Please contact the admin!",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 		)
@@ -109,6 +114,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 
 	if reminder.Time.IsZero() || len(reminder.Subject) == 0 || reminder.Object == "" || reminder.Time.Unix() < time.Now().Unix() {
 		err := c.Reply(
+			ctx,
 			"Sorry, I'm unable to parse the reminder text that you just sent. Send /remind and see the guide for this command.",
 			&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
 		)
@@ -142,7 +148,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 			strings.Join(reminder.Subject, ", "),
 			utils.SanitizeInput(reminder.Object),
 		)
-		_, err := c.Bot().Send(c.Chat(), template, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
+		_, err := c.Bot().Send(ctx, c.Chat(), template, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 		if err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		}
@@ -158,7 +164,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		sentry.GetHubFromContext(ctx).CaptureException(err)
 	}
 
-	err = c.Reply(fmt.Sprintf("Reminder for %s was created", reminder.Time.Format(time.RFC1123)))
+	err = c.Reply(ctx, fmt.Sprintf("Reminder for %s was created", reminder.Time.Format(time.RFC1123)))
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // WaitForAnswer is the handler for listening to incoming user message.
@@ -76,6 +76,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	if answer != captcha.Answer {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
+			ctx,
 			m.Chat,
 			"Jawaban captcha salah, harap coba lagi. Kamu punya "+
 				strconv.Itoa(int(remainingTime.Seconds()))+
@@ -84,15 +85,10 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 				ParseMode:             tb.ModeHTML,
 				ReplyTo:               m,
 				DisableWebPagePreview: true,
+				AllowWithoutReply:     true,
 			},
 		)
 		if err != nil {
-			if strings.Contains(err.Error(), "replied message not found") {
-				// Don't retry to send the message if the user won't know
-				// which message we're replying to.
-				return
-			}
-
 			if strings.Contains(err.Error(), "retry after") {
 				// If this happens, probably we're in a spam bot surge and would
 				// probably don't care with the user captcha after all.
@@ -153,7 +149,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -168,7 +164,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -179,7 +175,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	}
 
 	// Delete the question message.
-	err = d.deleteMessageBlocking(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})
