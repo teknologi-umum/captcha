@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Setup jq
+        uses: dcarbone/install-jq-action@v2.1.0
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
