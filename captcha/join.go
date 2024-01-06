@@ -145,43 +145,23 @@ SENDMSG_RETRY:
 			ParseMode:             tb.ModeHTML,
 			ReplyTo:               m,
 			DisableWebPagePreview: true,
+			AllowWithoutReply:     true,
 		},
 	)
 	if err != nil {
-		if strings.Contains(err.Error(), "retry after") {
-			// Acquire the retry number
-			retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-			if err != nil {
-				// If there's an error, we'll just retry after 10 second
-				retry = 10
+		var floodError tb.FloodError
+		if errors.As(err, &floodError) {
+			if floodError.RetryAfter == 0 {
+				floodError.RetryAfter = 15
 			}
 
-			// Let's wait a bit and retry
-			time.Sleep(time.Second * time.Duration(retry))
+			time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 			goto SENDMSG_RETRY
 		}
 
 		if strings.Contains(err.Error(), "Gateway Timeout (504)") {
 			time.Sleep(time.Second * 10)
 			goto SENDMSG_RETRY
-		}
-
-		if strings.Contains(err.Error(), "replied message not found") {
-			msgQuestion, err = d.Bot.Send(
-				ctx,
-				m.Chat,
-				question,
-				&tb.SendOptions{
-					ParseMode:             tb.ModeHTML,
-					DisableWebPagePreview: true,
-				},
-			)
-			if err != nil {
-				if !strings.Contains(err.Error(), "retry after") && !strings.Contains(err.Error(), "Gateway Timeout (504)") {
-					shared.HandleBotError(ctx, err, d.Bot, m)
-					return
-				}
-			}
 		}
 
 		// err could possibly be nil at this point, so we better check it out.

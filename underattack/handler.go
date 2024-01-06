@@ -2,6 +2,7 @@ package underattack
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -57,16 +58,13 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 				},
 			)
 			if err != nil {
-				if strings.Contains(err.Error(), "retry after") {
-					// Acquire the retry number
-					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-					if err != nil {
-						// If there's an error, we'll just retry after 15 second
-						retry = 15
+				var floodError tb.FloodError
+				if errors.As(err, &floodError) {
+					if floodError.RetryAfter == 0 {
+						floodError.RetryAfter = 15
 					}
 
-					// Let's wait a bit and retry
-					time.Sleep(time.Second * time.Duration(retry))
+					time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 					continue
 				}
 
@@ -114,16 +112,13 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 				},
 			)
 			if err != nil {
-				if strings.Contains(err.Error(), "retry after") {
-					// Acquire the retry number
-					retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-					if err != nil {
-						// If there's an error, we'll just retry after 15 second
-						retry = 15
+				var floodError tb.FloodError
+				if errors.As(err, &floodError) {
+					if floodError.RetryAfter == 0 {
+						floodError.RetryAfter = 15
 					}
 
-					// Let's wait a bit and retry
-					time.Sleep(time.Second * time.Duration(retry))
+					time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 					continue
 				}
 
@@ -161,16 +156,13 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 			},
 		)
 		if err != nil {
-			if strings.Contains(err.Error(), "retry after") {
-				// Acquire the retry number
-				retry, err := strconv.Atoi(strings.Split(strings.Split(err.Error(), "telegram: retry after ")[1], " ")[0])
-				if err != nil {
-					// If there's an error, we'll just retry after 15 second
-					retry = 15
+			var floodError tb.FloodError
+			if errors.As(err, &floodError) {
+				if floodError.RetryAfter == 0 {
+					floodError.RetryAfter = 15
 				}
 
-				// Let's wait a bit and retry
-				time.Sleep(time.Second * time.Duration(retry))
+				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				continue
 			}
 

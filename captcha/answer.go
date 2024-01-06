@@ -85,15 +85,10 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 				ParseMode:             tb.ModeHTML,
 				ReplyTo:               m,
 				DisableWebPagePreview: true,
+				AllowWithoutReply:     true,
 			},
 		)
 		if err != nil {
-			if strings.Contains(err.Error(), "replied message not found") {
-				// Don't retry to send the message if the user won't know
-				// which message we're replying to.
-				return
-			}
-
 			if strings.Contains(err.Error(), "retry after") {
 				// If this happens, probably we're in a spam bot surge and would
 				// probably don't care with the user captcha after all.
