@@ -36,7 +36,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 		Timestamp: time.Now(),
 	}, &sentry.BreadcrumbHint{})
 
-	admins, err := c.Bot().AdminsOf(c.Chat())
+	admins, err := c.Bot().AdminsOf(ctx, c.Chat())
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
@@ -48,6 +48,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 		// at one. Hence, we should retry every enabling command for under attack.
 		for {
 			_, err := c.Bot().Send(
+				ctx,
 				c.Chat(),
 				"Cuma admin yang boleh jalanin command ini. Ada baiknya kamu ping adminnya langsung :)",
 				&tb.SendOptions{
@@ -104,6 +105,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 	if underAttackModeEnabled {
 		for {
 			_, err := c.Bot().Send(
+				ctx,
 				c.Chat(),
 				"Mode under attack sudah menyala. Untuk mematikan, kirim /disableunderattack",
 				&tb.SendOptions{
@@ -144,6 +146,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 	var notificationMessage *tb.Message
 	for {
 		notificationMessage, err = c.Bot().Send(
+			ctx,
 			c.Chat(),
 			"Grup ini dalam kondisi under attack sampai pukul "+
 				expiresAt.In(time.FixedZone("WIB", 7*60*60)).Format("15:04 MST")+
@@ -195,7 +198,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 		return nil
 	}
 
-	err = c.Bot().Pin(notificationMessage)
+	err = c.Bot().Pin(ctx, notificationMessage)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
@@ -229,7 +232,7 @@ func (d *Dependency) EnableUnderAttackModeHandler(ctx context.Context, c tb.Cont
 			Timestamp: time.Now(),
 		}, &sentry.BreadcrumbHint{})
 
-		err := c.Bot().Unpin(notificationMessage.Chat, notificationMessage.ID)
+		err := c.Bot().Unpin(ctx, notificationMessage.Chat, notificationMessage.ID)
 		if err != nil {
 			shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		}
@@ -249,7 +252,7 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 	defer span.Finish()
 	ctx = span.Context()
 
-	admins, err := c.Bot().AdminsOf(c.Chat())
+	admins, err := c.Bot().AdminsOf(ctx, c.Chat())
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil
@@ -257,6 +260,7 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 
 	if !utils.IsAdmin(admins, c.Sender()) {
 		_, err := c.Bot().Send(
+			ctx,
 			c.Chat(),
 			"Cuma admin yang boleh jalanin command ini. Ada baiknya kamu ping adminnya langsung :)",
 			&tb.SendOptions{
@@ -311,7 +315,7 @@ func (d *Dependency) DisableUnderAttackModeHandler(ctx context.Context, c tb.Con
 		return nil
 	}
 
-	err = c.Bot().Unpin(c.Chat(), int(underAttackEntry.NotificationMessageID))
+	err = c.Bot().Unpin(ctx, c.Chat(), int(underAttackEntry.NotificationMessageID))
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, c.Message())
 		return nil

@@ -72,7 +72,7 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			// Find and set
-			admins, err = d.Bot.AdminsOf(m.Chat)
+			admins, err = d.Bot.AdminsOf(ctx, m.Chat)
 			if err != nil {
 				if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
 					shared.HandleBotError(ctx, err, d.Bot, m)
@@ -138,6 +138,7 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 SENDMSG_RETRY:
 	// Send the question first.
 	msgQuestion, err := d.Bot.Send(
+		ctx,
 		m.Chat,
 		question,
 		&tb.SendOptions{
@@ -167,6 +168,7 @@ SENDMSG_RETRY:
 
 		if strings.Contains(err.Error(), "replied message not found") {
 			msgQuestion, err = d.Bot.Send(
+				ctx,
 				m.Chat,
 				question,
 				&tb.SendOptions{

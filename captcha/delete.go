@@ -17,7 +17,7 @@ func (d *Dependencies) deleteMessage(ctx context.Context, message *tb.StoredMess
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		for {
-			err := d.Bot.Delete(message)
+			err := d.Bot.Delete(ctx, message)
 			if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 				if strings.Contains(err.Error(), "retry after") {
 					// Acquire the retry number
@@ -49,9 +49,9 @@ func (d *Dependencies) deleteMessage(ctx context.Context, message *tb.StoredMess
 	<-c
 }
 
-func (d *Dependencies) deleteMessageBlocking(message *tb.StoredMessage) error {
+func (d *Dependencies) deleteMessageBlocking(ctx context.Context, message *tb.StoredMessage) error {
 	for {
-		err := d.Bot.Delete(message)
+		err := d.Bot.Delete(ctx, message)
 		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 			if strings.Contains(err.Error(), "retry after") {
 				// Acquire the retry number

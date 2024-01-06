@@ -17,7 +17,7 @@ func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 	defer span.Finish()
 
 	for {
-		err := c.Bot().Ban(c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
+		err := c.Bot().Ban(ctx, c.Chat(), &tb.ChatMember{User: c.Sender(), RestrictedUntil: tb.Forever()})
 		if err != nil {
 			if strings.Contains(err.Error(), "retry after") {
 				// Acquire the retry number
@@ -44,7 +44,7 @@ func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 	}
 
 	for {
-		err := d.Bot.Delete(c.Message())
+		err := d.Bot.Delete(ctx, c.Message())
 		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 			if strings.Contains(err.Error(), "retry after") {
 				// Acquire the retry number

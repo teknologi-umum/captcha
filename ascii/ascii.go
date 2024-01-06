@@ -25,6 +25,7 @@ func (d *Dependencies) Ascii(ctx context.Context, m *tb.Message) {
 	gen := utils.GenerateAscii(m.Payload)
 
 	_, err := d.Bot.Send(
+		ctx,
 		m.Chat,
 		"<pre>"+gen+"</pre>",
 		&tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true},
@@ -32,6 +33,7 @@ func (d *Dependencies) Ascii(ctx context.Context, m *tb.Message) {
 	if err != nil {
 		if errors.Is(err, tb.ErrEmptyMessage) {
 			_, err := d.Bot.Send(
+				ctx,
 				m.Chat,
 				"That text is not supported yet",
 				&tb.SendOptions{

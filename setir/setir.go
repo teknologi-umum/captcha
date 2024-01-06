@@ -55,7 +55,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 			}
 		}
 
-		_, err = d.Bot.Send(tb.ChatID(d.HomeID), c.Message().ReplyTo.Text, &tb.SendOptions{
+		_, err = d.Bot.Send(ctx, tb.ChatID(d.HomeID), c.Message().ReplyTo.Text, &tb.SendOptions{
 			ParseMode:         tb.ModeHTML,
 			AllowWithoutReply: true,
 			ReplyTo: &tb.Message{
@@ -66,13 +66,13 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 			},
 		})
 		if err != nil {
-			_, err = d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
+			_, err = d.Bot.Send(ctx, c.Chat(), "Failed sending that message: "+err.Error())
 			if err != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(fmt.Errorf("failed sending that message: %w", err))
 				return nil
 			}
 		} else {
-			_, err = d.Bot.Send(c.Chat(), "Message sent")
+			_, err = d.Bot.Send(ctx, c.Chat(), "Message sent")
 			if err != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(fmt.Errorf("sending message: %w", err))
 				return nil
@@ -93,9 +93,9 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 			return nil
 		}
 
-		_, err = d.Bot.Send(tb.ChatID(d.HomeID), toBeSent, &tb.SendOptions{AllowWithoutReply: true})
+		_, err = d.Bot.Send(ctx, tb.ChatID(d.HomeID), toBeSent, &tb.SendOptions{AllowWithoutReply: true})
 		if err != nil {
-			_, e := d.Bot.Send(c.Message().Chat, "Failed sending that photo: "+err.Error())
+			_, e := d.Bot.Send(ctx, c.Message().Chat, "Failed sending that photo: "+err.Error())
 			if e != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(fmt.Errorf("sending message: %w", e))
 				return nil
@@ -105,7 +105,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 			return nil
 		}
 
-		_, err = d.Bot.Send(c.Chat(), "Photo sent")
+		_, err = d.Bot.Send(ctx, c.Chat(), "Photo sent")
 		if err != nil {
 			return fmt.Errorf("sending message that says 'photo sent': %w", err)
 		}
@@ -113,9 +113,9 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 
 	}
 
-	_, err = d.Bot.Send(tb.ChatID(d.HomeID), c.Message().Payload, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
+	_, err = d.Bot.Send(ctx, tb.ChatID(d.HomeID), c.Message().Payload, &tb.SendOptions{ParseMode: tb.ModeHTML, AllowWithoutReply: true})
 	if err != nil {
-		_, e := d.Bot.Send(c.Chat(), "Failed sending that message: "+err.Error())
+		_, e := d.Bot.Send(ctx, c.Chat(), "Failed sending that message: "+err.Error())
 		if e != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(fmt.Errorf("sending message: %w", e))
 			return nil
@@ -125,7 +125,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 		return nil
 	}
 
-	_, err = d.Bot.Send(c.Chat(), "Message sent")
+	_, err = d.Bot.Send(ctx, c.Chat(), "Message sent")
 	if err != nil {
 		sentry.GetHubFromContext(ctx).CaptureException(fmt.Errorf("sending message: %w", err))
 		return nil

@@ -76,6 +76,7 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 
 	for {
 		msg, err := d.Bot.Send(
+			ctx,
 			m.Chat,
 			strings.NewReplacer(
 				"{user}",

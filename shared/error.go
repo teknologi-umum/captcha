@@ -65,6 +65,7 @@ func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 	hub.CaptureException(errors.WithStack(e))
 
 	_, err := bot.Send(
+		ctx,
 		m.Chat,
 		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
 		&tb.SendOptions{ParseMode: tb.ModeHTML},

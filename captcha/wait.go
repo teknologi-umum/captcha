@@ -46,6 +46,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 		KICKMSG_RETRY:
 			// Goodbye, user!
 			kickMsg, err := d.Bot.Send(
+				ctx,
 				msgUser.Chat,
 				"<a href=\"tg://user?id="+strconv.FormatInt(msgUser.Sender.ID, 10)+"\">"+
 					utils.SanitizeInput(msgUser.Sender.FirstName)+
@@ -82,7 +83,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			// Even if the keyword is Ban, it's just kicking them.
 			// If the RestrictedUntil value is below zero, it means
 			// they are banned forever.
-			err = d.Bot.Ban(msgUser.Chat, &tb.ChatMember{
+			err = d.Bot.Ban(ctx, msgUser.Chat, &tb.ChatMember{
 				RestrictedUntil: time.Now().Add(BanDuration).Unix(),
 				User:            msgUser.Sender,
 			}, true)
@@ -114,7 +115,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 				ChatID:    msgUser.Chat.ID,
 				MessageID: captcha.QuestionID,
 			}
-			err = d.deleteMessageBlocking(&msgToBeDeleted)
+			err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
 			if err != nil {
 				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
@@ -125,7 +126,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 					ChatID:    msgUser.Chat.ID,
 					MessageID: msgID,
 				}
-				err = d.deleteMessageBlocking(&msgToBeDeleted)
+				err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
 				if err != nil {
 					shared.HandleBotError(ctx, err, d.Bot, msgUser)
 					break

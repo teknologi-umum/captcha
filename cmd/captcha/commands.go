@@ -179,7 +179,7 @@ func (d *Dependency) BadWordHandler(c tb.Context) error {
 		return nil
 	}
 
-	_, err = c.Bot().Send(c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
+	_, err = c.Bot().Send(ctx, c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
 	if err != nil {
 		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
 	}

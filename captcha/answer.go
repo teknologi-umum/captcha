@@ -76,6 +76,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	if answer != captcha.Answer {
 		remainingTime := time.Until(captcha.Expiry)
 		wrongMsg, err := d.Bot.Send(
+			ctx,
 			m.Chat,
 			"Jawaban captcha salah, harap coba lagi. Kamu punya "+
 				strconv.Itoa(int(remainingTime.Seconds()))+
@@ -153,7 +154,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -168,7 +169,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(&tb.StoredMessage{
+		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
@@ -179,7 +180,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	}
 
 	// Delete the question message.
-	err = d.deleteMessageBlocking(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})

@@ -57,6 +57,7 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	// Check if the answer is a media
 	remainingTime := time.Until(captcha.Expiry)
 	wrongMsg, err := d.Bot.Send(
+		ctx,
 		m.Chat,
 		"Hai, <a href=\"tg://user?id="+strconv.FormatInt(m.Sender.ID, 10)+"\">"+
 			utils.SanitizeInput(m.Sender.FirstName)+
@@ -76,7 +77,7 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	err = d.deleteMessageBlocking(&tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: strconv.Itoa(m.ID),
 	})
