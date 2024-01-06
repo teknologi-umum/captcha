@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"

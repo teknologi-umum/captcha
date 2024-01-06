@@ -9,7 +9,7 @@ import (
 
 	"github.com/teknologi-umum/captcha/shared"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // deleteMessage creates a timer of one minute to delete a certain message.

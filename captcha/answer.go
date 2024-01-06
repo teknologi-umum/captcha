@@ -13,7 +13,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // WaitForAnswer is the handler for listening to incoming user message.

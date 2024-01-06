@@ -12,7 +12,7 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.

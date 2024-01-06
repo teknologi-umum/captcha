@@ -1,6 +1,6 @@
 package utils
 
-import tb "gopkg.in/telebot.v3"
+import tb "github.com/teknologi-umum/captcha/internal/telebot"
 
 // ShouldAddSpace thinks whether to add a space
 // to the given user, considering their first name

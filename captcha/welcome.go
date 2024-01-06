@@ -12,7 +12,7 @@ import (
 
 	"github.com/teknologi-umum/captcha/utils"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // currentWelcomeMessages is a collection of welcome messages

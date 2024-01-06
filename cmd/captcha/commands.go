@@ -15,9 +15,9 @@ import (
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 	"github.com/teknologi-umum/captcha/shared"
 	"github.com/teknologi-umum/captcha/underattack"
-	tb "gopkg.in/telebot.v3"
 )
 
 // Dependency contains the dependency injection struct

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // NewMessage handles an incoming message from the group

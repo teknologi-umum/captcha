@@ -3,7 +3,7 @@ package analytics
 import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 // Dependency is the dependency injection struct

@@ -5,7 +5,7 @@ import (
 
 	"github.com/teknologi-umum/captcha/analytics"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func TestParseGroupMember(t *testing.T) {

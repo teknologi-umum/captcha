@@ -9,7 +9,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 
-	tb "gopkg.in/telebot.v3"
+	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
