@@ -142,21 +142,16 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	// go d.Analytics.UpdateSwarm(m.Sender, m.Chat.ID, true)
-
+	var messageToBeDeleted []tb.Editable
 	// Delete user's messages.
 	for _, msgID := range captcha.UserMessages {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+		messageToBeDeleted = append(messageToBeDeleted, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
-		if err != nil {
-			shared.HandleBotError(ctx, err, d.Bot, m)
-			return
-		}
 	}
 
 	// Delete any additional message.
@@ -164,21 +159,19 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+		messageToBeDeleted = append(messageToBeDeleted, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
-		if err != nil {
-			shared.HandleBotError(ctx, err, d.Bot, m)
-			return
-		}
 	}
 
 	// Delete the question message.
-	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+	messageToBeDeleted = append(messageToBeDeleted, &tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: captcha.QuestionID,
 	})
+
+	err = d.deleteMessageBlocking(ctx, messageToBeDeleted)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return

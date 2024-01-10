@@ -70,14 +70,13 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	// Delete the question message.
-	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
-		ChatID:    m.Chat.ID,
-		MessageID: captcha.QuestionID,
-	})
-	if err != nil {
-		shared.HandleBotError(ctx, err, d.Bot, m)
-		return
+	// Build message to be deleted
+	messagesToBeDeleted := []tb.Editable{
+		// Delete question message
+		&tb.StoredMessage{
+			ChatID:    m.Chat.ID,
+			MessageID: captcha.QuestionID,
+		},
 	}
 
 	// Delete user's messages.
@@ -85,14 +84,11 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+
+		messagesToBeDeleted = append(messagesToBeDeleted, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
-		if err != nil {
-			shared.HandleBotError(ctx, err, d.Bot, m)
-			return
-		}
 	}
 
 	// Delete any additional message.
@@ -100,13 +96,16 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		if msgID == "" {
 			continue
 		}
-		err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+
+		messagesToBeDeleted = append(messagesToBeDeleted, &tb.StoredMessage{
 			ChatID:    m.Chat.ID,
 			MessageID: msgID,
 		})
-		if err != nil {
-			shared.HandleBotError(ctx, err, d.Bot, m)
-			return
-		}
+	}
+
+	err = d.deleteMessageBlocking(ctx, messagesToBeDeleted)
+	if err != nil {
+		shared.HandleBotError(ctx, err, d.Bot, m)
+		return
 	}
 }

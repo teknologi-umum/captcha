@@ -77,10 +77,10 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	err = d.deleteMessageBlocking(ctx, &tb.StoredMessage{
+	err = d.deleteMessageBlocking(ctx, []tb.Editable{&tb.StoredMessage{
 		ChatID:    m.Chat.ID,
 		MessageID: strconv.Itoa(m.ID),
-	})
+	}})
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return

@@ -25,6 +25,6 @@ type StoredMessage struct {
 	ChatID    int64  `sql:"chat_id" json:"chat_id"`
 }
 
-func (x StoredMessage) MessageSig() (string, int64) {
+func (x StoredMessage) MessageSig() (messageID string, chatID int64) {
 	return x.MessageID, x.ChatID
 }

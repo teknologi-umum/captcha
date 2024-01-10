@@ -92,7 +92,7 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 				ParseMode:             tb.ModeHTML,
 				DisableWebPagePreview: true,
 				DisableNotification:   false,
-				AllowWithoutReply:     true,
+				AllowWithoutReply:     false,
 			},
 		)
 		if err != nil {
@@ -115,7 +115,7 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 
 		go d.deleteMessage(
 			ctx,
-			&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID},
+			[]tb.Editable{&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID}},
 		)
 
 		break
