@@ -105,34 +105,34 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			}
 
 			// Delete all the message that we've sent unless the last one.
-			msgToBeDeleted := tb.StoredMessage{
+			msgToBeDeleted := []tb.Editable{&tb.StoredMessage{
 				ChatID:    msgUser.Chat.ID,
 				MessageID: captcha.QuestionID,
+			}}
+
+			for _, msgID := range captcha.AdditionalMessages {
+				if msgID == "" {
+					continue
+				}
+
+				msgToBeDeleted = append(msgToBeDeleted, &tb.StoredMessage{
+					ChatID:    msgUser.Chat.ID,
+					MessageID: msgID,
+				})
 			}
-			err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
+
+			err = d.deleteMessageBlocking(ctx, msgToBeDeleted)
 			if err != nil {
 				shared.HandleBotError(ctx, err, d.Bot, msgUser)
 				break
 			}
 
-			for _, msgID := range captcha.AdditionalMessages {
-				msgToBeDeleted = tb.StoredMessage{
-					ChatID:    msgUser.Chat.ID,
-					MessageID: msgID,
-				}
-				err = d.deleteMessageBlocking(ctx, &msgToBeDeleted)
-				if err != nil {
-					shared.HandleBotError(ctx, err, d.Bot, msgUser)
-					break
-				}
-			}
-
 			go d.deleteMessage(
 				ctx,
-				&tb.StoredMessage{
+				[]tb.Editable{&tb.StoredMessage{
 					MessageID: strconv.Itoa(kickMsg.ID),
 					ChatID:    kickMsg.Chat.ID,
-				},
+				}},
 			)
 
 			err = d.Memory.Delete(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10))

@@ -13,11 +13,11 @@ import (
 )
 
 // deleteMessage creates a timer of one minute to delete a certain message.
-func (d *Dependencies) deleteMessage(ctx context.Context, message *tb.StoredMessage) {
+func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable) {
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		for {
-			err := d.Bot.Delete(ctx, message)
+			err := d.Bot.DeleteBulk(ctx, messages)
 			if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 				var floodError tb.FloodError
 				if errors.As(err, &floodError) {
@@ -46,9 +46,9 @@ func (d *Dependencies) deleteMessage(ctx context.Context, message *tb.StoredMess
 	<-c
 }
 
-func (d *Dependencies) deleteMessageBlocking(ctx context.Context, message *tb.StoredMessage) error {
+func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.Editable) error {
 	for {
-		err := d.Bot.Delete(ctx, message)
+		err := d.Bot.DeleteBulk(ctx, messages)
 		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 			var floodError tb.FloodError
 			if errors.As(err, &floodError) {

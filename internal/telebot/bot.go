@@ -672,6 +672,26 @@ func (b *Bot) Delete(ctx context.Context, msg Editable) error {
 	return err
 }
 
+func (b *Bot) DeleteBulk(ctx context.Context, msgs []Editable) error {
+	var chatId string
+	var messageIds []string
+
+	for _, msg := range msgs {
+		msgID, chatID := msg.MessageSig()
+		chatId = strconv.FormatInt(chatID, 10)
+
+		messageIds = append(messageIds, msgID)
+	}
+
+	params := map[string]interface{}{
+		"chat_id":     chatId,
+		"message_ids": messageIds,
+	}
+
+	_, err := b.Raw(ctx, "deleteMessages", params)
+	return err
+}
+
 // Notify updates the chat action for recipient.
 //
 // Chat action is a status message that recipient would see where
