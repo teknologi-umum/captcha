@@ -46,7 +46,6 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	// this specific user ID from the cache.
 	var captchaData []byte
 	err = d.DB.View(func(txn *badger.Txn) error {
-		defer txn.Discard()
 		item, err := txn.Get([]byte(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10)))
 		if err != nil {
 			return err
@@ -57,7 +56,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {
@@ -198,13 +197,11 @@ func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
 	err := d.DB.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(groupID, 10)))
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
 		users, err := item.ValueCopy(nil)
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
@@ -212,17 +209,15 @@ func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
 
 		err = txn.Set([]byte("captcha:users:"+strconv.FormatInt(groupID, 10)), str)
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
 		err = txn.Delete([]byte(strconv.FormatInt(groupID, 10) + ":" + strconv.FormatInt(userID, 10)))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			txn.Discard()
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		return err

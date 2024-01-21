@@ -34,8 +34,6 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 		// Fetch the captcha data first
 		var captcha Captcha
 		err := d.DB.View(func(txn *badger.Txn) error {
-			defer txn.Discard()
-
 			item, err := txn.Get([]byte(strconv.FormatInt(msgUser.Chat.ID, 10) + ":" + strconv.FormatInt(msgUser.Sender.ID, 10)))
 			if err != nil {
 				return err
@@ -51,7 +49,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 				return err
 			}
 
-			return txn.Commit()
+			return nil
 		})
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -92,7 +90,6 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			}
 
 			shared.HandleBotError(ctx, err, d.Bot, msgUser)
-			return
 		}
 
 		go d.deleteMessage(

@@ -64,11 +64,10 @@ BanRetry:
 	err = d.DB.Update(func(txn *badger.Txn) error {
 		err := txn.Delete([]byte(strconv.FormatInt(chat.ID, 10) + ":" + strconv.FormatInt(sender.ID, 10)))
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 		return err

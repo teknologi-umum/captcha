@@ -29,11 +29,10 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 	err = d.DB.Update(func(txn *badger.Txn) error {
 		err := txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), data)
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to set captcha in database: %w", err)
@@ -55,11 +54,10 @@ func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Messag
 	err = d.DB.Update(func(txn *badger.Txn) error {
 		err := txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), data)
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to set captcha in cache: %w", err)

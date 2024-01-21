@@ -45,8 +45,6 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 	// this specific user ID from the cache.
 	var captcha Captcha
 	err = d.DB.View(func(txn *badger.Txn) error {
-		defer txn.Discard()
-
 		item, err := txn.Get([]byte(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10)))
 		if err != nil {
 			return err
@@ -62,7 +60,7 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {

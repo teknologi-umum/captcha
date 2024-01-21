@@ -210,6 +210,10 @@ func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 }
 
 func (d *Dependency) ReminderHandler(c tb.Context) error {
+	if !d.FeatureFlag.Reminder {
+		return nil
+	}
+
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	span := sentry.StartSpan(ctx, "bot.reminder_handler", sentry.WithTransactionSource(sentry.SourceTask),

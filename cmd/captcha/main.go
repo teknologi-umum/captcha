@@ -18,7 +18,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -51,6 +50,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
@@ -66,7 +66,7 @@ func main() {
 
 	configuration, err := ParseConfiguration(configurationFilePath)
 	if err != nil {
-		log.Fatalf("Parsing configuration: %s", err.Error())
+		log.Fatal().Err(err).Msg("Parsing configuration")
 		return
 	}
 
@@ -74,6 +74,7 @@ func main() {
 	err = sentry.Init(sentry.ClientOptions{
 		Dsn:           configuration.SentryDSN,
 		Debug:         configuration.Environment == "development",
+		DebugWriter:   log.Logger,
 		Environment:   configuration.Environment,
 		SampleRate:    1.0,
 		EnableTracing: true,
@@ -88,23 +89,24 @@ func main() {
 		Release:            version,
 	})
 	if err != nil {
-		log.Fatal("during initiating a new sentry client:", errors.WithStack(err))
+		log.Fatal().Err(err).Msg("during initiating a new sentry client:")
 	}
-	defer sentry.Flush(30 * time.Second)
+	defer sentry.Flush(10 * time.Second)
 
 	var db *sqlx.DB
 	if configuration.FeatureFlag.Analytics || (configuration.FeatureFlag.UnderAttack && configuration.UnderAttack.DatastoreProvider == "postgres") {
 		// Connect to PostgreSQL
 		db, err = sqlx.Open("postgres", configuration.Database.PostgresUrl)
 		if err != nil {
-			log.Fatal("during opening a postgres client:", errors.WithStack(err))
+			log.Fatal().Err(err).Msg("during opening a postgres client")
 		}
 	}
 	defer func(db *sqlx.DB) {
 		if db != nil {
+			log.Debug().Msg("Closing postgresql")
 			err := db.Close()
 			if err != nil {
-				log.Print("during closing the postgres client:", errors.WithStack(err))
+				log.Warn().Err(err).Msg("during closing the postgres client")
 			}
 		}
 	}(db)
@@ -120,28 +122,29 @@ func main() {
 		// Setup mongodb connection
 		mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(configuration.Database.MongoUrl))
 		if err != nil {
-			log.Fatal("during connecting to mongo client:", errors.WithStack(err))
+			log.Fatal().Err(err).Msg("during connecting to mongo client")
 		}
 
 		// Mongo health check
 		if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
-			log.Fatal("during mongodb ping:", err)
+			log.Fatal().Err(err).Msg("during mongodb ping")
 		}
 
 		// Get the MongoDB database name from the given MONGO_URL environment variable.
 		parsedURL, err := url.Parse(configuration.Database.MongoUrl)
 		if err != nil {
-			log.Fatal(errors.Wrap(err, "failed to parse MONGO_URL"))
+			log.Fatal().Err(err).Msg("failed to parse MONGO_URL")
 		}
 		mongoDBName = parsedURL.Path[1:]
 	}
 	defer func(client *mongo.Client) {
 		if client != nil {
+			log.Debug().Msg("Closing mongo")
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 			defer cancel()
 			err := client.Disconnect(ctx)
 			if err != nil {
-				log.Print("during closing the mongo connection:", errors.WithStack(err))
+				log.Warn().Err(err).Msg("during closing the mongo connection")
 			}
 		}
 	}(mongoClient)
@@ -152,14 +155,16 @@ func main() {
 		LifeWindow:         time.Hour * 12,
 		CleanWindow:        time.Hour,
 		Verbose:            configuration.Environment != "production",
+		Logger:             &log.Logger,
 		HardMaxCacheSize:   1024 * 1024 * 1024,
 		MaxEntrySize:       500,
 		MaxEntriesInWindow: 50,
 	})
 	if err != nil {
-		log.Fatal("during creating a in memory cache: ", errors.WithStack(err))
+		log.Fatal().Err(err).Msg("during creating a in memory cache")
 	}
 	defer func(cache *bigcache.BigCache) {
+		log.Debug().Msg("Closing bigcache")
 		err := cache.Close()
 		if err != nil {
 			log.Print(errors.WithStack(err))
@@ -168,10 +173,11 @@ func main() {
 
 	fileStorage, err := badger.Open(badger.DefaultOptions(configuration.Database.BadgerPath))
 	if err != nil {
-		log.Fatal("during creating badger db: ", errors.WithStack(err))
+		log.Fatal().Err(err).Msg("during creating badger db")
 		return
 	}
 	defer func(db *badger.DB) {
+		log.Debug().Msg("Closing badger")
 		err := fileStorage.Close()
 		if err != nil {
 			log.Print(errors.WithStack(err))
@@ -210,23 +216,24 @@ func main() {
 	})
 	if err != nil {
 		sentry.CaptureException(fmt.Errorf("initializing bot client: %w", err))
-		log.Fatal("during init of bot client:", errors.WithStack(err))
+		log.Fatal().Err(err).Msg("during init of bot client")
 	}
 	defer func() {
+		b.Stop()
+
 		_, err := b.Close(context.Background())
 		if err != nil {
 			sentry.CaptureException(err)
 			log.Print(errors.WithStack(err))
 		}
 	}()
-	defer b.Stop()
 
 	// This is for recovering from panic.
 	defer func() {
 		r := recover()
 		if r != nil {
 			sentry.CaptureException(r.(error))
-			log.Println(r.(error))
+			log.Error().Err(err).Msg("recovering from panic")
 		}
 	}()
 
@@ -234,13 +241,13 @@ func main() {
 	if configuration.FeatureFlag.Analytics {
 		// Check if database is initialized
 		if db == nil {
-			log.Println("To enable analytics, database must been set")
+			log.Print("To enable analytics, database must been set")
 			return
 		}
 		err = analytics.MustMigrate(db)
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal("during initial database migration: ", errors.WithStack(err))
+			log.Fatal().Err(err).Msg("during initial database migration")
 		}
 
 		analyticsDependency = &analytics.Dependency{
@@ -255,7 +262,7 @@ func main() {
 	if configuration.FeatureFlag.BadwordsInsertion {
 		// Check if mongodb is initialized
 		if mongoClient == nil && mongoDBName == "" {
-			log.Println("To enable badwords insertion, mongodb mnust been set")
+			log.Print("To enable badwords insertion, mongodb mnust been set")
 			return
 		}
 
@@ -273,7 +280,7 @@ func main() {
 		case "postgres":
 			underAttackDatastore, err = datastore.NewPostgresDatastore(db.DB)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal().Err(err).Msg("creating postgres datastore for under attack feature")
 				return
 			}
 		case "memory":
@@ -281,7 +288,7 @@ func main() {
 		default:
 			underAttackDatastore, err = datastore.NewInMemoryDatastore(cache)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal().Err(err).Msg("creating in memory datastore for under attack feature")
 				return
 			}
 		}
@@ -290,7 +297,7 @@ func main() {
 		err = underAttackDatastore.Migrate(context.Background())
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("migrating under attack tables schema")
 			return
 		}
 
@@ -305,7 +312,7 @@ func main() {
 	setirDependency, err = setir.New(b, configuration.AdminIds, configuration.HomeGroupID)
 	if err != nil {
 		sentry.CaptureException(err)
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("creating setir dependency")
 		return
 	}
 
@@ -314,7 +321,7 @@ func main() {
 		reminderDependency, err = reminder.New(cache)
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("creating reminder dependency")
 			return
 		}
 	}
@@ -336,7 +343,7 @@ func main() {
 	})
 	if err != nil {
 		sentry.CaptureException(err)
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("creating main program")
 		return
 	}
 
@@ -393,23 +400,29 @@ func main() {
 		// Start an HTTP server instance
 		log.Printf("Starting http server on %s", httpServer.Addr)
 		err := httpServer.ListenAndServe()
-		if err != nil {
-			log.Printf("%s", err.Error())
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error().Err(err).Msg("Listening HTTP server")
 		}
 	}()
 
 	go func() {
 		<-exitSignal
-		log.Println("Shutdown signal received, exiting...")
+		log.Print("Shutdown signal received, exiting...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer shutdownCancel()
 
+		b.Stop()
+
 		err = httpServer.Shutdown(shutdownCtx)
 		if err != nil {
-			log.Printf("Shutting down HTTP server: %s", err.Error())
+			log.Error().Err(err).Msg("Shutting down the http server")
 			sentry.CaptureException(err)
 		}
+
+		log.Debug().Msg("Starting a 10 second countdown until killing the application")
+		time.Sleep(time.Second * 10)
+		os.Exit(0)
 	}()
 
 	go func() {
@@ -418,6 +431,7 @@ func main() {
 	}()
 
 	// Lesson learned: do not start bot on a goroutine
-	log.Println("Bot started!")
+	log.Print("Bot started!")
 	b.Start()
+	log.Print("Application is shutting down...")
 }

@@ -11,11 +11,10 @@ import (
 // Check if a cache with a specific key exists or not.
 func (d *Dependencies) cacheExists(key string) bool {
 	err := d.DB.View(func(txn *badger.Txn) error {
-		defer txn.Discard()
 		if _, err := txn.Get([]byte(key)); err != nil {
 			return err
 		}
-		return txn.Commit()
+		return nil
 	})
 	return !errors.Is(err, badger.ErrKeyNotFound)
 }
@@ -23,8 +22,6 @@ func (d *Dependencies) cacheExists(key string) bool {
 // Check if a user exists on the "captcha:users" key.
 func (d *Dependencies) userExists(userID int64, groupID int64) (exists bool, err error) {
 	err = d.DB.View(func(txn *badger.Txn) error {
-		defer txn.Discard()
-
 		item, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(groupID, 10)))
 		if err != nil {
 			return err

@@ -43,9 +43,11 @@ func (s *SentryTransportWrapper) RoundTrip(request *http.Request) (*http.Respons
 
 	response, err := s.OriginalTransport.RoundTrip(request)
 
-	span.Status = sentry.HTTPtoSpanStatus(response.StatusCode)
-	span.SetData("http.response.status_code", response.Status)
-	span.SetData("http.response_content_length", strconv.FormatInt(response.ContentLength, 10))
+	if response != nil {
+		span.Status = sentry.HTTPtoSpanStatus(response.StatusCode)
+		span.SetData("http.response.status_code", response.Status)
+		span.SetData("http.response_content_length", strconv.FormatInt(response.ContentLength, 10))
+	}
 
 	return response, err
 }

@@ -196,7 +196,6 @@ SENDMSG_RETRY:
 	err = d.DB.Update(func(txn *badger.Txn) error {
 		err = txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), captchaData)
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
@@ -204,25 +203,22 @@ SENDMSG_RETRY:
 
 		captchaUsersItem, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(m.Chat.ID, 10)))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			txn.Discard()
 			return err
 		}
 
 		if captchaUsersItem != nil && err == nil {
 			captchaUsers, err = captchaUsersItem.ValueCopy(nil)
 			if err != nil {
-				txn.Discard()
 				return err
 			}
 		}
 
 		err = txn.Set([]byte("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10)), []byte(string(captchaUsers)+";"+strconv.FormatInt(m.Sender.ID, 10)))
 		if err != nil {
-			txn.Discard()
 			return err
 		}
 
-		return txn.Commit()
+		return nil
 	})
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)

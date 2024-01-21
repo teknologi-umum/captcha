@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -57,9 +58,16 @@ func (d *Dependencies) Cleanup() {
 		}
 
 		for _, captcha := range captchas {
-			err := d.removeUserFromGroup(ctx, &tb.Chat{ID: captcha.ChatID}, &tb.User{ID: captcha.SenderID}, captcha)
-			if err != nil {
-				sentry.CaptureException(err)
+			if captcha.Expiry.Unix() < time.Now().Unix() {
+				err := d.removeUserFromGroup(ctx, &tb.Chat{ID: captcha.ChatID}, &tb.User{ID: captcha.SenderID}, captcha)
+				if err != nil {
+					sentry.CaptureException(err)
+				}
+
+				err = d.removeUserFromCache(captcha.SenderID, captcha.ChatID)
+				if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+					sentry.CaptureException(err)
+				}
 			}
 		}
 
