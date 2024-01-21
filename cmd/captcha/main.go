@@ -412,6 +412,11 @@ func main() {
 		}
 	}()
 
+	go func() {
+		// Run the cleanup worker
+		program.Captcha.Cleanup()
+	}()
+
 	// Lesson learned: do not start bot on a goroutine
 	log.Println("Bot started!")
 	b.Start()
