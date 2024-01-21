@@ -200,16 +200,20 @@ SENDMSG_RETRY:
 			return err
 		}
 
+		var captchaUsers []byte
+
 		captchaUsersItem, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(m.Chat.ID, 10)))
-		if err != nil {
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			txn.Discard()
 			return err
 		}
 
-		captchaUsers, err := captchaUsersItem.ValueCopy(nil)
-		if err != nil {
-			txn.Discard()
-			return err
+		if captchaUsersItem != nil && err == nil {
+			captchaUsers, err = captchaUsersItem.ValueCopy(nil)
+			if err != nil {
+				txn.Discard()
+				return err
+			}
 		}
 
 		err = txn.Set([]byte("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10)), []byte(string(captchaUsers)+";"+strconv.FormatInt(m.Sender.ID, 10)))

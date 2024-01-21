@@ -62,12 +62,12 @@ func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 		"unix": m.Unixtime,
 	})
 
-	hub.CaptureException(errors.WithStack(e))
+	eventID := hub.CaptureException(errors.WithStack(e))
 
 	_, err := bot.Send(
 		ctx,
 		m.Chat,
-		"Oh no, something went wrong with me! Can you guys help me to ping my masters?",
+		"Oh no, something went wrong with me! Can you guys help me to ping my masters? (Event ID: "+*eventID+")",
 		&tb.SendOptions{ParseMode: tb.ModeHTML},
 	)
 	if err != nil {
