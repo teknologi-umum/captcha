@@ -3,8 +3,10 @@ package captcha
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/teknologi-umum/captcha/shared"
@@ -51,15 +53,31 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 
 	// OK, they exist in the cache. Now we've got to delete
 	// all the message that we've sent before.
-	data, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
-	if err != nil {
-		shared.HandleBotError(ctx, err, d.Bot, m)
-		return
-	}
-
 	var captcha Captcha
-	err = json.Unmarshal(data, &captcha)
+	err = d.DB.View(func(txn *badger.Txn) error {
+		defer txn.Discard()
+
+		item, err := txn.Get([]byte(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10)))
+		if err != nil {
+			return err
+		}
+
+		rawValue, err := item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawValue, &captcha)
+		if err != nil {
+			return err
+		}
+
+		return txn.Commit()
+	})
 	if err != nil {
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return
+		}
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}

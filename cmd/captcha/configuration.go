@@ -25,6 +25,7 @@ type Configuration struct {
 	Database    struct {
 		PostgresUrl string `yaml:"postgres_url" json:"postgres_url" env:"POSTGRES_URL"`
 		MongoUrl    string `yaml:"mongo_url" json:"mongo_url" env:"MONGO_URL"`
+		BadgerPath  string `yaml:"badger_path" json:"badger_path" env:"BADGER_PATH"`
 	} `yaml:"database" json:"database"`
 	HTTPServer struct {
 		ListeningHost string `yaml:"listening_host" json:"listening_host" env:"HTTP_HOST"`
