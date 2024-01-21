@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/teknologi-umum/captcha/shared"
@@ -27,13 +28,14 @@ import (
 // of the corresponding Telegram User ID.
 type Captcha struct {
 	// Store the correct answer for the captcha
-	Answer string `json:"answer"`
+	Answer string `json:"a"`
 	// Expiry time for the captcha
-	Expiry             time.Time `json:"expiry"`
-	ChatID             int64     `json:"chat_id"`
-	QuestionID         string    `json:"question_id"`
-	AdditionalMessages []string  `json:"additional_messages"`
-	UserMessages       []string  `json:"user_messages"`
+	Expiry             time.Time `json:"e"`
+	ChatID             int64     `json:"c"`
+	SenderID           int64     `json:"s"`
+	QuestionID         string    `json:"q"`
+	AdditionalMessages []string  `json:"am"`
+	UserMessages       []string  `json:"um"`
 }
 
 const (
@@ -177,11 +179,13 @@ SENDMSG_RETRY:
 	// The AdditionalMessages key will be added later when there is an additional message
 	// sent by the bot.
 	captchaData, err := json.Marshal(Captcha{
+		Answer:             randNum,
 		Expiry:             time.Now().Add(Timeout),
 		ChatID:             m.Chat.ID,
-		Answer:             randNum,
+		SenderID:           m.Sender.ID,
 		QuestionID:         strconv.Itoa(msgQuestion.ID),
 		AdditionalMessages: []string{strconv.Itoa(m.ID)},
+		UserMessages:       nil,
 	})
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
@@ -189,13 +193,33 @@ SENDMSG_RETRY:
 	}
 
 	// Yes, the cache key is their User ID in string format.
-	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), captchaData)
-	if err != nil {
-		shared.HandleBotError(ctx, err, d.Bot, m)
-		return
-	}
+	err = d.DB.Update(func(txn *badger.Txn) error {
+		err = txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), captchaData)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
 
-	err = d.Memory.Append("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10), []byte(";"+strconv.FormatInt(m.Sender.ID, 10)))
+		captchaUsersItem, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(m.Chat.ID, 10)))
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		captchaUsers, err := captchaUsersItem.ValueCopy(nil)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		err = txn.Set([]byte("captcha:users:"+strconv.FormatInt(m.Chat.ID, 10)), []byte(string(captchaUsers)+";"+strconv.FormatInt(m.Sender.ID, 10)))
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		return txn.Commit()
+	})
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return

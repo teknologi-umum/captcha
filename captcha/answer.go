@@ -1,17 +1,18 @@
 package captcha
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/teknologi-umum/captcha/shared"
 
-	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
@@ -43,9 +44,23 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	//
 	// Get the answer and all the captchaData surrounding captcha from
 	// this specific user ID from the cache.
-	captchaData, err := d.Memory.Get(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10))
+	var captchaData []byte
+	d.DB.View(func(txn *badger.Txn) error {
+		defer txn.Discard()
+		item, err := txn.Get([]byte(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10)))
+		if err != nil {
+			return err
+		}
+
+		captchaData, err = item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+
+		return txn.Commit()
+	})
 	if err != nil {
-		if errors.Is(err, bigcache.ErrEntryNotFound) {
+		if errors.Is(err, badger.ErrKeyNotFound) {
 			return
 		}
 
@@ -180,19 +195,36 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 
 // It... remove the user from cache. What else do you expect?
 func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
-	users, err := d.Memory.Get("captcha:users:" + strconv.FormatInt(groupID, 10))
-	if err != nil {
-		return err
-	}
+	err := d.DB.Update(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(groupID, 10)))
+		if err != nil {
+			txn.Discard()
+			return err
+		}
 
-	str := strings.Replace(string(users), ";"+strconv.FormatInt(userID, 10), "", 1)
-	err = d.Memory.Set("captcha:users:"+strconv.FormatInt(groupID, 10), []byte(str))
-	if err != nil {
-		return err
-	}
+		users, err := item.ValueCopy(nil)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
 
-	err = d.Memory.Delete(strconv.FormatInt(groupID, 10) + ":" + strconv.FormatInt(userID, 10))
-	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+		str := bytes.Replace(users, []byte(";"+strconv.FormatInt(userID, 10)), []byte(""), 1)
+
+		err = txn.Set([]byte("captcha:users:"+strconv.FormatInt(groupID, 10)), str)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		err = txn.Delete([]byte(strconv.FormatInt(groupID, 10) + ":" + strconv.FormatInt(userID, 10)))
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			txn.Discard()
+			return err
+		}
+
+		return txn.Commit()
+	})
+	if err != nil {
 		return err
 	}
 

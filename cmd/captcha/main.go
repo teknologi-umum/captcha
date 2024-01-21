@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/ascii"
@@ -148,9 +149,9 @@ func main() {
 	// Setup in memory cache
 	cache, err := bigcache.New(context.Background(), bigcache.Config{
 		Shards:             1024,
-		LifeWindow:         time.Minute * 5,
-		CleanWindow:        time.Minute * 1,
-		Verbose:            true,
+		LifeWindow:         time.Hour * 12,
+		CleanWindow:        time.Hour,
+		Verbose:            configuration.Environment != "production",
 		HardMaxCacheSize:   1024 * 1024 * 1024,
 		MaxEntrySize:       500,
 		MaxEntriesInWindow: 50,
@@ -164,6 +165,18 @@ func main() {
 			log.Print(errors.WithStack(err))
 		}
 	}(cache)
+
+	fileStorage, err := badger.Open(badger.DefaultOptions(configuration.Database.BadgerPath))
+	if err != nil {
+		log.Fatal("during creating badger db: ", errors.WithStack(err))
+		return
+	}
+	defer func(db *badger.DB) {
+		err := fileStorage.Close()
+		if err != nil {
+			log.Print(errors.WithStack(err))
+		}
+	}(fileStorage)
 
 	// Setup Telegram Bot
 	b, err := tb.NewBot(tb.Settings{
@@ -312,6 +325,7 @@ func main() {
 			Memory:        cache,
 			Bot:           b,
 			TeknumGroupID: configuration.HomeGroupID,
+			DB:            fileStorage,
 		},
 		Ascii:       &ascii.Dependencies{Bot: b},
 		Analytics:   analyticsDependency,
@@ -396,6 +410,11 @@ func main() {
 			log.Printf("Shutting down HTTP server: %s", err.Error())
 			sentry.CaptureException(err)
 		}
+	}()
+
+	go func() {
+		// Run the cleanup worker
+		program.Captcha.Cleanup()
 	}()
 
 	// Lesson learned: do not start bot on a goroutine

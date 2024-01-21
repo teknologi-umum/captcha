@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/dgraph-io/badger/v4"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
@@ -25,9 +26,17 @@ func (d *Dependencies) collectAdditionalAndCache(captcha *Captcha, m *tb.Message
 		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
-	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), data)
+	err = d.DB.Update(func(txn *badger.Txn) error {
+		err := txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), data)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		return txn.Commit()
+	})
 	if err != nil {
-		return fmt.Errorf("failed to set captcha in cache: %w", err)
+		return fmt.Errorf("failed to set captcha in database: %w", err)
 	}
 
 	return nil
@@ -43,7 +52,15 @@ func (d *Dependencies) collectUserMessageAndCache(captcha *Captcha, m *tb.Messag
 		return fmt.Errorf("failed to marshal captcha: %w", err)
 	}
 
-	err = d.Memory.Set(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10), data)
+	err = d.DB.Update(func(txn *badger.Txn) error {
+		err := txn.Set([]byte(strconv.FormatInt(m.Chat.ID, 10)+":"+strconv.FormatInt(m.Sender.ID, 10)), data)
+		if err != nil {
+			txn.Discard()
+			return err
+		}
+
+		return txn.Commit()
+	})
 	if err != nil {
 		return fmt.Errorf("failed to set captcha in cache: %w", err)
 	}
