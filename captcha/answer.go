@@ -45,7 +45,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 	// Get the answer and all the captchaData surrounding captcha from
 	// this specific user ID from the cache.
 	var captchaData []byte
-	d.DB.View(func(txn *badger.Txn) error {
+	err = d.DB.View(func(txn *badger.Txn) error {
 		defer txn.Discard()
 		item, err := txn.Get([]byte(strconv.FormatInt(m.Chat.ID, 10) + ":" + strconv.FormatInt(m.Sender.ID, 10)))
 		if err != nil {
