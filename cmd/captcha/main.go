@@ -32,6 +32,7 @@ import (
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
+	"github.com/teknologi-umum/captcha/deletion"
 	"github.com/teknologi-umum/captcha/reminder"
 	"github.com/teknologi-umum/captcha/setir"
 	"github.com/teknologi-umum/captcha/shared"
@@ -326,6 +327,16 @@ func main() {
 		}
 	}
 
+	var deletionDependency *deletion.Dependency
+	if configuration.FeatureFlag.Deletion {
+		deletionDependency, err = deletion.New()
+		if err != nil {
+			sentry.CaptureException(err)
+			log.Fatal().Err(err).Msg("creating deletion dependency")
+			return
+		}
+	}
+
 	program, err := New(Dependency{
 		FeatureFlag: configuration.FeatureFlag,
 		Captcha: &captcha.Dependencies{
@@ -340,6 +351,7 @@ func main() {
 		UnderAttack: underAttackDependency,
 		Setir:       setirDependency,
 		Reminder:    reminderDependency,
+		Deletion:    deletionDependency,
 	})
 	if err != nil {
 		sentry.CaptureException(err)
@@ -386,6 +398,9 @@ func main() {
 
 	// Reminder (temporary feature)
 	b.Handle("/remind", program.ReminderHandler)
+
+	// Deletion (temporary feature)
+	b.Handle("/delete", program.DeletionHandler)
 
 	// Bad word handlers
 	b.Handle("/badwords", program.BadWordHandler)

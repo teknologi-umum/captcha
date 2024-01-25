@@ -13,6 +13,7 @@ type FeatureFlag struct {
 	Dukun             bool `yaml:"dukun" json:"dukun" env:"FEATURE_FLAG_DUKUN" env-default:"false"`
 	UnderAttack       bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
 	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER" env-default:"false"`
+	Deletion          bool `yaml:"deletion" json:"deletion" env:"FEATURE_FLAG_DELETION" env-default:"false"`
 }
 
 type Configuration struct {

@@ -1172,3 +1172,18 @@ func (b *Bot) Close(ctx context.Context) (bool, error) {
 
 	return resp.Result, nil
 }
+
+func (b *Bot) SetMessageReaction(ctx context.Context, msg Editable, emoji string) error {
+	msgId, chatId := msg.MessageSig()
+	params := map[string]any{
+		"chat_id":    chatId,
+		"message_id": msgId,
+		"reaction": map[string]any{
+			"type":  "emoji",
+			"emoji": emoji,
+		},
+	}
+
+	_, err := b.Raw(ctx, "setMessageReaction", params)
+	return err
+}
