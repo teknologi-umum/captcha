@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/teknologi-umum/captcha/deletion"
 	"github.com/teknologi-umum/captcha/reminder"
 	"github.com/teknologi-umum/captcha/setir"
 
@@ -34,6 +35,7 @@ type Dependency struct {
 	UnderAttack *underattack.Dependency
 	Setir       *setir.Dependency
 	Reminder    *reminder.Dependency
+	Deletion    *deletion.Dependency
 }
 
 // New returns a pointer struct of Dependency
@@ -228,4 +230,18 @@ func (d *Dependency) SetirHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	return d.Setir.Handler(ctx, c)
+}
+
+func (d *Dependency) DeletionHandler(c tb.Context) error {
+	if !d.FeatureFlag.Deletion {
+		return nil
+	}
+
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	span := sentry.StartSpan(ctx, "bot.deletion_handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithTransactionName("Captcha DeletionHandler"))
+	defer span.Finish()
+	ctx = span.Context()
+
+	return d.Deletion.Handler(ctx, c)
 }
