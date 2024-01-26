@@ -15,8 +15,13 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 	if input == "" {
 		return nil
 	}
-
+	if !c.Message().FromGroup() {
+		return nil
+	}
 	if !c.Message().IsReply() {
+		return nil
+	}
+	if c.Message().ReplyTo.Sender.ID != c.Message().Sender.ID {
 		return nil
 	}
 
@@ -51,6 +56,11 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		}
 
 		sentry.GetHubFromContext(ctx).CaptureException(err)
+		return nil
+	}
+
+	// Avoid abuse
+	if duration <= 0 || duration >= time.Hour*24*7 {
 		return nil
 	}
 

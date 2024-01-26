@@ -48,7 +48,7 @@ func ParseDuration(ctx context.Context, s string) (time.Duration, error) {
 			continue
 		}
 
-		if value, err := strconv.ParseInt(s, 10, 64); err != nil {
+		if value, err := strconv.ParseInt(part, 10, 64); value > 0 && err == nil {
 			if duration == 0 {
 				duration = time.Duration(value)
 				continue
@@ -67,7 +67,9 @@ func ParseDuration(ctx context.Context, s string) (time.Duration, error) {
 				return 0, err
 			}
 
-			duration = (time.Duration(hour) * time.Hour) + (time.Duration(minute) * time.Minute)
+			n := time.Now().Round(time.Second)
+			t := time.Date(n.Year(), n.Month(), n.Day(), hour, minute, 0, 0, time.FixedZone("UTC+7", 7*60*60))
+			duration = t.Sub(n)
 			break
 		}
 
