@@ -1178,9 +1178,11 @@ func (b *Bot) SetMessageReaction(ctx context.Context, msg Editable, emoji string
 	params := map[string]any{
 		"chat_id":    chatId,
 		"message_id": msgId,
-		"reaction": map[string]any{
-			"type":  "emoji",
-			"emoji": []string{emoji},
+		"reaction": []map[string]any{
+			{
+				"type":  "emoji",
+				"emoji": emoji,
+			},
 		},
 	}
 
