@@ -3,6 +3,7 @@ package setir
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -31,6 +32,10 @@ func New(bot *tb.Bot, adminIDs []string, homeID int64) (*Dependency, error) {
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 	if d.AdminIDs == nil || d.HomeID == 0 {
 		// The feature is disabled
+		return nil
+	}
+
+	if !slices.Contains(d.AdminIDs, strconv.FormatInt(c.Sender().ID, 10)) {
 		return nil
 	}
 
