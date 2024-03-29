@@ -1,10 +1,10 @@
-FROM golang:1.21-bookworm AS builder
+FROM golang:1.22-bookworm AS builder
 
 WORKDIR /app
 
 COPY . .
 
-RUN go build -o captcha-bot -ldflags="-X main.version=$(git rev-parse HEAD)"  ./cmd/captcha
+RUN go build -o captcha-bot -ldflags="-X main.version=$(git rev-parse HEAD)" ./cmd/captcha
 
 FROM debian:bookworm-slim AS runtime
 

@@ -72,6 +72,14 @@ func (d *Dependencies) NonTextListener(ctx context.Context, m *tb.Message) {
 
 	// Check if the answer is a media
 	remainingTime := time.Until(captcha.Expiry)
+	// If the current time is after the expiry time, we should return immediately.
+	// We don't need to delete any message since sometimes those messages are a valid one,
+	// and we are having a race due to network issues. This is not something that
+	// we can easily fix, since network is not always consistent.
+	if remainingTime < 0 {
+		return
+	}
+
 	wrongMsg, err := d.Bot.Send(
 		ctx,
 		m.Chat,
