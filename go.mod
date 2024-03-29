@@ -1,13 +1,13 @@
 module github.com/teknologi-umum/captcha
 
-go 1.20
+go 1.22
 
 require (
 	github.com/aldy505/asciitxt v0.0.2
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/dgraph-io/badger/v4 v4.2.0
-	github.com/getsentry/sentry-go v0.25.0
-	github.com/go-chi/chi/v5 v5.0.11
+	github.com/getsentry/sentry-go v0.27.0
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/goccy/go-yaml v1.9.5
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jmoiron/sqlx v1.3.5
@@ -15,11 +15,11 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.10.1
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.32.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.2
-	github.com/unrolled/secure v1.13.0
-	go.mongodb.org/mongo-driver v1.13.1
+	github.com/unrolled/secure v1.14.0
+	go.mongodb.org/mongo-driver v1.14.0
 )
 
 require (
@@ -56,10 +56,10 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
