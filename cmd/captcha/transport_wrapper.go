@@ -24,17 +24,17 @@ func (s *SentryTransportWrapper) RoundTrip(request *http.Request) (*http.Respons
 	ctx := request.Context()
 	var cleanRequestURL string
 	pathFragments := strings.Split(request.URL.Path, "/")
-	if len(pathFragments) >= 2 {
-		if pathFragments[0] == "" {
-			pathFragments[1] = "bot[Filtered]"
-		} else {
-			pathFragments[0] = "bot[Filtered]"
+	for i, value := range pathFragments {
+		if strings.HasPrefix(value, "bot") {
+			pathFragments[i] = "bot[Filtered]"
 		}
-
-		cleanRequestURL = strings.Join(pathFragments, "/")
 	}
 
-	span := sentry.StartSpan(ctx, "http.client", sentry.WithTransactionName(fmt.Sprintf("%s %s", request.Method, cleanRequestURL)))
+	cleanRequestURL = strings.Join(pathFragments, "/")
+	transactionName := fmt.Sprintf("%s %s", request.Method, cleanRequestURL)
+	span := sentry.StartSpan(ctx, "http.client",
+		sentry.WithTransactionName(transactionName),
+		sentry.WithDescription(transactionName))
 	defer span.Finish()
 
 	span.SetData("http.query", request.URL.Query().Encode())

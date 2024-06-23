@@ -44,6 +44,8 @@ feature_flag:
     dukun: false
     under_attack: true
     reminder: false
+    deletion: false
+    http_server: false
 home_group_id: 0       # Assuming default value
 admin_ids: [ ]
 # Optional sentry.io DSN, you can track project errors & performance there
@@ -72,7 +74,9 @@ under_attack:
         "badwords_insertion": false,
         "dukun": false,
         "under_attack": true,
-        "reminder": false
+        "reminder": false,
+        "deletion": false,
+        "http_server": false
     },
     "home_group_id": 0,
     "admin_ids": [],
@@ -107,6 +111,8 @@ Optional:
 * FEATURE_FLAG_DUKUN: (Default: "false")
 * FEATURE_FLAG_UNDER_ATTACK: (Default: "true")
 * FEATURE_FLAG_REMINDER: (Default: "false")
+* FEATURE_FLAG_DELETION: (Default: "false")
+* FEATURE_FLAG_HTTP_SERVER: (Default: "false")
 * HOME_GROUP_ID: (No default value provided)
 * ADMIN_IDS: (No default value provided, comma-separated string)
 * SENTRY_DSN: (No default value provided)
@@ -199,7 +205,7 @@ Let's work together to make Telegram a safer and more enjoyable experience for e
 
 ```
 Teknologi Umum Captcha Bot
-Copyright (C) 2023 Teknologi Umum <opensource@teknologiumum.com>
+Copyright (C) 2024 Teknologi Umum <opensource@teknologiumum.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

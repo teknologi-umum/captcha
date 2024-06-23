@@ -14,6 +14,7 @@ type FeatureFlag struct {
 	UnderAttack       bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
 	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER" env-default:"false"`
 	Deletion          bool `yaml:"deletion" json:"deletion" env:"FEATURE_FLAG_DELETION" env-default:"false"`
+	HttpServer        bool `yaml:"http_server" json:"http_server" env:"FEATURE_FLAG_HTTP_SERVER" env-default:"false"`
 }
 
 type Configuration struct {
