@@ -1,5 +1,5 @@
 // Teknologi Umum Captcha Bot
-// Copyright (C) 2023 Teknologi Umum <opensource@teknologiumum.com>
+// Copyright (C) 2024 Teknologi Umum <opensource@teknologiumum.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

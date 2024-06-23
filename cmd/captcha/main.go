@@ -359,13 +359,16 @@ func main() {
 		return
 	}
 
-	httpServer := server.New(server.Config{
-		DB:               db,
-		Memory:           cache,
-		Mongo:            mongoClient,
-		MongoDBName:      mongoDBName,
-		ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
-	})
+	var httpServer *http.Server
+	if configuration.FeatureFlag.HttpServer {
+		httpServer = server.New(server.Config{
+			DB:               db,
+			Memory:           cache,
+			Mongo:            mongoClient,
+			MongoDBName:      mongoDBName,
+			ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
+		})
+	}
 
 	// This is basically just for health check.
 	b.Handle("/start", func(c tb.Context) error {
@@ -412,6 +415,10 @@ func main() {
 	signal.Notify(exitSignal, os.Interrupt)
 
 	go func() {
+		if httpServer == nil {
+			return
+		}
+
 		// Start an HTTP server instance
 		log.Printf("Starting http server on %s", httpServer.Addr)
 		err := httpServer.ListenAndServe()
@@ -429,10 +436,12 @@ func main() {
 
 		b.Stop()
 
-		err = httpServer.Shutdown(shutdownCtx)
-		if err != nil {
-			log.Error().Err(err).Msg("Shutting down the http server")
-			sentry.CaptureException(err)
+		if httpServer != nil {
+			err := httpServer.Shutdown(shutdownCtx)
+			if err != nil {
+				log.Error().Err(err).Msg("Shutting down the http server")
+				sentry.CaptureException(err)
+			}
 		}
 
 		log.Debug().Msg("Starting a 10 second countdown until killing the application")
