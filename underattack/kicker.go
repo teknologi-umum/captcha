@@ -14,6 +14,7 @@ import (
 
 func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 	span := sentry.StartSpan(ctx, "underattack.kicker")
+	ctx = span.Context()
 	defer span.Finish()
 
 	for {
@@ -52,7 +53,7 @@ func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				continue
 			}
-			
+
 			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
 				time.Sleep(time.Second * 10)
 				continue

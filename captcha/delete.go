@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/shared"
 
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
@@ -14,6 +15,10 @@ import (
 
 // deleteMessage creates a timer of one minute to delete a certain message.
 func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable) {
+	span := sentry.StartSpan(ctx, "captcha.delete_message")
+	ctx = span.Context()
+	defer span.Finish()
+
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		for {
@@ -47,6 +52,10 @@ func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable
 }
 
 func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.Editable) error {
+	span := sentry.StartSpan(ctx, "captcha.delete_message_blocking")
+	ctx = span.Context()
+	defer span.Finish()
+
 	for {
 		err := d.Bot.DeleteBulk(ctx, messages)
 		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {

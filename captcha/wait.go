@@ -19,6 +19,7 @@ import (
 // waitOrDelete will start a timer. If the timer is expired, it will kick the user from the group.
 func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 	span := sentry.StartSpan(ctx, "captcha.wait_or_delete")
+	ctx = span.Context()
 	defer span.Finish()
 	// Let's start the timer, shall we?
 	time.Sleep(Timeout)
