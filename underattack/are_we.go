@@ -15,8 +15,8 @@ import (
 // AreWe ...on under attack mode?
 func (d *Dependency) AreWe(ctx context.Context, chatID int64) (bool, error) {
 	span := sentry.StartSpan(ctx, "underattack.are_we", sentry.WithTransactionName("Are we under attack?"))
-	defer span.Finish()
 	ctx = span.Context()
+	defer span.Finish()
 
 	underAttackCache, err := d.Memory.Get("UnderAttack:" + strconv.FormatInt(chatID, 10))
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {

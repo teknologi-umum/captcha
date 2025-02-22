@@ -77,17 +77,16 @@ func main() {
 		Debug:         configuration.Environment == "development",
 		DebugWriter:   log.Logger,
 		Environment:   configuration.Environment,
-		SampleRate:    1.0,
+		SampleRate:    configuration.SentryConfig.SentrySampleRate,
 		EnableTracing: true,
 		TracesSampler: func(ctx sentry.SamplingContext) float64 {
 			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" {
 				return 0
 			}
 
-			return 0.2
+			return configuration.SentryConfig.SentryTracesSampleRate
 		},
-		ProfilesSampleRate: 0.05,
-		Release:            version,
+		Release: version,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("during initiating a new sentry client:")

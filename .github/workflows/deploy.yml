@@ -22,13 +22,21 @@ jobs:
           extra_args: --debug --only-verified
 
   ci:
-    name: CI
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    name: CI / ${{ matrix.arch.arch }}
+    runs-on: ${{ matrix.arch.runs-on }}
+    timeout-minutes: 20
     container: golang:1
+    strategy:
+      fail-fast: true
+      matrix:
+        arch:
+          - runs-on: ubuntu-24.04
+            arch: amd64
+          - runs-on: ubuntu-24.04-arm
+            arch: arm64
     services:
       db:
-        image: postgres:15
+        image: postgres:16
         ports:
           - 5432:5432
         env:
@@ -83,7 +91,7 @@ jobs:
 
   cd:
     name: CD
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     needs:
       - ci
@@ -122,17 +130,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
 
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        with:
-          environment: production
-          set_commits: skip
-          version: ${{ github.sha }}
+
 
   deploy:
     name: Deploy app
@@ -147,3 +147,14 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: production
+          version: ${{ github.sha }}
