@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 			return fmt.Errorf("error banning user: %w", err)
 		}
 
+		slog.DebugContext(ctx, "Succesfully banned user", slog.String("user_name", c.Sender().Username), slog.Int64("user_id", c.Sender().ID))
 		break
 	}
 
@@ -62,6 +64,7 @@ func (d *Dependency) Kicker(ctx context.Context, c tb.Context) error {
 			return fmt.Errorf("error deleting message: %w", err)
 		}
 
+		slog.DebugContext(ctx, "Succesfully deleted message", slog.String("user_name", c.Sender().Username), slog.Int64("user_id", c.Sender().ID), slog.Int("message_id", c.Message().ID))
 		break
 	}
 

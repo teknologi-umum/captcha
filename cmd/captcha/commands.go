@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -104,6 +105,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		}
 
 		if underAttack {
+			slog.DebugContext(ctx, "State is on under attack mode, preventing a user to come through")
 			err := d.UnderAttack.Kicker(ctx, c)
 			if err != nil {
 				shared.HandleBotError(ctx, err, c.Bot(), c.Message())
@@ -123,6 +125,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		go d.Analytics.NewUser(ctx, c.Message(), tempSender)
 	}
 
+	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID))
 	d.Captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil
