@@ -8,6 +8,7 @@ import (
 	"github.com/allegro/bigcache/v3"
 )
 
+// slowWriterWrapper is a wrapper for slog.Logger to implement io.Writer as well as bigcache.Logger
 type slogWriterWrapper struct {
 	logger *slog.Logger
 }

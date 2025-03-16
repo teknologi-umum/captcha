@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/teknologi-umum/captcha/deletion"
+	"github.com/teknologi-umum/captcha/internal/requestid"
 	"github.com/teknologi-umum/captcha/reminder"
 	"github.com/teknologi-umum/captcha/setir"
 
@@ -69,7 +70,7 @@ func New(deps Dependency) (*Dependency, error) {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx := requestid.SetRequestIdOnContext(sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone()))
 
 	d.Captcha.WaitForAnswer(ctx, c.Message())
 
@@ -96,7 +97,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	span := sentry.StartSpan(ctx, "bot.on_user_join_handler", sentry.WithTransactionSource(sentry.SourceTask),
 		sentry.WithTransactionName("Captcha OnUserJoinHandler"))
 	defer span.Finish()
-	ctx = span.Context()
+	ctx = requestid.SetRequestIdOnContext(span.Context())
 
 	if d.FeatureFlag.UnderAttack {
 		underAttack, err := d.UnderAttack.AreWe(ctx, c.Chat().ID)
@@ -105,7 +106,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		}
 
 		if underAttack {
-			slog.DebugContext(ctx, "State is on under attack mode, preventing a user to come through")
+			slog.DebugContext(ctx, "State is on under attack mode, preventing a user to come through", requestid.GetSlogAttributesFromContext(ctx)...)
 			err := d.UnderAttack.Kicker(ctx, c)
 			if err != nil {
 				shared.HandleBotError(ctx, err, c.Bot(), c.Message())
@@ -125,7 +126,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		go d.Analytics.NewUser(ctx, c.Message(), tempSender)
 	}
 
-	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID))
+	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID), requestid.GetSlogAttributesFromContext(ctx))
 	d.Captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil

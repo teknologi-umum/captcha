@@ -71,20 +71,30 @@ func main() {
 		return
 	}
 
+	slogSentryBreadcrumb := &SlogSentryBreadcrumb{
+		Enable: configuration.SentryDSN != "",
+		Level:  parseSlogLevel(configuration.LogLevel),
+	}
 	switch strings.ToLower(configuration.LogFormat) {
 	case "pretty":
 		fallthrough
 	case "basic":
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: parseSlogLevel(configuration.LogLevel),
-		})))
+		slog.SetDefault(slog.New(SlogFanout(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+				Level: parseSlogLevel(configuration.LogLevel),
+			}),
+			slogSentryBreadcrumb,
+		)))
 		break
 	case "json":
 		fallthrough
 	default:
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: parseSlogLevel(configuration.LogLevel),
-		})))
+		slog.SetDefault(slog.New(SlogFanout(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+				Level: parseSlogLevel(configuration.LogLevel),
+			}),
+			slogSentryBreadcrumb,
+		)))
 	}
 
 	slogWrapper := &slogWriterWrapper{logger: slog.Default()}
@@ -98,7 +108,7 @@ func main() {
 		SampleRate:    configuration.SentryConfig.SentrySampleRate,
 		EnableTracing: true,
 		TracesSampler: func(ctx sentry.SamplingContext) float64 {
-			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" {
+			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" || ctx.Span.Name == "POST /bot[Filtered]/getMe" {
 				return 0
 			}
 

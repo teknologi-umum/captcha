@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -73,14 +74,17 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 	groupAdmins, err := d.Memory.Get("group-admins:" + strconv.FormatInt(m.Chat.ID, 10))
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
+			slog.DebugContext(ctx, "Setting cache entry for group admins", slog.Int64("group_id", m.Chat.ID))
 			// Find and set
 			admins, err = d.Bot.AdminsOf(ctx, m.Chat)
 			if err != nil {
 				if !strings.Contains(err.Error(), "Gateway Timeout (504)") && !strings.Contains(err.Error(), "retry after") {
+					slog.ErrorContext(ctx, "failed to get group admins", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID))
 					shared.HandleBotError(ctx, err, d.Bot, m)
 					return
 				}
 
+				slog.WarnContext(ctx, "failed to get group admins", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID))
 				shared.HandleBotError(ctx, err, d.Bot, m)
 				return
 			}
@@ -94,10 +98,12 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 
 			err = d.Memory.Set("group-admins:"+strconv.FormatInt(m.Chat.ID, 10), groupAdmins)
 			if err != nil {
+				slog.ErrorContext(ctx, "failed to set group admins", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID))
 				shared.HandleBotError(ctx, err, d.Bot, m)
 				// DO NOT return, continue the captcha process.
 			}
 		} else {
+			slog.ErrorContext(ctx, "failed to get group admins", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID))
 			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
@@ -117,10 +123,9 @@ func (d *Dependencies) CaptchaUserJoin(ctx context.Context, m *tb.Message) {
 	}
 
 	if m.Sender.IsBot || m.Private() || utils.IsAdmin(admins, m.Sender) {
+		slog.DebugContext(ctx, "User is a bot, private chat, or an admin, skipping captcha", slog.Int64("user_id", m.Sender.ID), slog.Int64("group_id", m.Chat.ID))
 		return
 	}
-
-	// go d.A.SwarmLog(m.Sender, m.Chat.ID, false)
 
 	// randNum generates a random number (3 digit) in string format
 	var randNum = utils.GenerateRandomNumber()
@@ -157,6 +162,7 @@ SENDMSG_RETRY:
 				floodError.RetryAfter = 15
 			}
 
+			slog.DebugContext(ctx, "Received FloodError", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID), slog.Int64("user_id", m.Sender.ID), slog.Int("retry_after", floodError.RetryAfter))
 			time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 			goto SENDMSG_RETRY
 		}
