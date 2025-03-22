@@ -99,25 +99,6 @@ func TestGetHourly(t *testing.T) {
 	}
 }
 
-func TestGetDukunPoints(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	data, err := dependency.GetDukunPoints(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-
-	data2, err := dependency.GetDukunPoints(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(data) != string(data2) {
-		t.Errorf("Expected %s, got %s", data, data2)
-	}
-}
-
 func TestLastUpdated(t *testing.T) {
 	now := time.Now().Round(time.Minute).Format(time.RFC3339)
 

@@ -43,6 +43,11 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) (err error) {
 		return nil
 	}
 
+	span := sentry.StartSpan(ctx, "setir.handler", sentry.WithTransactionSource(sentry.SourceTask),
+		sentry.WithDescription("Setir Handler"))
+	defer span.Finish()
+	ctx = span.Context()
+
 	if c.Message().IsReply() {
 		var replyToID int
 

@@ -16,7 +16,6 @@ import (
 // If it is, we'll kick the person.
 func (d *Dependencies) Cleanup() {
 	var captchaPrefix = []byte("captcha:")
-	ctx := context.Background()
 
 	for {
 		var captchas []Captcha
@@ -59,7 +58,7 @@ func (d *Dependencies) Cleanup() {
 
 		for _, captcha := range captchas {
 			if captcha.Expiry.Unix() < time.Now().Unix() {
-				err := d.removeUserFromGroup(ctx, &tb.Chat{ID: captcha.ChatID}, &tb.User{ID: captcha.SenderID}, captcha)
+				err := d.removeUserFromGroup(context.WithoutCancel(context.Background()), &tb.Chat{ID: captcha.ChatID}, &tb.User{ID: captcha.SenderID}, captcha)
 				if err != nil {
 					sentry.CaptureException(err)
 				}

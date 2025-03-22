@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/teknologi-umum/captcha/deletion"
@@ -126,7 +124,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		go d.Analytics.NewUser(ctx, c.Message(), tempSender)
 	}
 
-	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID), requestid.GetSlogAttributesFromContext(ctx))
+	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID))
 	d.Captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil
@@ -155,41 +153,6 @@ func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	d.Captcha.CaptchaUserLeave(ctx, c.Message())
-	return nil
-}
-
-// BadWordHandler handle the /badwords command.
-// This can only be accessed by some users on Telegram
-// and only valid for private chats.
-func (d *Dependency) BadWordHandler(c tb.Context) error {
-	if d.FeatureFlag.BadwordsInsertion {
-		return nil
-	}
-
-	if !c.Message().Private() {
-		return nil
-	}
-	ok := d.Badwords.Authenticate(strconv.FormatInt(c.Sender().ID, 10))
-	if !ok {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-	defer cancel()
-
-	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
-
-	err := d.Badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
-	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
-		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
-		return nil
-	}
-
-	_, err = c.Bot().Send(ctx, c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
-	if err != nil {
-		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
-	}
-
 	return nil
 }
 

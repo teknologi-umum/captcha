@@ -168,12 +168,14 @@ SENDMSG_RETRY:
 		}
 
 		if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+			slog.DebugContext(ctx, "Received Gateway Timeout, retrying in 10 seconds", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID), slog.Int64("user_id", m.Sender.ID))
 			time.Sleep(time.Second * 10)
 			goto SENDMSG_RETRY
 		}
 
 		// err could possibly be nil at this point, so we better check it out.
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to send question", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID), slog.Int64("user_id", m.Sender.ID))
 			shared.HandleBotError(ctx, err, d.Bot, m)
 			return
 		}
@@ -194,6 +196,7 @@ SENDMSG_RETRY:
 		UserMessages:       nil,
 	})
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to marshal captcha data", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID), slog.Int64("user_id", m.Sender.ID))
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}
@@ -227,6 +230,7 @@ SENDMSG_RETRY:
 		return nil
 	})
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to save captcha data", slog.String("error", err.Error()), slog.Int64("group_id", m.Chat.ID), slog.Int64("user_id", m.Sender.ID))
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
 	}

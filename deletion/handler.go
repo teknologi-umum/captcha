@@ -25,6 +25,10 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		return nil
 	}
 
+	span := sentry.StartSpan(ctx, "bot.deletion_handler", sentry.WithDescription("Deletion Handler"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	// This is an experimental feature, so sending telemetry is a must.
 	// It eases the debugging process.
 	sentry.GetHubFromContext(ctx).AddBreadcrumb(&sentry.Breadcrumb{

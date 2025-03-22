@@ -14,7 +14,7 @@ type slogWriterWrapper struct {
 }
 
 // Printf implements bigcache.Logger.
-func (s *slogWriterWrapper) Printf(format string, v ...interface{}) {
+func (s *slogWriterWrapper) Printf(format string, v ...any) {
 	s.logger.Debug(fmt.Sprintf(format, v...))
 }
 

@@ -30,9 +30,8 @@ type Configuration struct {
 		SentrySampleRate       float64 `yaml:"sentry_sample_rate" json:"sentry_sample_rate" env:"SENTRY_SAMPLE_RATE" env-default:"1.0"`
 		SentryTracesSampleRate float64 `yaml:"sentry_traces_sample_rate" json:"sentry_traces_sample_rate" env:"SENTRY_TRACES_SAMPLE_RATE" env-default:"0.2"`
 	} `yaml:"sentry_config" json:"sentry_config"`
-	LogLevel  string `yaml:"log_level" json:"log_level" env:"LOG_LEVEL" env-default:"info"`
-	LogFormat string `yaml:"log_format" json:"log_format" env:"LOG_FORMAT" env-default:"json"`
-	Database  struct {
+	LogLevel string `yaml:"log_level" json:"log_level" env:"LOG_LEVEL" env-default:"info"`
+	Database struct {
 		PostgresUrl string `yaml:"postgres_url" json:"postgres_url" env:"POSTGRES_URL"`
 		MongoUrl    string `yaml:"mongo_url" json:"mongo_url" env:"MONGO_URL"`
 		BadgerPath  string `yaml:"badger_path" json:"badger_path" env:"BADGER_PATH"`

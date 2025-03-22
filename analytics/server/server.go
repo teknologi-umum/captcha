@@ -14,16 +14,13 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Dependency specifies the dependency injection struct
 // for the server package to use.
 type Dependency struct {
-	DB          *sqlx.DB
-	Memory      *bigcache.BigCache
-	Mongo       *mongo.Client
-	MongoDBName string
+	DB     *sqlx.DB
+	Memory *bigcache.BigCache
 }
 
 // User is a type alias for analytics.GroupMember and should be
@@ -55,8 +52,6 @@ var ErrInvalidValue = errors.New("invalid value")
 // Only the Port field is optional. It will be set to 8080 if not set.
 type Config struct {
 	DB               *sqlx.DB
-	Mongo            *mongo.Client
-	MongoDBName      string
 	Memory           *bigcache.BigCache
 	Environment      string
 	ListeningAddress string
@@ -73,10 +68,8 @@ func New(config Config) *http.Server {
 	}
 
 	deps := &Dependency{
-		DB:          config.DB,
-		Memory:      config.Memory,
-		Mongo:       config.Mongo,
-		MongoDBName: config.MongoDBName,
+		DB:     config.DB,
+		Memory: config.Memory,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -184,37 +177,6 @@ func New(config Config) *http.Server {
 		}
 
 		lastUpdated, err := deps.LastUpdated(TotalEndpoint)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(r.Context(), err, r)
-			return
-		}
-
-		h := w.Header()
-		h.Set("Content-Type", "application/json")
-		h.Set("Last-Updated", lastUpdated.String())
-		w.WriteHeader(http.StatusOK)
-		_, err = w.Write(data)
-		if err != nil {
-			shared.HandleHttpError(r.Context(), err, r)
-			return
-		}
-	})
-
-	r.Get("/dukun", func(w http.ResponseWriter, r *http.Request) {
-		if deps.Mongo == nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		data, err := deps.GetDukunPoints(r.Context())
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			shared.HandleHttpError(r.Context(), err, r)
-			return
-		}
-
-		lastUpdated, err := deps.LastUpdated(DukunEndpoint)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			shared.HandleHttpError(r.Context(), err, r)

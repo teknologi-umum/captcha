@@ -11,29 +11,15 @@ import (
 
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/analytics/server"
-	"github.com/teknologi-umum/captcha/dukun"
 
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var dependency *server.Dependency
 
 func TestMain(m *testing.M) {
-	mongoUrl, ok := os.LookupEnv("MONGO_URL")
-	if !ok {
-		mongoUrl = "mongodb://root:password@localhost:27017"
-	}
-
-	mongoDbName, ok := os.LookupEnv("MONGO_DBNAME")
-	if !ok {
-		mongoDbName = "captcha"
-	}
-
 	databaseUrl, ok := os.LookupEnv("POSTGRES_URL")
 	if !ok {
 		databaseUrl = "postgresql://postgres:password@localhost:5432/captcha?sslmode=disable"
@@ -52,15 +38,6 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	mongoClient, err := mongo.Connect(setupCtx, options.Client().ApplyURI(mongoUrl))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err = mongoClient.Ping(setupCtx, readpref.Primary()); err != nil {
-		log.Fatal(err)
-	}
-
 	memory, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 1))
 	if err != nil {
 		log.Fatal(err)
@@ -72,10 +49,8 @@ func TestMain(m *testing.M) {
 	}
 
 	dependency = &server.Dependency{
-		DB:          db,
-		Memory:      memory,
-		Mongo:       mongoClient,
-		MongoDBName: mongoDbName,
+		DB:     db,
+		Memory: memory,
 	}
 
 	err = Seed(setupCtx)
@@ -100,11 +75,6 @@ func TestMain(m *testing.M) {
 		log.Print(err)
 	}
 	err = db.Close()
-	if err != nil {
-		log.Print(err)
-	}
-
-	err = mongoClient.Disconnect(cleanupCtx)
 	if err != nil {
 		log.Print(err)
 	}
@@ -153,12 +123,6 @@ func Cleanup() {
 		if e := tx.Rollback(); e != nil {
 			log.Fatal(e)
 		}
-		log.Fatal(err)
-	}
-
-	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("dukun")
-	err = collection.Drop(ctx)
-	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -344,19 +308,6 @@ func Seed(ctx context.Context) error {
 
 		return err
 	}
-
-	// Feed some dukun
-	collection := dependency.Mongo.Database(dependency.MongoDBName).Collection("dukun")
-	_, err = collection.InsertOne(ctx, dukun.Dukun{
-		UserID:    1,
-		FirstName: "Jason",
-		LastName:  "Bourne",
-		UserName:  "jasonbourne",
-		Points:    100,
-		Master:    true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
 
 	now := time.Date(2020, 8, 2, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
 

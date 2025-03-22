@@ -21,17 +21,14 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/ascii"
-	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
 	"github.com/teknologi-umum/captcha/deletion"
 	"github.com/teknologi-umum/captcha/reminder"
@@ -44,14 +41,13 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	// Others third party stuff
 	"github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
+	slogmulti "github.com/samber/slog-multi"
+	"github.com/teknologi-umum/captcha/internal/requestid"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
@@ -75,27 +71,25 @@ func main() {
 		Enable: configuration.SentryDSN != "",
 		Level:  parseSlogLevel(configuration.LogLevel),
 	}
-	switch strings.ToLower(configuration.LogFormat) {
-	case "pretty":
-		fallthrough
-	case "basic":
-		slog.SetDefault(slog.New(SlogFanout(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-				Level: parseSlogLevel(configuration.LogLevel),
+	slog.SetDefault(slog.New(
+		slogmulti.Pipe(
+			slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
+				clonedRecord := record.Clone()
+				reqId := requestid.GetRequestIdFromContext(ctx)
+				if reqId != "" {
+					clonedRecord.AddAttrs(slog.String("request_id", reqId))
+				}
+				next(ctx, clonedRecord)
+				return nil
 			}),
-			slogSentryBreadcrumb,
-		)))
-		break
-	case "json":
-		fallthrough
-	default:
-		slog.SetDefault(slog.New(SlogFanout(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-				Level: parseSlogLevel(configuration.LogLevel),
-			}),
-			slogSentryBreadcrumb,
-		)))
-	}
+		).
+			Handler(slogmulti.Fanout(
+				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+					Level: parseSlogLevel(configuration.LogLevel),
+				}),
+				slogSentryBreadcrumb,
+			)),
+	))
 
 	slogWrapper := &slogWriterWrapper{logger: slog.Default()}
 
@@ -147,44 +141,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
-
-	var mongoClient *mongo.Client
-	var mongoDBName string
-	if configuration.FeatureFlag.BadwordsInsertion || configuration.FeatureFlag.Dukun {
-		// Setup mongodb connection
-		mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(configuration.Database.MongoUrl))
-		if err != nil {
-			slog.Error("connecting to mongo client", slog.String("error", err.Error()))
-			os.Exit(1)
-			return
-		}
-
-		// Mongo health check
-		if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
-			slog.Error("mongodb ping", slog.String("error", err.Error()))
-			os.Exit(1)
-			return
-		}
-
-		// Get the MongoDB database name from the given MONGO_URL environment variable.
-		parsedURL, err := url.Parse(configuration.Database.MongoUrl)
-		if err != nil {
-			slog.Error("failed to parse MONGO_URL", slog.String("error", err.Error()))
-			os.Exit(1)
-		}
-		mongoDBName = parsedURL.Path[1:]
-	}
-	defer func(client *mongo.Client) {
-		if client != nil {
-			slog.Debug("Closing mongo")
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-			defer cancel()
-			err := client.Disconnect(ctx)
-			if err != nil {
-				slog.Warn("closing the mongo connection", slog.String("error", err.Error()))
-			}
-		}
-	}(mongoClient)
 
 	// Setup in memory cache
 	cache, err := bigcache.New(context.Background(), bigcache.Config{
@@ -284,46 +240,6 @@ func main() {
 		}
 	}()
 
-	var analyticsDependency *analytics.Dependency
-	if configuration.FeatureFlag.Analytics {
-		// Check if database is initialized
-		if db == nil {
-			slog.Error("To enable analytics, database must been set")
-			os.Exit(1)
-			return
-		}
-		err = analytics.MustMigrate(db)
-		if err != nil {
-			sentry.CaptureException(err)
-			slog.Error("initial database migration", slog.String("error", err.Error()))
-			os.Exit(1)
-			return
-		}
-
-		analyticsDependency = &analytics.Dependency{
-			Memory:      cache,
-			Bot:         b,
-			DB:          db,
-			HomeGroupID: configuration.HomeGroupID,
-		}
-	}
-
-	var badwordsDependency *badwords.Dependency
-	if configuration.FeatureFlag.BadwordsInsertion {
-		// Check if mongodb is initialized
-		if mongoClient == nil && mongoDBName == "" {
-			slog.Error("To enable badwords insertion, mongodb mnust been set")
-			os.Exit(1)
-			return
-		}
-
-		badwordsDependency = &badwords.Dependency{
-			Mongo:       mongoClient,
-			MongoDBName: mongoDBName,
-			AdminIDs:    configuration.AdminIds,
-		}
-	}
-
 	var underAttackDependency *underattack.Dependency
 	if configuration.FeatureFlag.UnderAttack {
 		var underAttackDatastore underattack.Datastore
@@ -402,8 +318,6 @@ func main() {
 			DB:            fileStorage,
 		},
 		Ascii:       &ascii.Dependencies{Bot: b},
-		Analytics:   analyticsDependency,
-		Badwords:    badwordsDependency,
 		UnderAttack: underAttackDependency,
 		Setir:       setirDependency,
 		Reminder:    reminderDependency,
@@ -421,8 +335,6 @@ func main() {
 		httpServer = server.New(server.Config{
 			DB:               db,
 			Memory:           cache,
-			Mongo:            mongoClient,
-			MongoDBName:      mongoDBName,
 			ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
 		})
 	}
@@ -461,9 +373,6 @@ func main() {
 
 	// Deletion (temporary feature)
 	b.Handle("/delete", program.DeletionHandler)
-
-	// Bad word handlers
-	b.Handle("/badwords", program.BadWordHandler)
 
 	// <redacted>
 	b.Handle("/setir", program.SetirHandler)

@@ -56,6 +56,7 @@ var clockRegex = regexp.MustCompile("^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$")
 
 func ParseText(ctx context.Context, text string) (Reminder, error) {
 	span := sentry.StartSpan(ctx, "reminder.parse_text")
+	ctx = span.Context()
 	defer span.Finish()
 
 	scanner := bufio.NewScanner(strings.NewReader(text))
