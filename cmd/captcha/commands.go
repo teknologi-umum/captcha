@@ -62,7 +62,10 @@ func New(deps Dependency) (*Dependency, error) {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
-	ctx := requestid.SetRequestIdOnContext(sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone()))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	defer cancel()
+
+	ctx = requestid.SetRequestIdOnContext(sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone()))
 
 	d.Captcha.WaitForAnswer(ctx, c.Message())
 
@@ -81,7 +84,7 @@ func (d *Dependency) OnTextHandler(c tb.Context) error {
 // added by someone else into the group), or they join
 // the group all by themselves.
 func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*15)
 	defer cancel()
 
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
@@ -127,7 +130,10 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 // OnNonTextHandler meant to handle anything else
 // than an incoming text message.
 func (d *Dependency) OnNonTextHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	d.Captcha.NonTextListener(ctx, c.Message())
 
@@ -144,7 +150,10 @@ func (d *Dependency) OnNonTextHandler(c tb.Context) error {
 // OnUserLeftHandler handles during an event in which
 // a user left the group.
 func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	d.Captcha.CaptchaUserLeave(ctx, c.Message())
 	return nil
@@ -156,7 +165,10 @@ func (d *Dependency) EnableUnderAttackModeHandler(c tb.Context) error {
 		return nil
 	}
 
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	return d.UnderAttack.EnableUnderAttackModeHandler(ctx, c)
 }
@@ -167,7 +179,10 @@ func (d *Dependency) DisableUnderAttackModeHandler(c tb.Context) error {
 		return nil
 	}
 
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	return d.UnderAttack.DisableUnderAttackModeHandler(ctx, c)
 }
@@ -177,7 +192,10 @@ func (d *Dependency) ReminderHandler(c tb.Context) error {
 		return nil
 	}
 
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	span := sentry.StartSpan(ctx, "bot.reminder_handler", sentry.WithTransactionSource(sentry.SourceTask),
 		sentry.WithTransactionName("Captcha ReminderHandler"))
@@ -188,7 +206,10 @@ func (d *Dependency) ReminderHandler(c tb.Context) error {
 }
 
 func (d *Dependency) SetirHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
 
 	return d.Setir.Handler(ctx, c)
 }
@@ -198,7 +219,11 @@ func (d *Dependency) DeletionHandler(c tb.Context) error {
 		return nil
 	}
 
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
+	ctx = requestid.SetRequestIdOnContext(ctx)
+
 	span := sentry.StartSpan(ctx, "bot.deletion_handler", sentry.WithTransactionSource(sentry.SourceTask),
 		sentry.WithTransactionName("Captcha DeletionHandler"))
 	defer span.Finish()
