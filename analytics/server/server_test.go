@@ -146,7 +146,7 @@ func Teardown(cleanupCtx context.Context) error {
 		}
 	}(c)
 
-	tx, err := c.BeginTxx(cleanupCtx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
+	tx, err := c.BeginTxx(cleanupCtx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 	if err != nil {
 		return err
 	}

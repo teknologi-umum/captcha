@@ -41,9 +41,6 @@ const (
 	// TotalEndpoint indicates the endpoint for getting the total amount
 	// of messages that was sent per the database's data.
 	TotalEndpoint
-	// DukunEndpoint indicates the endpoint for getting the whole
-	// dukun points as used by the Javascript bot.
-	DukunEndpoint
 )
 
 var ErrInvalidValue = errors.New("invalid value")

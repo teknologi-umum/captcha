@@ -129,15 +129,6 @@ func TestLastUpdated(t *testing.T) {
 		t.Errorf("Expected %s, got %s", now, data3)
 	}
 
-	data4, err := dependency.LastUpdated(server.DukunEndpoint)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if data4.Round(time.Minute).Format(time.RFC3339) != now {
-		t.Errorf("Expected %s, got %s", now, data4)
-	}
-
 	// should return an error
 	_, err = dependency.LastUpdated(server.Endpoint(5))
 	if err == nil {

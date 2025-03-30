@@ -164,17 +164,6 @@ func (d *Dependency) LastUpdated(r Endpoint) (time.Time, error) {
 		}
 
 		return time.Time{}, nil
-	case DukunEndpoint:
-		data, err := d.Memory.Get("analytics:last_updated:dukun")
-		if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
-			return time.Time{}, err
-		}
-
-		if len(data) > 0 {
-			return time.Parse(time.RFC3339, string(data))
-		}
-
-		return time.Time{}, nil
 	default:
 		return time.Time{}, ErrInvalidValue
 	}
