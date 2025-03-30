@@ -42,6 +42,7 @@ func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable
 					continue
 				}
 
+				slog.ErrorContext(ctx, "Failed to delete message", slog.String("error", err.Error()), slog.Any("messages", messages))
 				shared.HandleError(ctx, err)
 			}
 

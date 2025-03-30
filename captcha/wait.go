@@ -3,6 +3,7 @@ package captcha
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -62,11 +63,12 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 				return
 			}
 
+			slog.ErrorContext(ctx, "Failed to get captcha data from cache", slog.String("error", err.Error()), slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
 			shared.HandleBotError(ctx, err, d.Bot, msgUser)
 			return
 		}
 
-		slog.DebugContext(ctx, "WIll try to kick the user", slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
+		slog.DebugContext(ctx, "Will try to kick the user", slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
 
 	KICKMSG_RETRY:
 		// Goodbye, user!
@@ -88,7 +90,7 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 					floodError.RetryAfter = 15
 				}
 
-				slog.WarnContext(ctx, "Received FloodError, retrying in 10 seconds", slog.String("error", err.Error()), slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID), slog.Int("retry_after", floodError.RetryAfter))
+				slog.WarnContext(ctx, fmt.Sprintf("Received FloodError, retrying in %d seconds", floodError.RetryAfter), slog.String("error", err.Error()), slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID), slog.Int("retry_after", floodError.RetryAfter))
 				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				goto KICKMSG_RETRY
 			}
@@ -99,16 +101,20 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 				goto KICKMSG_RETRY
 			}
 
+			slog.ErrorContext(ctx, "Failed to send a kick message to user", slog.String("error", err.Error()), slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
 			shared.HandleBotError(ctx, err, d.Bot, msgUser)
 		}
 
-		go d.deleteMessage(
-			ctx,
-			[]tb.Editable{&tb.StoredMessage{
-				MessageID: strconv.Itoa(kickMsg.ID),
-				ChatID:    kickMsg.Chat.ID,
-			}},
-		)
+		if kickMsg != nil {
+			slog.DebugContext(ctx, "Deleting the kick message", slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
+			go d.deleteMessage(
+				ctx,
+				[]tb.Editable{&tb.StoredMessage{
+					MessageID: strconv.Itoa(kickMsg.ID),
+					ChatID:    msgUser.Chat.ID,
+				}},
+			)
+		}
 
 		err = d.removeUserFromGroup(ctx, msgUser.Chat, msgUser.Sender, captcha)
 		if err != nil {
