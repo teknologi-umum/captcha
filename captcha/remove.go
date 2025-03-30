@@ -68,6 +68,17 @@ BanRetry:
 		})
 	}
 
+	for _, msgId := range captcha.UserMessages {
+		if msgId == "" {
+			continue
+		}
+
+		msgToBeDeleted = append(msgToBeDeleted, &tb.StoredMessage{
+			ChatID:    chat.ID,
+			MessageID: msgId,
+		})
+	}
+
 	err = d.deleteMessageBlocking(ctx, msgToBeDeleted)
 	if err != nil {
 		return err
