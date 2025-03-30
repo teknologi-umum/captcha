@@ -71,6 +71,8 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 
 	go func(duration2 time.Duration) {
 		time.Sleep(duration2)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+		defer cancel()
 		_ = c.Bot().Delete(ctx, c.Message().ReplyTo)
 	}(duration)
 
