@@ -69,11 +69,13 @@ func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.
 					floodError.RetryAfter = 15
 				}
 
+				slog.DebugContext(ctx, fmt.Sprintf("Received flood error, retrying in %d seconds", floodError.RetryAfter), slog.Any("messages", messages))
 				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				continue
 			}
 
 			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				slog.DebugContext(ctx, "Received Gateway Timeout, retrying in 10 seconds", slog.Any("messages", messages))
 				time.Sleep(time.Second * 10)
 				continue
 			}
