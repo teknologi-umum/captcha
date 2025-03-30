@@ -14,7 +14,6 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/ascii"
-	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 	"github.com/teknologi-umum/captcha/shared"
@@ -31,7 +30,6 @@ type Dependency struct {
 	Captcha     *captcha.Dependencies
 	Ascii       *ascii.Dependencies
 	Analytics   *analytics.Dependency
-	Badwords    *badwords.Dependency
 	UnderAttack *underattack.Dependency
 	Setir       *setir.Dependency
 	Reminder    *reminder.Dependency
@@ -53,10 +51,6 @@ func New(deps Dependency) (*Dependency, error) {
 
 	if deps.FeatureFlag.Analytics && deps.Analytics == nil {
 		return nil, fmt.Errorf("analytics feature is enabled, but analytics dependency is nil")
-	}
-
-	if deps.FeatureFlag.BadwordsInsertion && deps.Badwords == nil {
-		return nil, fmt.Errorf("badwords insertion feature is enabled, but badwords dependency is nil")
 	}
 
 	if deps.FeatureFlag.Reminder && deps.Reminder == nil {

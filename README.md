@@ -40,21 +40,23 @@ environment: production  # Assuming default value
 bot_token: ""            # Required field
 feature_flag:
     analytics: false       # Assuming default values
-    badwords_insertion: false
-    dukun: false
     under_attack: true
     reminder: false
     deletion: false
     http_server: false
 home_group_id: 0       # Assuming default value
-admin_ids: [ ]
+admin_ids: [ ] # Array of string
 # Optional sentry.io DSN, you can track project errors & performance there
 sentry_dsn: ""
+sentry_config:
+    sentry_sample_rate: 1.0 # Assuming default value
+    sentry_traces_sample_rate: 0.2 # Assuming default value
+log_level: "info" # Available options: "debug", "info", "warn", "error"
 database:
     # Example value: postgres://username:password@host:port/database?sslmode=disable
     postgres_url: ""
-    # Example value: mongodb://username:password@host:port/database
-    mongo_url: ""
+    # Path to a local filesystem-based Badger database
+    badger_path: ""
 http_server:
     listening_host: ""
     listening_port: "8080"  # Assuming default value
@@ -71,8 +73,6 @@ under_attack:
     "bot_token": "",
     "feature_flag": {
         "analytics": false,
-        "badwords_insertion": false,
-        "dukun": false,
         "under_attack": true,
         "reminder": false,
         "deletion": false,
@@ -81,9 +81,14 @@ under_attack:
     "home_group_id": 0,
     "admin_ids": [],
     "sentry_dsn": "",
+    "sentry_config": {
+        "sentry_sample_rate": 1.0,
+        "sentry_traces_sample_rate": 0.2
+    },
+    "log_level": "info",
     "database": {
         "postgres_url": "",
-        "mongo_url": ""
+        "badger_path": ""
     },
     "http_server": {
         "listening_host": "",
@@ -107,8 +112,6 @@ Optional:
 
 * ENVIRONMENT: (Default: "production")
 * FEATURE_FLAG_ANALYTICS: (Default: "false")
-* FEATURE_FLAG_BADWORDS_INSERTION: (Default: "false")
-* FEATURE_FLAG_DUKUN: (Default: "false")
 * FEATURE_FLAG_UNDER_ATTACK: (Default: "true")
 * FEATURE_FLAG_REMINDER: (Default: "false")
 * FEATURE_FLAG_DELETION: (Default: "false")
@@ -116,8 +119,11 @@ Optional:
 * HOME_GROUP_ID: (No default value provided)
 * ADMIN_IDS: (No default value provided, comma-separated string)
 * SENTRY_DSN: (No default value provided)
+* SENTRY_SAMPLE_RATE: (Default: "1.0")
+* SENTRY_TRACES_SAMPLE_RATE: (Default: "0.2")
+* LOG_LEVEL: (Default: "info")
 * POSTGRES_URL: (No default value provided)
-* MONGO_URL: (No default value provided)
+* BADGER_PATH: (No default value provided)
 * HTTP_HOST: (No default value provided)
 * HTTP_PORT: (Default: "8080")
 * UNDER_ATTACK__DATASTORE_PROVIDER: (Default: "memory")
@@ -205,7 +211,7 @@ Let's work together to make Telegram a safer and more enjoyable experience for e
 
 ```
 Teknologi Umum Captcha Bot
-Copyright (C) 2024 Teknologi Umum <opensource@teknologiumum.com>
+Copyright (C) 2025 Teknologi Umum <opensource@teknologiumum.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
