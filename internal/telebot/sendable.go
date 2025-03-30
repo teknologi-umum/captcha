@@ -116,6 +116,7 @@ func (d *Document) Send(ctx context.Context, b *Bot, to Recipient, opt *SendOpti
 func (s *Sticker) Send(ctx context.Context, b *Bot, to Recipient, opt *SendOptions) (*Message, error) {
 	params := map[string]string{
 		"chat_id": to.Recipient(),
+		"emoji":   s.Emoji,
 	}
 	b.embedSendOptions(params, opt)
 
@@ -352,12 +353,7 @@ func (p *Poll) Send(ctx context.Context, b *Bot, to Recipient, opt *SendOptions)
 	}
 	b.embedSendOptions(params, opt)
 
-	var options []string
-	for _, o := range p.Options {
-		options = append(options, o.Text)
-	}
-
-	opts, _ := json.Marshal(options)
+	opts, _ := json.Marshal(p.Options)
 	params["options"] = string(opts)
 
 	data, err := b.Raw(ctx, "sendPoll", params)
@@ -402,7 +398,7 @@ func (g *Game) Send(ctx context.Context, b *Bot, to Recipient, opt *SendOptions)
 
 func thumbnailToFilemap(thumb *Photo) map[string]File {
 	if thumb != nil {
-		return map[string]File{"thumb": thumb.File}
+		return map[string]File{"thumbnail": thumb.File}
 	}
 	return nil
 }

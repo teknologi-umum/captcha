@@ -66,6 +66,8 @@ func (d *Dependencies) waitOrDelete(ctx context.Context, msgUser *tb.Message) {
 			return
 		}
 
+		slog.DebugContext(ctx, "WIll try to kick the user", slog.Int64("group_id", msgUser.Chat.ID), slog.Int64("user_id", msgUser.Sender.ID))
+
 	KICKMSG_RETRY:
 		// Goodbye, user!
 		kickMsg, err := d.Bot.Send(

@@ -1,334 +1,121 @@
 package telebot
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
-	"log"
-	"mime/multipart"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
-// Raw lets you call any method of Bot API manually.
-// It also handles API errors, so you only need to unwrap
-// result field from json data.
-func (b *Bot) Raw(ctx context.Context, method string, payload interface{}) ([]byte, error) {
-	url := b.URL + "/bot" + b.Token + "/" + method
+// API is the interface that wraps all basic methods for interacting
+// with Telegram Bot API.
+type API interface {
+	Raw(ctx context.Context, method string, payload interface{}) ([]byte, error)
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(payload); err != nil {
-		return nil, err
-	}
-
-	// Cancel the request immediately without waiting for the timeout  when bot is about to stop.
-	// This may become important if doing long polling with long timeout.
-	exit := make(chan struct{})
-	defer close(exit)
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	go func() {
-		select {
-		case <-b.stopClient:
-			cancel()
-		case <-exit:
-		}
-	}()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &buf)
-	if err != nil {
-		return nil, wrapError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, wrapError(err)
-	}
-	resp.Close = true
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, wrapError(err)
-	}
-
-	if b.verbose {
-		verbose(method, payload, data)
-	}
-
-	// returning data as well
-	return data, extractOk(data)
-}
-
-func (b *Bot) sendFiles(ctx context.Context, method string, files map[string]File, params map[string]string) ([]byte, error) {
-	rawFiles := make(map[string]interface{})
-	for name, f := range files {
-		switch {
-		case f.InCloud():
-			params[name] = f.FileID
-		case f.FileURL != "":
-			params[name] = f.FileURL
-		case f.OnDisk():
-			rawFiles[name] = f.FileLocal
-		case f.FileReader != nil:
-			rawFiles[name] = f.FileReader
-		default:
-			return nil, fmt.Errorf("telebot: file for field %s doesn't exist", name)
-		}
-	}
-
-	if len(rawFiles) == 0 {
-		return b.Raw(ctx, method, params)
-	}
-
-	pipeReader, pipeWriter := io.Pipe()
-	writer := multipart.NewWriter(pipeWriter)
-
-	go func() {
-		defer pipeWriter.Close()
-
-		for field, file := range rawFiles {
-			if err := addFileToWriter(writer, files[field].fileName, field, file); err != nil {
-				pipeWriter.CloseWithError(err)
-				return
-			}
-		}
-		for field, value := range params {
-			if err := writer.WriteField(field, value); err != nil {
-				pipeWriter.CloseWithError(err)
-				return
-			}
-		}
-		if err := writer.Close(); err != nil {
-			pipeWriter.CloseWithError(err)
-			return
-		}
-	}()
-
-	url := b.URL + "/bot" + b.Token + "/" + method
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, pipeReader)
-	if err != nil {
-		return nil, wrapError(err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		err = wrapError(err)
-		pipeReader.CloseWithError(err)
-		return nil, err
-	}
-	resp.Close = true
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusInternalServerError {
-		return nil, ErrInternal
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, wrapError(err)
-	}
-
-	return data, extractOk(data)
-}
-
-func addFileToWriter(writer *multipart.Writer, filename, field string, file interface{}) error {
-	var reader io.Reader
-	if r, ok := file.(io.Reader); ok {
-		reader = r
-	} else if path, ok := file.(string); ok {
-		f, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		reader = f
-	} else {
-		return fmt.Errorf("telebot: file for field %v should be io.ReadCloser or string", field)
-	}
-
-	part, err := writer.CreateFormFile(field, filename)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(part, reader)
-	return err
-}
-
-func (b *Bot) sendText(ctx context.Context, to Recipient, text string, opt *SendOptions) (*Message, error) {
-	params := map[string]string{
-		"chat_id": to.Recipient(),
-		"text":    text,
-	}
-	b.embedSendOptions(params, opt)
-
-	data, err := b.Raw(ctx, "sendMessage", params)
-	if err != nil {
-		return nil, err
-	}
-
-	return extractMessage(data)
-}
-
-func (b *Bot) sendMedia(ctx context.Context, media Media, params map[string]string, files map[string]File) (*Message, error) {
-	kind := media.MediaType()
-	what := "send" + strings.Title(kind)
-
-	if kind == "videoNote" {
-		kind = "video_note"
-	}
-
-	sendFiles := map[string]File{kind: *media.MediaFile()}
-	for k, v := range files {
-		sendFiles[k] = v
-	}
-
-	data, err := b.sendFiles(ctx, what, sendFiles, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return extractMessage(data)
-}
-
-func (b *Bot) getMe(ctx context.Context) (*User, error) {
-	data, err := b.Raw(ctx, "getMe", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp struct {
-		Result *User
-	}
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, wrapError(err)
-	}
-	return resp.Result, nil
-}
-
-func (b *Bot) getUpdates(ctx context.Context, offset int, limit int, timeout time.Duration, allowed []string) ([]Update, error) {
-	params := map[string]string{
-		"offset":  strconv.Itoa(offset),
-		"timeout": strconv.Itoa(int(timeout / time.Second)),
-	}
-
-	data, _ := json.Marshal(allowed)
-	params["allowed_updates"] = string(data)
-
-	if limit != 0 {
-		params["limit"] = strconv.Itoa(limit)
-	}
-
-	data, err := b.Raw(ctx, "getUpdates", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp struct {
-		Result []Update
-	}
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, wrapError(err)
-	}
-	return resp.Result, nil
-}
-
-// extractOk checks given result for error. If result is ok returns nil.
-// In other cases it extracts API error. If error is not presented
-// in errors.go, it will be prefixed with `unknown` keyword.
-func extractOk(data []byte) error {
-	var e struct {
-		Ok          bool                   `json:"ok"`
-		Code        int                    `json:"error_code"`
-		Description string                 `json:"description"`
-		Parameters  map[string]interface{} `json:"parameters"`
-	}
-	if json.NewDecoder(bytes.NewReader(data)).Decode(&e) != nil {
-		return nil // FIXME
-	}
-	if e.Ok {
-		return nil
-	}
-
-	err := Err(e.Description)
-	switch err {
-	case nil:
-	case ErrGroupMigrated:
-		migratedTo, ok := e.Parameters["migrate_to_chat_id"]
-		if !ok {
-			return NewError(e.Code, e.Description)
-		}
-
-		return GroupError{
-			err:        err.(*Error),
-			MigratedTo: int64(migratedTo.(float64)),
-		}
-	default:
-		return err
-	}
-
-	switch e.Code {
-	case http.StatusTooManyRequests:
-		retryAfter, ok := e.Parameters["retry_after"]
-		if !ok {
-			return NewError(e.Code, e.Description)
-		}
-
-		err = FloodError{
-			err:        NewError(e.Code, e.Description),
-			RetryAfter: int(retryAfter.(float64)),
-		}
-	default:
-		err = fmt.Errorf("telegram: %s (%d)", e.Description, e.Code)
-	}
-
-	return err
-}
-
-// extractMessage extracts common Message result from given data.
-// Should be called after extractOk or b.Raw() to handle possible errors.
-func extractMessage(data []byte) (*Message, error) {
-	var resp struct {
-		Result *Message
-	}
-	if err := json.Unmarshal(data, &resp); err != nil {
-		var resp struct {
-			Result bool
-		}
-		if err := json.Unmarshal(data, &resp); err != nil {
-			return nil, wrapError(err)
-		}
-		if resp.Result {
-			return nil, ErrTrueResult
-		}
-		return nil, wrapError(err)
-	}
-	return resp.Result, nil
-}
-
-func verbose(method string, payload interface{}, data []byte) {
-	body, _ := json.Marshal(payload)
-	body = bytes.ReplaceAll(body, []byte(`\"`), []byte(`"`))
-	body = bytes.ReplaceAll(body, []byte(`"{`), []byte(`{`))
-	body = bytes.ReplaceAll(body, []byte(`}"`), []byte(`}`))
-
-	indent := func(b []byte) string {
-		var buf bytes.Buffer
-		json.Indent(&buf, b, "", "  ")
-		return buf.String()
-	}
-
-	log.Printf(
-		"[verbose] telebot: sent request\nMethod: %v\nParams: %v\nResponse: %v",
-		method, indent(body), indent(data),
-	)
+	Accept(ctx context.Context, query *PreCheckoutQuery, errorMessage ...string) error
+	AddStickerToSet(ctx context.Context, of Recipient, name string, sticker InputSticker) error
+	AdminsOf(ctx context.Context, chat *Chat) ([]ChatMember, error)
+	Answer(ctx context.Context, query *Query, resp *QueryResponse) error
+	AnswerWebApp(ctx context.Context, query *Query, r Result) (*WebAppMessage, error)
+	ApproveJoinRequest(ctx context.Context, chat Recipient, user *User) error
+	Ban(ctx context.Context, chat *Chat, member *ChatMember, revokeMessages ...bool) error
+	BanSenderChat(ctx context.Context, chat *Chat, sender Recipient) error
+	BusinessConnection(ctx context.Context, d string) (*BusinessConnection, error)
+	ChatByID(ctx context.Context, id int64) (*Chat, error)
+	ChatByUsername(ctx context.Context, name string) (*Chat, error)
+	ChatMemberOf(ctx context.Context, chat, user Recipient) (*ChatMember, error)
+	Close(ctx context.Context) (bool, error)
+	CloseGeneralTopic(ctx context.Context, chat *Chat) error
+	CloseTopic(ctx context.Context, chat *Chat, topic *Topic) error
+	Commands(ctx context.Context, opts ...interface{}) ([]Command, error)
+	Copy(ctx context.Context, to Recipient, msg Editable, opts ...interface{}) (*Message, error)
+	CopyMany(ctx context.Context, to Recipient, msgs []Editable, opts ...*SendOptions) ([]Message, error)
+	CreateInviteLink(ctx context.Context, chat Recipient, link *ChatInviteLink) (*ChatInviteLink, error)
+	CreateInvoiceLink(ctx context.Context, i Invoice) (string, error)
+	CreateStickerSet(ctx context.Context, of Recipient, set *StickerSet) error
+	CreateTopic(ctx context.Context, chat *Chat, topic *Topic) (*Topic, error)
+	CustomEmojiStickers(ctx context.Context, ids []string) ([]Sticker, error)
+	DeclineJoinRequest(ctx context.Context, chat Recipient, user *User) error
+	DefaultRights(ctx context.Context, forChannels bool) (*Rights, error)
+	Delete(ctx context.Context, msg Editable) error
+	DeleteCommands(ctx context.Context, opts ...interface{}) error
+	DeleteGroupPhoto(ctx context.Context, chat *Chat) error
+	DeleteGroupStickerSet(ctx context.Context, chat *Chat) error
+	DeleteMany(ctx context.Context, msgs []Editable) error
+	DeleteSticker(ctx context.Context, sticker string) error
+	DeleteStickerSet(ctx context.Context, name string) error
+	DeleteTopic(ctx context.Context, chat *Chat, topic *Topic) error
+	Download(ctx context.Context, file *File, localFilename string) error
+	Edit(ctx context.Context, msg Editable, what interface{}, opts ...interface{}) (*Message, error)
+	EditCaption(ctx context.Context, msg Editable, caption string, opts ...interface{}) (*Message, error)
+	EditGeneralTopic(ctx context.Context, chat *Chat, topic *Topic) error
+	EditInviteLink(ctx context.Context, chat Recipient, link *ChatInviteLink) (*ChatInviteLink, error)
+	EditMedia(ctx context.Context, msg Editable, media Inputtable, opts ...interface{}) (*Message, error)
+	EditReplyMarkup(ctx context.Context, msg Editable, markup *ReplyMarkup) (*Message, error)
+	EditTopic(ctx context.Context, chat *Chat, topic *Topic) error
+	File(ctx context.Context, file *File) (io.ReadCloser, error)
+	FileByID(ctx context.Context, fileID string) (File, error)
+	Forward(ctx context.Context, to Recipient, msg Editable, opts ...interface{}) (*Message, error)
+	ForwardMany(ctx context.Context, to Recipient, msgs []Editable, opts ...*SendOptions) ([]Message, error)
+	GameScores(ctx context.Context, user Recipient, msg Editable) ([]GameHighScore, error)
+	HideGeneralTopic(ctx context.Context, chat *Chat) error
+	InviteLink(ctx context.Context, chat *Chat) (string, error)
+	Leave(ctx context.Context, chat Recipient) error
+	Len(ctx context.Context, chat *Chat) (int, error)
+	Logout(ctx context.Context) (bool, error)
+	MenuButton(ctx context.Context, chat *User) (*MenuButton, error)
+	MyDescription(ctx context.Context, language string) (*BotInfo, error)
+	MyName(ctx context.Context, language string) (*BotInfo, error)
+	MyShortDescription(ctx context.Context, language string) (*BotInfo, error)
+	Notify(ctx context.Context, to Recipient, action ChatAction, threadID ...int) error
+	Pin(ctx context.Context, msg Editable, opts ...interface{}) error
+	ProfilePhotosOf(ctx context.Context, user *User) ([]Photo, error)
+	Promote(ctx context.Context, chat *Chat, member *ChatMember) error
+	React(ctx context.Context, to Recipient, msg Editable, r Reactions) error
+	RefundStars(ctx context.Context, to Recipient, chargeID string) error
+	RemoveWebhook(ctx context.Context, dropPending ...bool) error
+	ReopenGeneralTopic(ctx context.Context, chat *Chat) error
+	ReopenTopic(ctx context.Context, chat *Chat, topic *Topic) error
+	ReplaceStickerInSet(ctx context.Context, of Recipient, stickerSet, oldSticker string, sticker InputSticker) (bool, error)
+	Reply(ctx context.Context, to *Message, what interface{}, opts ...interface{}) (*Message, error)
+	Respond(ctx context.Context, c *Callback, resp ...*CallbackResponse) error
+	Restrict(ctx context.Context, chat *Chat, member *ChatMember) error
+	RevokeInviteLink(ctx context.Context, chat Recipient, link string) (*ChatInviteLink, error)
+	Send(ctx context.Context, to Recipient, what interface{}, opts ...interface{}) (*Message, error)
+	SendAlbum(ctx context.Context, to Recipient, a Album, opts ...interface{}) ([]Message, error)
+	SendPaid(ctx context.Context, to Recipient, stars int, a PaidAlbum, opts ...interface{}) (*Message, error)
+	SetAdminTitle(ctx context.Context, chat *Chat, user *User, title string) error
+	SetCommands(ctx context.Context, opts ...interface{}) error
+	SetCustomEmojiStickerSetThumb(ctx context.Context, name, id string) error
+	SetDefaultRights(ctx context.Context, rights Rights, forChannels bool) error
+	SetGameScore(ctx context.Context, user Recipient, msg Editable, score GameHighScore) (*Message, error)
+	SetGroupDescription(ctx context.Context, chat *Chat, description string) error
+	SetGroupPermissions(ctx context.Context, chat *Chat, perms Rights) error
+	SetGroupStickerSet(ctx context.Context, chat *Chat, setName string) error
+	SetGroupTitle(ctx context.Context, chat *Chat, title string) error
+	SetMenuButton(ctx context.Context, chat *User, mb interface{}) error
+	SetMyDescription(ctx context.Context, desc, language string) error
+	SetMyName(ctx context.Context, name, language string) error
+	SetMyShortDescription(ctx context.Context, desc, language string) error
+	SetStickerEmojis(ctx context.Context, sticker string, emojis []string) error
+	SetStickerKeywords(ctx context.Context, sticker string, keywords []string) error
+	SetStickerMaskPosition(ctx context.Context, sticker string, mask MaskPosition) error
+	SetStickerPosition(ctx context.Context, sticker string, position int) error
+	SetStickerSetThumb(ctx context.Context, of Recipient, set *StickerSet) error
+	SetStickerSetTitle(ctx context.Context, s StickerSet) error
+	SetWebhook(ctx context.Context, w *Webhook) error
+	Ship(ctx context.Context, query *ShippingQuery, what ...interface{}) error
+	StarTransactions(ctx context.Context, offset, limit int) ([]StarTransaction, error)
+	StickerSet(ctx context.Context, name string) (*StickerSet, error)
+	StopLiveLocation(ctx context.Context, msg Editable, opts ...interface{}) (*Message, error)
+	StopPoll(ctx context.Context, msg Editable, opts ...interface{}) (*Poll, error)
+	TopicIconStickers(ctx context.Context) ([]Sticker, error)
+	Unban(ctx context.Context, chat *Chat, user *User, forBanned ...bool) error
+	UnbanSenderChat(ctx context.Context, chat *Chat, sender Recipient) error
+	UnhideGeneralTopic(ctx context.Context, chat *Chat) error
+	Unpin(ctx context.Context, chat Recipient, messageID ...int) error
+	UnpinAll(ctx context.Context, chat Recipient) error
+	UnpinAllGeneralTopicMessages(ctx context.Context, chat *Chat) error
+	UnpinAllTopicMessages(ctx context.Context, chat *Chat, topic *Topic) error
+	UploadSticker(ctx context.Context, to Recipient, format StickerSetFormat, f File) (*File, error)
+	UserBoosts(ctx context.Context, chat, user Recipient) ([]Boost, error)
+	Webhook(ctx context.Context) (*Webhook, error)
 }

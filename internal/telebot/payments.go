@@ -7,6 +7,9 @@ import (
 	"strconv"
 )
 
+// Stars is a provider token for Telegram Stars.
+const Stars = "XTR"
+
 // ShippingQuery contains information about an incoming shipping query.
 type ShippingQuery struct {
 	Sender  *User           `json:"from"`
@@ -39,6 +42,14 @@ type Payment struct {
 	Payload          string `json:"invoice_payload"`
 	OptionID         string `json:"shipping_option_id"`
 	Order            Order  `json:"order_info"`
+	TelegramChargeID string `json:"telegram_payment_charge_id"`
+	ProviderChargeID string `json:"provider_payment_charge_id"`
+}
+
+type RefundedPayment struct {
+	Currency         string `json:"currency"`
+	Total            int    `json:"total_amount"`
+	Payload          string `json:"invoice_payload"`
 	TelegramChargeID string `json:"telegram_payment_charge_id"`
 	ProviderChargeID string `json:"provider_payment_charge_id"`
 }
@@ -186,4 +197,19 @@ func (b *Bot) CreateInvoiceLink(ctx context.Context, i Invoice) (string, error) 
 		return "", wrapError(err)
 	}
 	return resp.Result, nil
+}
+
+// RefundStars returns a successful payment in Telegram Stars.
+func (b *Bot) RefundStars(ctx context.Context, to Recipient, chargeID string) error {
+	params := map[string]string{
+		"user_id":                    to.Recipient(),
+		"telegram_payment_charge_id": chargeID,
+	}
+
+	_, err := b.Raw(ctx, "refundStarPayment", params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

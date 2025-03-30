@@ -235,5 +235,6 @@ SENDMSG_RETRY:
 		return
 	}
 
-	d.waitOrDelete(ctx, m)
+	// Invoking it on a goroutine since we got a nil-pointer error somehow.
+	go d.waitOrDelete(ctx, m)
 }

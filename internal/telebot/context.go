@@ -12,10 +12,19 @@ import (
 // used to handle actual endpoints.
 type HandlerFunc func(Context) error
 
+// NewContext returns a new native context object,
+// field by the passed update.
+func NewContext(b API, u Update) Context {
+	return &nativeContext{
+		b: b,
+		u: u,
+	}
+}
+
 // Context wraps an update and represents the context of current event.
 type Context interface {
 	// Bot returns the bot instance.
-	Bot() *Bot
+	Bot() API
 
 	// Update returns the original update.
 	Update() Update
@@ -38,6 +47,9 @@ type Context interface {
 	// PreCheckoutQuery returns stored pre checkout query if such presented.
 	PreCheckoutQuery() *PreCheckoutQuery
 
+	// Payment returns payment instance.
+	Payment() *Payment
+
 	// Poll returns stored poll if such presented.
 	Poll() *Poll
 
@@ -56,6 +68,12 @@ type Context interface {
 	// Topic returns the topic changes.
 	Topic() *Topic
 
+	// Boost returns the boost instance.
+	Boost() *BoostUpdated
+
+	// BoostRemoved returns the boost removed from a chat instance.
+	BoostRemoved() *BoostRemoved
+
 	// Sender returns the current recipient, depending on the context type.
 	// Returns nil if user is not presented.
 	Sender() *User
@@ -63,7 +81,6 @@ type Context interface {
 	// Chat returns the current chat, depending on the context type.
 	// Returns nil if chat is not presented.
 	Chat() *Chat
-
 	// Recipient combines both Sender and Chat functions. If there is no user
 	// the chat will be returned. The native context cannot be without sender,
 	// but it is useful in the case when the context created intentionally
@@ -153,6 +170,12 @@ type Context interface {
 	// See Respond from bot.go.
 	Respond(ctx context.Context, resp ...*CallbackResponse) error
 
+	// RespondText sends a popup response for the current callback query.
+	RespondText(ctx context.Context, text string) error
+
+	// RespondAlert sends an alert response for the current callback query.
+	RespondAlert(ctx context.Context, text string) error
+
 	// Get retrieves data from the context.
 	Get(key string) interface{}
 
@@ -163,13 +186,13 @@ type Context interface {
 // nativeContext is a native implementation of the Context interface.
 // "context" is taken by context package, maybe there is a better name.
 type nativeContext struct {
-	b     *Bot
+	b     API
 	u     Update
 	lock  sync.RWMutex
 	store map[string]interface{}
 }
 
-func (c *nativeContext) Bot() *Bot {
+func (c *nativeContext) Bot() API {
 	return c.b
 }
 
@@ -217,6 +240,13 @@ func (c *nativeContext) PreCheckoutQuery() *PreCheckoutQuery {
 	return c.u.PreCheckoutQuery
 }
 
+func (c *nativeContext) Payment() *Payment {
+	if c.u.Message == nil {
+		return nil
+	}
+	return c.u.Message.Payment
+}
+
 func (c *nativeContext) ChatMember() *ChatMemberUpdate {
 	switch {
 	case c.u.ChatMember != nil:
@@ -241,7 +271,11 @@ func (c *nativeContext) PollAnswer() *PollAnswer {
 }
 
 func (c *nativeContext) Migration() (int64, int64) {
-	return c.u.Message.MigrateFrom, c.u.Message.MigrateTo
+	m := c.u.Message
+	if m == nil {
+		return 0, 0
+	}
+	return m.MigrateFrom, m.MigrateTo
 }
 
 func (c *nativeContext) Topic() *Topic {
@@ -258,6 +292,14 @@ func (c *nativeContext) Topic() *Topic {
 		return m.TopicEdited
 	}
 	return nil
+}
+
+func (c *nativeContext) Boost() *BoostUpdated {
+	return c.u.Boost
+}
+
+func (c *nativeContext) BoostRemoved() *BoostRemoved {
+	return c.u.BoostRemoved
 }
 
 func (c *nativeContext) Sender() *User {
@@ -282,9 +324,16 @@ func (c *nativeContext) Sender() *User {
 		return c.u.ChatMember.Sender
 	case c.u.ChatJoinRequest != nil:
 		return c.u.ChatJoinRequest.Sender
-	default:
-		return nil
+	case c.u.Boost != nil:
+		if b := c.u.Boost.Boost; b != nil && b.Source != nil {
+			return b.Source.Booster
+		}
+	case c.u.BoostRemoved != nil:
+		if b := c.u.BoostRemoved; b.Source != nil {
+			return b.Source.Booster
+		}
 	}
+	return nil
 }
 
 func (c *nativeContext) Chat() *Chat {
@@ -335,7 +384,11 @@ func (c *nativeContext) Entities() Entities {
 func (c *nativeContext) Data() string {
 	switch {
 	case c.u.Message != nil:
-		return c.u.Message.Payload
+		m := c.u.Message
+		if m.Payment != nil {
+			return m.Payment.Payload
+		}
+		return m.Payload
 	case c.u.Callback != nil:
 		return c.u.Callback.Data
 	case c.u.Query != nil:
@@ -352,11 +405,14 @@ func (c *nativeContext) Data() string {
 }
 
 func (c *nativeContext) Args() []string {
+	m := c.u.Message
 	switch {
-	case c.u.Message != nil:
-		payload := strings.Trim(c.u.Message.Payload, " ")
+	case m != nil && m.Payment != nil:
+		return strings.Split(m.Payment.Payload, "|")
+	case m != nil:
+		payload := strings.Trim(m.Payload, " ")
 		if payload != "" {
-			return strings.Split(payload, " ")
+			return strings.Fields(payload)
 		}
 	case c.u.Callback != nil:
 		return strings.Split(c.u.Callback.Data, "|")
@@ -369,11 +425,42 @@ func (c *nativeContext) Args() []string {
 }
 
 func (c *nativeContext) Send(ctx context.Context, what interface{}, opts ...interface{}) error {
+	opts = c.inheritOpts(opts...)
 	_, err := c.b.Send(ctx, c.Recipient(), what, opts...)
 	return err
 }
 
+func (c *nativeContext) inheritOpts(opts ...interface{}) []interface{} {
+	var (
+		ignoreThread bool
+	)
+
+	if opts == nil {
+		opts = make([]interface{}, 0)
+	}
+
+	for _, opt := range opts {
+		switch opt.(type) {
+		case Option:
+			switch opt {
+			case IgnoreThread:
+				ignoreThread = true
+			default:
+			}
+		}
+	}
+
+	switch {
+	case !ignoreThread && c.Message() != nil && c.Message().ThreadID != 0:
+		opts = append(opts, &Topic{ThreadID: c.Message().ThreadID})
+	}
+
+	return opts
+}
+
 func (c *nativeContext) SendAlbum(ctx context.Context, a Album, opts ...interface{}) error {
+	opts = c.inheritOpts(opts...)
+
 	_, err := c.b.SendAlbum(ctx, c.Recipient(), a, opts...)
 	return err
 }
@@ -383,6 +470,7 @@ func (c *nativeContext) Reply(ctx context.Context, what interface{}, opts ...int
 	if msg == nil {
 		return ErrBadContext
 	}
+	opts = c.inheritOpts(opts...)
 	_, err := c.b.Reply(ctx, msg, what, opts...)
 	return err
 }
@@ -402,6 +490,8 @@ func (c *nativeContext) ForwardTo(ctx context.Context, to Recipient, opts ...int
 }
 
 func (c *nativeContext) Edit(ctx context.Context, what interface{}, opts ...interface{}) error {
+	opts = c.inheritOpts(opts...)
+
 	if c.u.InlineResult != nil {
 		_, err := c.b.Edit(ctx, c.u.InlineResult, what, opts...)
 		return err
@@ -414,6 +504,8 @@ func (c *nativeContext) Edit(ctx context.Context, what interface{}, opts ...inte
 }
 
 func (c *nativeContext) EditCaption(ctx context.Context, caption string, opts ...interface{}) error {
+	opts = c.inheritOpts(opts...)
+
 	if c.u.InlineResult != nil {
 		_, err := c.b.EditCaption(ctx, c.u.InlineResult, caption, opts...)
 		return err
@@ -427,7 +519,7 @@ func (c *nativeContext) EditCaption(ctx context.Context, caption string, opts ..
 
 func (c *nativeContext) EditOrSend(ctx context.Context, what interface{}, opts ...interface{}) error {
 	err := c.Edit(ctx, what, opts...)
-	if errors.Is(err, ErrBadContext) {
+	if err == ErrBadContext {
 		return c.Send(ctx, what, opts...)
 	}
 	return err
@@ -435,7 +527,7 @@ func (c *nativeContext) EditOrSend(ctx context.Context, what interface{}, opts .
 
 func (c *nativeContext) EditOrReply(ctx context.Context, what interface{}, opts ...interface{}) error {
 	err := c.Edit(ctx, what, opts...)
-	if errors.Is(err, ErrBadContext) {
+	if err == ErrBadContext {
 		return c.Reply(ctx, what, opts...)
 	}
 	return err
@@ -452,7 +544,9 @@ func (c *nativeContext) Delete(ctx context.Context) error {
 func (c *nativeContext) DeleteAfter(ctx context.Context, d time.Duration) *time.Timer {
 	return time.AfterFunc(d, func() {
 		if err := c.Delete(ctx); err != nil {
-			c.b.OnError(err, c)
+			if b, ok := c.b.(*Bot); ok {
+				b.OnError(err, c)
+			}
 		}
 	})
 }
@@ -482,6 +576,14 @@ func (c *nativeContext) Respond(ctx context.Context, resp ...*CallbackResponse) 
 	return c.b.Respond(ctx, c.u.Callback, resp...)
 }
 
+func (c *nativeContext) RespondText(ctx context.Context, text string) error {
+	return c.Respond(ctx, &CallbackResponse{Text: text})
+}
+
+func (c *nativeContext) RespondAlert(ctx context.Context, text string) error {
+	return c.Respond(ctx, &CallbackResponse{Text: text, ShowAlert: true})
+}
+
 func (c *nativeContext) Answer(ctx context.Context, resp *QueryResponse) error {
 	if c.u.Query == nil {
 		return errors.New("telebot: context inline query is nil")
@@ -496,6 +598,7 @@ func (c *nativeContext) Set(key string, value interface{}) {
 	if c.store == nil {
 		c.store = make(map[string]interface{})
 	}
+
 	c.store[key] = value
 }
 

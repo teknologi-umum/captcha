@@ -23,7 +23,7 @@ func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable
 	c := make(chan struct{}, 1)
 	time.AfterFunc(time.Minute*1, func() {
 		for {
-			err := d.Bot.DeleteBulk(ctx, messages)
+			err := d.Bot.DeleteMany(ctx, messages)
 			if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 				var floodError tb.FloodError
 				if errors.As(err, &floodError) {
@@ -61,7 +61,7 @@ func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.
 	defer span.Finish()
 
 	for {
-		err := d.Bot.DeleteBulk(ctx, messages)
+		err := d.Bot.DeleteMany(ctx, messages)
 		if err != nil && !strings.Contains(err.Error(), "message to delete not found") {
 			var floodError tb.FloodError
 			if errors.As(err, &floodError) {
@@ -69,11 +69,13 @@ func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.
 					floodError.RetryAfter = 15
 				}
 
+				slog.DebugContext(ctx, fmt.Sprintf("Received flood error, retrying in %d seconds", floodError.RetryAfter), slog.Any("messages", messages))
 				time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 				continue
 			}
 
 			if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+				slog.DebugContext(ctx, "Received Gateway Timeout, retrying in 10 seconds", slog.Any("messages", messages))
 				time.Sleep(time.Second * 10)
 				continue
 			}

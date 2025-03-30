@@ -60,6 +60,16 @@ func (r *ResultBase) Process(b *Bot) {
 	}
 }
 
+// GameResult represents a game. Game is a content type
+// supported by Telegram, which can be sent back to the
+// user as a result for an inline query.
+type GameResult struct {
+	ResultBase
+
+	// ShortName is a unique identifier of the game.
+	ShortName string `json:"game_short_name"`
+}
+
 // ArticleResult represents a link to an article or web page.
 type ArticleResult struct {
 	ResultBase
@@ -81,13 +91,13 @@ type ArticleResult struct {
 	Description string `json:"description,omitempty"`
 
 	// Optional. URL of the thumbnail for the result.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 
 	// Optional. Width of the thumbnail for the result.
-	ThumbWidth int `json:"thumb_width,omitempty"`
+	ThumbWidth int `json:"thumbnail_width,omitempty"`
 
 	// Optional. Height of the thumbnail for the result.
-	ThumbHeight int `json:"thumb_height,omitempty"`
+	ThumbHeight int `json:"thumbnail_height,omitempty"`
 }
 
 // AudioResult represents a link to an mp3 audio file.
@@ -130,13 +140,13 @@ type ContactResult struct {
 	LastName string `json:"last_name,omitempty"`
 
 	// Optional. URL of the thumbnail for the result.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 
 	// Optional. Width of the thumbnail for the result.
-	ThumbWidth int `json:"thumb_width,omitempty"`
+	ThumbWidth int `json:"thumbnail_width,omitempty"`
 
 	// Optional. Height of the thumbnail for the result.
-	ThumbHeight int `json:"thumb_height,omitempty"`
+	ThumbHeight int `json:"thumbnail_height,omitempty"`
 }
 
 // DocumentResult represents a link to a file.
@@ -160,13 +170,13 @@ type DocumentResult struct {
 	Description string `json:"description,omitempty"`
 
 	// Optional. URL of the thumbnail (jpeg only) for the file.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 
 	// Optional. Width of the thumbnail for the result.
-	ThumbWidth int `json:"thumb_width,omitempty"`
+	ThumbWidth int `json:"thumbnail_width,omitempty"`
 
 	// Optional. Height of the thumbnail for the result.
-	ThumbHeight int `json:"thumb_height,omitempty"`
+	ThumbHeight int `json:"thumbnail_height,omitempty"`
 
 	// If Cache != "", it'll be used instead
 	Cache string `json:"document_file_id,omitempty"`
@@ -189,11 +199,11 @@ type GifResult struct {
 	Duration int `json:"gif_duration,omitempty"`
 
 	// URL of the static thumbnail for the result (jpeg or gif).
-	ThumbURL string `json:"thumb_url"`
+	ThumbURL string `json:"thumbnail_url"`
 
 	// Optional. MIME type of the thumbnail, must be one of
 	// “image/jpeg”, “image/gif”, or “video/mp4”.
-	ThumbMIME string `json:"thumb_mime_type,omitempty"`
+	ThumbMIME string `json:"thumbnail_mime_type,omitempty"`
 
 	// Optional. Title for the result.
 	Title string `json:"title,omitempty"`
@@ -203,6 +213,9 @@ type GifResult struct {
 
 	// If Cache != "", it'll be used instead
 	Cache string `json:"gif_file_id,omitempty"`
+
+	// (Optional) Pass True, if the caption must be shown above the message media
+	CaptionAbove bool `json:"show_caption_above_media,omitempty"`
 }
 
 // LocationResult represents a location on a map.
@@ -215,7 +228,7 @@ type LocationResult struct {
 	Title string `json:"title"`
 
 	// Optional. Url of the thumbnail for the result.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 }
 
 // Mpeg4GifResult represents a link to a video animation
@@ -236,11 +249,11 @@ type Mpeg4GifResult struct {
 	Duration int `json:"mpeg4_duration,omitempty"`
 
 	// URL of the static thumbnail (jpeg or gif) for the result.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 
 	// Optional. MIME type of the thumbnail, must be one of
 	// “image/jpeg”, “image/gif”, or “video/mp4”.
-	ThumbMIME string `json:"thumb_mime_type,omitempty"`
+	ThumbMIME string `json:"thumbnail_mime_type,omitempty"`
 
 	// Optional. Title for the result.
 	Title string `json:"title,omitempty"`
@@ -250,6 +263,9 @@ type Mpeg4GifResult struct {
 
 	// If Cache != "", it'll be used instead
 	Cache string `json:"mpeg4_file_id,omitempty"`
+
+	// (Optional) Pass True, if the caption must be shown above the message media
+	CaptionAbove bool `json:"show_caption_above_media,omitempty"`
 }
 
 // PhotoResult represents a link to a photo.
@@ -276,10 +292,13 @@ type PhotoResult struct {
 	Caption string `json:"caption,omitempty"`
 
 	// URL of the thumbnail for the photo.
-	ThumbURL string `json:"thumb_url"`
+	ThumbURL string `json:"thumbnail_url"`
 
 	// If Cache != "", it'll be used instead
 	Cache string `json:"photo_file_id,omitempty"`
+
+	// (Optional) Pass True, if the caption must be shown above the message media
+	CaptionAbove bool `json:"show_caption_above_media,omitempty"`
 }
 
 // VenueResult represents a venue.
@@ -298,13 +317,13 @@ type VenueResult struct {
 	FoursquareID string `json:"foursquare_id,omitempty"`
 
 	// Optional. URL of the thumbnail for the result.
-	ThumbURL string `json:"thumb_url,omitempty"`
+	ThumbURL string `json:"thumbnail_url,omitempty"`
 
 	// Optional. Width of the thumbnail for the result.
-	ThumbWidth int `json:"thumb_width,omitempty"`
+	ThumbWidth int `json:"thumbnail_width,omitempty"`
 
 	// Optional. Height of the thumbnail for the result.
-	ThumbHeight int `json:"thumb_height,omitempty"`
+	ThumbHeight int `json:"thumbnail_height,omitempty"`
 }
 
 // VideoResult represents a link to a page containing an embedded
@@ -319,7 +338,7 @@ type VideoResult struct {
 	MIME string `json:"mime_type"`
 
 	// URL of the thumbnail (jpeg only) for the video.
-	ThumbURL string `json:"thumb_url"`
+	ThumbURL string `json:"thumbnail_url"`
 
 	// Title for the result.
 	Title string `json:"title"`
@@ -341,6 +360,9 @@ type VideoResult struct {
 
 	// If Cache != "", it'll be used instead
 	Cache string `json:"video_file_id,omitempty"`
+
+	// (Optional) Pass True, if the caption must be shown above the message media
+	CaptionAbove bool `json:"show_caption_above_media,omitempty"`
 }
 
 // VoiceResult represents a link to a voice recording in an .ogg
