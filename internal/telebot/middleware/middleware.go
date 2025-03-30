@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"log"
 
 	tele "github.com/teknologi-umum/captcha/internal/telebot"
 )
@@ -10,11 +11,10 @@ import (
 // AutoRespond returns a middleware that automatically responds
 // to every callback.
 func AutoRespond() tele.MiddlewareFunc {
-	ctx := context.Background()
 	return func(next tele.HandlerFunc) tele.HandlerFunc {
 		return func(c tele.Context) error {
 			if c.Callback() != nil {
-				defer c.Respond(ctx)
+				defer c.Respond(context.Background())
 			}
 			return next(c)
 		}
@@ -34,26 +34,30 @@ func IgnoreVia() tele.MiddlewareFunc {
 	}
 }
 
+type RecoverFunc = func(error, tele.Context)
+
 // Recover returns a middleware that recovers a panic happened in
 // the handler.
-func Recover(onError ...func(error)) tele.MiddlewareFunc {
+func Recover(onError ...RecoverFunc) tele.MiddlewareFunc {
 	return func(next tele.HandlerFunc) tele.HandlerFunc {
 		return func(c tele.Context) error {
-			var f func(error)
+			var f RecoverFunc
 			if len(onError) > 0 {
 				f = onError[0]
+			} else if b, ok := c.Bot().(*tele.Bot); ok {
+				f = b.OnError
 			} else {
-				f = func(err error) {
-					c.Bot().OnError(err, nil)
+				f = func(err error, _ tele.Context) {
+					log.Println("telebot/middleware/recover:", err)
 				}
 			}
 
 			defer func() {
 				if r := recover(); r != nil {
 					if err, ok := r.(error); ok {
-						f(err)
+						f(err, c)
 					} else if s, ok := r.(string); ok {
-						f(errors.New(s))
+						f(errors.New(s), c)
 					}
 				}
 			}()

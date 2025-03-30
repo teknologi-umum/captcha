@@ -6,26 +6,40 @@ import "strings"
 type Update struct {
 	ID int `json:"update_id"`
 
-	Message           *Message          `json:"message,omitempty"`
-	EditedMessage     *Message          `json:"edited_message,omitempty"`
-	ChannelPost       *Message          `json:"channel_post,omitempty"`
-	EditedChannelPost *Message          `json:"edited_channel_post,omitempty"`
-	Callback          *Callback         `json:"callback_query,omitempty"`
-	Query             *Query            `json:"inline_query,omitempty"`
-	InlineResult      *InlineResult     `json:"chosen_inline_result,omitempty"`
-	ShippingQuery     *ShippingQuery    `json:"shipping_query,omitempty"`
-	PreCheckoutQuery  *PreCheckoutQuery `json:"pre_checkout_query,omitempty"`
-	Poll              *Poll             `json:"poll,omitempty"`
-	PollAnswer        *PollAnswer       `json:"poll_answer,omitempty"`
-	MyChatMember      *ChatMemberUpdate `json:"my_chat_member,omitempty"`
-	ChatMember        *ChatMemberUpdate `json:"chat_member,omitempty"`
-	ChatJoinRequest   *ChatJoinRequest  `json:"chat_join_request,omitempty"`
+	Message                 *Message                 `json:"message,omitempty"`
+	EditedMessage           *Message                 `json:"edited_message,omitempty"`
+	ChannelPost             *Message                 `json:"channel_post,omitempty"`
+	EditedChannelPost       *Message                 `json:"edited_channel_post,omitempty"`
+	MessageReaction         *MessageReaction         `json:"message_reaction"`
+	MessageReactionCount    *MessageReactionCount    `json:"message_reaction_count"`
+	Callback                *Callback                `json:"callback_query,omitempty"`
+	Query                   *Query                   `json:"inline_query,omitempty"`
+	InlineResult            *InlineResult            `json:"chosen_inline_result,omitempty"`
+	ShippingQuery           *ShippingQuery           `json:"shipping_query,omitempty"`
+	PreCheckoutQuery        *PreCheckoutQuery        `json:"pre_checkout_query,omitempty"`
+	Poll                    *Poll                    `json:"poll,omitempty"`
+	PollAnswer              *PollAnswer              `json:"poll_answer,omitempty"`
+	MyChatMember            *ChatMemberUpdate        `json:"my_chat_member,omitempty"`
+	ChatMember              *ChatMemberUpdate        `json:"chat_member,omitempty"`
+	ChatJoinRequest         *ChatJoinRequest         `json:"chat_join_request,omitempty"`
+	Boost                   *BoostUpdated            `json:"chat_boost"`
+	BoostRemoved            *BoostRemoved            `json:"removed_chat_boost"`
+	BusinessConnection      *BusinessConnection      `json:"business_connection"`
+	BusinessMessage         *Message                 `json:"business_message"`
+	EditedBusinessMessage   *Message                 `json:"edited_business_message"`
+	DeletedBusinessMessages *BusinessMessagesDeleted `json:"deleted_business_messages"`
 }
 
 // ProcessUpdate processes a single incoming update.
 // A started bot calls this function automatically.
 func (b *Bot) ProcessUpdate(u Update) {
-	c := b.NewContext(u)
+	b.ProcessContext(b.NewContext(u))
+}
+
+// ProcessContext processes the given context.
+// A started bot calls this function automatically.
+func (b *Bot) ProcessContext(c Context) {
+	u := c.Update()
 
 	if u.Message != nil {
 		m := u.Message
@@ -33,6 +47,10 @@ func (b *Bot) ProcessUpdate(u Update) {
 		if m.PinnedMessage != nil {
 			b.handle(OnPinned, c)
 			return
+		}
+
+		if m.Origin != nil {
+			b.handle(OnForward, c)
 		}
 
 		// Commands
@@ -60,6 +78,10 @@ func (b *Bot) ProcessUpdate(u Update) {
 			// 1:1 satisfaction
 			if b.handle(m.Text, c) {
 				return
+			}
+
+			if m.ReplyTo != nil {
+				b.handle(OnReply, c)
 			}
 
 			b.handle(OnText, c)
@@ -98,7 +120,10 @@ func (b *Bot) ProcessUpdate(u Update) {
 			b.handle(OnPayment, c)
 			return
 		}
-
+		if m.RefundedPayment != nil {
+			b.handle(OnRefund, c)
+			return
+		}
 		if m.TopicCreated != nil {
 			b.handle(OnTopicCreated, c)
 			return
@@ -288,7 +313,6 @@ func (b *Bot) ProcessUpdate(u Update) {
 		b.handle(OnPoll, c)
 		return
 	}
-
 	if u.PollAnswer != nil {
 		b.handle(OnPollAnswer, c)
 		return
@@ -298,14 +322,38 @@ func (b *Bot) ProcessUpdate(u Update) {
 		b.handle(OnMyChatMember, c)
 		return
 	}
-
 	if u.ChatMember != nil {
 		b.handle(OnChatMember, c)
 		return
 	}
-
 	if u.ChatJoinRequest != nil {
 		b.handle(OnChatJoinRequest, c)
+		return
+	}
+
+	if u.Boost != nil {
+		b.handle(OnBoost, c)
+		return
+	}
+	if u.BoostRemoved != nil {
+		b.handle(OnBoostRemoved, c)
+		return
+	}
+
+	if u.BusinessConnection != nil {
+		b.handle(OnBusinessConnection, c)
+		return
+	}
+	if u.BusinessMessage != nil {
+		b.handle(OnBusinessMessage, c)
+		return
+	}
+	if u.EditedBusinessMessage != nil {
+		b.handle(OnEditedBusinessMessage, c)
+		return
+	}
+	if u.DeletedBusinessMessages != nil {
+		b.handle(OnDeletedBusinessMessages, c)
 		return
 	}
 }

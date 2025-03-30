@@ -220,7 +220,7 @@ type ReplyButton struct {
 	Contact  bool            `json:"request_contact,omitempty"`
 	Location bool            `json:"request_location,omitempty"`
 	Poll     PollType        `json:"request_poll,omitempty"`
-	User     *ReplyRecipient `json:"request_user,omitempty"`
+	User     *ReplyRecipient `json:"request_users,omitempty"`
 	Chat     *ReplyRecipient `json:"request_chat,omitempty"`
 	WebApp   *WebApp         `json:"web_app,omitempty"`
 }
@@ -244,23 +244,39 @@ func (pt PollType) MarshalJSON() ([]byte, error) {
 type ReplyRecipient struct {
 	ID int32 `json:"request_id"`
 
-	Bot     *bool `json:"user_is_bot,omitempty"`     // user only, optional
-	Premium *bool `json:"user_is_premium,omitempty"` // user only, optional
+	Bot      *bool `json:"user_is_bot,omitempty"`     // user only, optional
+	Premium  *bool `json:"user_is_premium,omitempty"` // user only, optional
+	Quantity int   `json:"max_quantity,omitempty"`    // user only, optional
 
-	Channel      bool    `json:"chat_is_channel,omitempty"`           // chat only, required
-	Forum        *bool   `json:"chat_is_forum,omitempty"`             // chat only, optional
-	WithUsername *bool   `json:"chat_has_username,omitempty"`         // chat only, optional
-	Created      *bool   `json:"chat_is_created,omitempty"`           // chat only, optional
-	UserRights   *Rights `json:"user_administrator_rights,omitempty"` // chat only, optional
-	BotRights    *Rights `json:"bot_administrator_rights,omitempty"`  // chat only, optional
-	BotMember    *bool   `json:"bot_is_member,omitempty"`             // chat only, optional
+	Channel         bool    `json:"chat_is_channel,omitempty"`           // chat only, required
+	Forum           *bool   `json:"chat_is_forum,omitempty"`             // chat only, optional
+	WithUsername    *bool   `json:"chat_has_username,omitempty"`         // chat only, optional
+	Created         *bool   `json:"chat_is_created,omitempty"`           // chat only, optional
+	UserRights      *Rights `json:"user_administrator_rights,omitempty"` // chat only, optional
+	BotRights       *Rights `json:"bot_administrator_rights,omitempty"`  // chat only, optional
+	BotMember       *bool   `json:"bot_is_member,omitempty"`             // chat only, optional
+	RequestTitle    *bool   `json:"request_title,omitempty"`             // chat only, optional
+	RequestName     *bool   `json:"request_name,omitempty"`              // user only, optional
+	RequestUsername *bool   `json:"request_username,omitempty"`          // user only, optional
+	RequestPhoto    *bool   `json:"request_photo,omitempty"`             // user only, optional
 }
 
 // RecipientShared combines both UserShared and ChatShared objects.
 type RecipientShared struct {
-	ID     int32 `json:"request_id"`
-	UserID int64 `json:"user_id"`
-	ChatID int64 `json:"chat_id"`
+	ID       int32  `json:"request_id"` // chat, users
+	ChatID   int64  `json:"chat_id"`    // chat only
+	Title    string `json:"title"`      // chat only
+	Username string `json:"username"`   // chat only
+	Photo    *Photo `json:"photo"`      // chat only
+
+	Users []struct {
+		UserID    int64  `json:"user_id"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Username  string `json:"username"`
+		Photo     *Photo `json:"photo"`
+	} `json:"users"` // users only
+
 }
 
 // InlineButton represents a button displayed in the message.
@@ -271,13 +287,16 @@ type InlineButton struct {
 	// It will be used as a callback endpoint.
 	Unique string `json:"unique,omitempty"`
 
-	Text            string  `json:"text"`
-	URL             string  `json:"url,omitempty"`
-	Data            string  `json:"callback_data,omitempty"`
-	InlineQuery     string  `json:"switch_inline_query,omitempty"`
-	InlineQueryChat string  `json:"switch_inline_query_current_chat"`
-	Login           *Login  `json:"login_url,omitempty"`
-	WebApp          *WebApp `json:"web_app,omitempty"`
+	Text                  string             `json:"text"`
+	URL                   string             `json:"url,omitempty"`
+	Data                  string             `json:"callback_data,omitempty"`
+	InlineQuery           string             `json:"switch_inline_query,omitempty"`
+	InlineQueryChat       string             `json:"switch_inline_query_current_chat"`
+	InlineQueryChosenChat *SwitchInlineQuery `json:"switch_inline_query_chosen_chat,omitempty"`
+	Login                 *Login             `json:"login_url,omitempty"`
+	WebApp                *WebApp            `json:"web_app,omitempty"`
+	CallbackGame          *CallbackGame      `json:"callback_game,omitempty"`
+	Pay                   bool               `json:"pay,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler interface.

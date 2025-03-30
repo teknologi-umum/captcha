@@ -24,12 +24,14 @@ type Poll struct {
 	VoterCount int          `json:"total_voter_count"`
 
 	// (Optional)
-	Closed          bool            `json:"is_closed,omitempty"`
-	CorrectOption   int             `json:"correct_option_id,omitempty"`
-	MultipleAnswers bool            `json:"allows_multiple_answers,omitempty"`
-	Explanation     string          `json:"explanation,omitempty"`
-	ParseMode       ParseMode       `json:"explanation_parse_mode,omitempty"`
-	Entities        []MessageEntity `json:"explanation_entities"`
+	Closed            bool            `json:"is_closed,omitempty"`
+	CorrectOption     int             `json:"correct_option_id,omitempty"`
+	MultipleAnswers   bool            `json:"allows_multiple_answers,omitempty"`
+	Explanation       string          `json:"explanation,omitempty"`
+	ParseMode         ParseMode       `json:"explanation_parse_mode,omitempty"`
+	Entities          []MessageEntity `json:"explanation_entities,omitempty"`
+	QuestionParseMode string          `json:"question_parse_mode,omitempty"`
+	QuestionEntities  []MessageEntity `json:"question_entities,omitempty"`
 
 	// True by default, shouldn't be omitted.
 	Anonymous bool `json:"is_anonymous"`
@@ -41,14 +43,17 @@ type Poll struct {
 
 // PollOption contains information about one answer option in a poll.
 type PollOption struct {
-	Text       string `json:"text"`
-	VoterCount int    `json:"voter_count"`
+	Text       string          `json:"text"`
+	VoterCount int             `json:"voter_count"`
+	ParseMode  ParseMode       `json:"text_parse_mode,omitempty"`
+	Entities   []MessageEntity `json:"text_entities,omitempty"`
 }
 
 // PollAnswer represents an answer of a user in a non-anonymous poll.
 type PollAnswer struct {
 	PollID  string `json:"poll_id"`
 	Sender  *User  `json:"user"`
+	Chat    *Chat  `json:"voter_chat"`
 	Options []int  `json:"option_ids"`
 }
 

@@ -28,7 +28,7 @@ func HandleError(ctx context.Context, e error) {
 //
 // For other errors that don't have one of those struct instance, use
 // HandleError instead.
-func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
+func HandleBotError(ctx context.Context, e error, bot tb.API, m *tb.Message) {
 	if e == nil {
 		return
 	}

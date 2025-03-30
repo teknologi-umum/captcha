@@ -21,6 +21,10 @@ type Game struct {
 	Animation *Animation      `json:"animation"`
 }
 
+// CallbackGame is a placeholder, currently holds no information
+type CallbackGame struct {
+}
+
 // GameHighScore object represents one row
 // of the high scores table for a game.
 type GameHighScore struct {

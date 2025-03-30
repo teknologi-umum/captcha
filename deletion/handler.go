@@ -8,6 +8,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
+	"github.com/teknologi-umum/captcha/internal/telebot/react"
 )
 
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
@@ -73,7 +74,7 @@ func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
 		_ = c.Bot().Delete(ctx, c.Message().ReplyTo)
 	}(duration)
 
-	err = c.Bot().SetMessageReaction(ctx, c.Message(), "\U0001FAE1")
+	err = c.Bot().React(ctx, c.Chat(), c.Message(), react.React(react.ThumbUp))
 	if err != nil {
 		sentry.GetHubFromContext(ctx).CaptureException(err)
 	}
