@@ -18,19 +18,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/teknologi-umum/captcha/analytics"
-	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/ascii"
-	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
 	"github.com/teknologi-umum/captcha/deletion"
 	"github.com/teknologi-umum/captcha/reminder"
@@ -43,15 +40,13 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	// Others third party stuff
 	"github.com/getsentry/sentry-go"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+	slogmulti "github.com/samber/slog-multi"
+	"github.com/teknologi-umum/captcha/internal/requestid"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
@@ -67,20 +62,46 @@ func main() {
 
 	configuration, err := ParseConfiguration(configurationFilePath)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Parsing configuration")
+		slog.Error("Parsing configuration", slog.String("error", err.Error()))
 		return
 	}
+
+	slogSentryBreadcrumb := &SlogSentryBreadcrumb{
+		Enable: configuration.SentryDSN != "",
+		Level:  parseSlogLevel(configuration.LogLevel),
+	}
+	slog.SetDefault(slog.New(
+		slogmulti.Pipe(
+			slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
+				clonedRecord := record.Clone()
+				reqId := requestid.GetRequestIdFromContext(ctx)
+				if reqId != "" {
+					clonedRecord.AddAttrs(slog.String("request_id", reqId))
+				}
+				next(ctx, clonedRecord)
+				return nil
+			}),
+		).
+			Handler(slogmulti.Fanout(
+				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+					Level: parseSlogLevel(configuration.LogLevel),
+				}),
+				slogSentryBreadcrumb,
+			)),
+	))
+
+	slogWrapper := &slogWriterWrapper{logger: slog.Default()}
 
 	// Setup Sentry for error handling.
 	err = sentry.Init(sentry.ClientOptions{
 		Dsn:           configuration.SentryDSN,
 		Debug:         configuration.Environment == "development",
-		DebugWriter:   log.Logger,
+		DebugWriter:   slogWrapper,
 		Environment:   configuration.Environment,
 		SampleRate:    configuration.SentryConfig.SentrySampleRate,
 		EnableTracing: true,
 		TracesSampler: func(ctx sentry.SamplingContext) float64 {
-			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" {
+			if ctx.Span.Name == "GET /" || ctx.Span.Name == "POST /bot[Filtered]/getUpdates" || ctx.Span.Name == "POST /bot[Filtered]/getMe" {
 				return 0
 			}
 
@@ -89,7 +110,9 @@ func main() {
 		Release: version,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("during initiating a new sentry client:")
+		slog.Error("initializing new sentry client", slog.String("error", err.Error()))
+		os.Exit(1)
+		return
 	}
 	defer sentry.Flush(10 * time.Second)
 
@@ -98,15 +121,17 @@ func main() {
 		// Connect to PostgreSQL
 		db, err = sqlx.Open("postgres", configuration.Database.PostgresUrl)
 		if err != nil {
-			log.Fatal().Err(err).Msg("during opening a postgres client")
+			slog.Error("opening a postgres client", slog.String("error", err.Error()))
+			os.Exit(1)
+			return
 		}
 	}
 	defer func(db *sqlx.DB) {
 		if db != nil {
-			log.Debug().Msg("Closing postgresql")
+			slog.Debug("Closing postgresql")
 			err := db.Close()
 			if err != nil {
-				log.Warn().Err(err).Msg("during closing the postgres client")
+				slog.Warn("closing the postgres client", slog.String("error", err.Error()))
 			}
 		}
 	}(db)
@@ -116,71 +141,45 @@ func main() {
 	defer cancel()
 	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 
-	var mongoClient *mongo.Client
-	var mongoDBName string
-	if configuration.FeatureFlag.BadwordsInsertion || configuration.FeatureFlag.Dukun {
-		// Setup mongodb connection
-		mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(configuration.Database.MongoUrl))
-		if err != nil {
-			log.Fatal().Err(err).Msg("during connecting to mongo client")
-		}
-
-		// Mongo health check
-		if err = mongoClient.Ping(ctx, readpref.Primary()); err != nil {
-			log.Fatal().Err(err).Msg("during mongodb ping")
-		}
-
-		// Get the MongoDB database name from the given MONGO_URL environment variable.
-		parsedURL, err := url.Parse(configuration.Database.MongoUrl)
-		if err != nil {
-			log.Fatal().Err(err).Msg("failed to parse MONGO_URL")
-		}
-		mongoDBName = parsedURL.Path[1:]
-	}
-	defer func(client *mongo.Client) {
-		if client != nil {
-			log.Debug().Msg("Closing mongo")
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-			defer cancel()
-			err := client.Disconnect(ctx)
-			if err != nil {
-				log.Warn().Err(err).Msg("during closing the mongo connection")
-			}
-		}
-	}(mongoClient)
-
 	// Setup in memory cache
 	cache, err := bigcache.New(context.Background(), bigcache.Config{
 		Shards:             1024,
 		LifeWindow:         time.Hour * 12,
 		CleanWindow:        time.Hour,
 		Verbose:            configuration.Environment != "production",
-		Logger:             &log.Logger,
+		Logger:             slogWrapper,
 		HardMaxCacheSize:   1024 * 1024 * 1024,
 		MaxEntrySize:       500,
 		MaxEntriesInWindow: 50,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("during creating a in memory cache")
+		slog.Error("creating a in memory cache", slog.String("error", err.Error()))
+		os.Exit(1)
+		return
 	}
 	defer func(cache *bigcache.BigCache) {
-		log.Debug().Msg("Closing bigcache")
+		slog.Debug("Closing bigcache")
 		err := cache.Close()
 		if err != nil {
-			log.Print(errors.WithStack(err))
+			slog.Warn("closing the bigcache", slog.String("error", err.Error()))
+			os.Exit(1)
+			return
 		}
 	}(cache)
 
 	fileStorage, err := badger.Open(badger.DefaultOptions(configuration.Database.BadgerPath))
 	if err != nil {
-		log.Fatal().Err(err).Msg("during creating badger db")
+		slog.Error("creating badger db", slog.String("error", err.Error()))
+		os.Exit(1)
 		return
 	}
 	defer func(db *badger.DB) {
-		log.Debug().Msg("Closing badger")
+		slog.Debug("Closing badger")
 		err := fileStorage.Close()
 		if err != nil {
-			log.Print(errors.WithStack(err))
+			slog.Warn("closing the badger db", slog.String("error", err.Error()))
+			os.Exit(1)
+			return
 		}
 	}(fileStorage)
 
@@ -216,15 +215,18 @@ func main() {
 	})
 	if err != nil {
 		sentry.CaptureException(fmt.Errorf("initializing bot client: %w", err))
-		log.Fatal().Err(err).Msg("during init of bot client")
+		slog.Error("initializing bot client", slog.String("error", err.Error()))
+		os.Exit(1)
+		return
 	}
 	defer func() {
+		slog.Debug("Closing bot client")
 		b.Stop()
 
 		_, err := b.Close(context.Background())
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Print(errors.WithStack(err))
+			slog.Warn("closing the bot client", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -233,45 +235,9 @@ func main() {
 		r := recover()
 		if r != nil {
 			sentry.CaptureException(r.(error))
-			log.Error().Err(err).Msg("recovering from panic")
+			slog.ErrorContext(ctx, "recovering from panic", slog.String("error", err.Error()))
 		}
 	}()
-
-	var analyticsDependency *analytics.Dependency
-	if configuration.FeatureFlag.Analytics {
-		// Check if database is initialized
-		if db == nil {
-			log.Print("To enable analytics, database must been set")
-			return
-		}
-		err = analytics.MustMigrate(db)
-		if err != nil {
-			sentry.CaptureException(err)
-			log.Fatal().Err(err).Msg("during initial database migration")
-		}
-
-		analyticsDependency = &analytics.Dependency{
-			Memory:      cache,
-			Bot:         b,
-			DB:          db,
-			HomeGroupID: configuration.HomeGroupID,
-		}
-	}
-
-	var badwordsDependency *badwords.Dependency
-	if configuration.FeatureFlag.BadwordsInsertion {
-		// Check if mongodb is initialized
-		if mongoClient == nil && mongoDBName == "" {
-			log.Print("To enable badwords insertion, mongodb mnust been set")
-			return
-		}
-
-		badwordsDependency = &badwords.Dependency{
-			Mongo:       mongoClient,
-			MongoDBName: mongoDBName,
-			AdminIDs:    configuration.AdminIds,
-		}
-	}
 
 	var underAttackDependency *underattack.Dependency
 	if configuration.FeatureFlag.UnderAttack {
@@ -280,7 +246,8 @@ func main() {
 		case "postgres":
 			underAttackDatastore, err = datastore.NewPostgresDatastore(db.DB)
 			if err != nil {
-				log.Fatal().Err(err).Msg("creating postgres datastore for under attack feature")
+				slog.ErrorContext(ctx, "creating postgres datastore for under attack feature", slog.String("error", err.Error()))
+				os.Exit(1)
 				return
 			}
 		case "memory":
@@ -288,7 +255,8 @@ func main() {
 		default:
 			underAttackDatastore, err = datastore.NewInMemoryDatastore(cache)
 			if err != nil {
-				log.Fatal().Err(err).Msg("creating in memory datastore for under attack feature")
+				slog.ErrorContext(ctx, "creating in memory datastore for under attack feature", slog.String("error", err.Error()))
+				os.Exit(1)
 				return
 			}
 		}
@@ -297,7 +265,8 @@ func main() {
 		err = underAttackDatastore.Migrate(context.Background())
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal().Err(err).Msg("migrating under attack tables schema")
+			slog.ErrorContext(ctx, "migrating under attack tables schema", slog.String("error", err.Error()))
+			os.Exit(1)
 			return
 		}
 
@@ -312,7 +281,8 @@ func main() {
 	setirDependency, err = setir.New(b, configuration.AdminIds, configuration.HomeGroupID)
 	if err != nil {
 		sentry.CaptureException(err)
-		log.Fatal().Err(err).Msg("creating setir dependency")
+		slog.ErrorContext(ctx, "creating setir dependency", slog.String("error", err.Error()))
+		os.Exit(1)
 		return
 	}
 
@@ -321,7 +291,8 @@ func main() {
 		reminderDependency, err = reminder.New(cache)
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal().Err(err).Msg("creating reminder dependency")
+			slog.ErrorContext(ctx, "creating reminder dependency", slog.String("error", err.Error()))
+			os.Exit(1)
 			return
 		}
 	}
@@ -331,7 +302,8 @@ func main() {
 		deletionDependency, err = deletion.New()
 		if err != nil {
 			sentry.CaptureException(err)
-			log.Fatal().Err(err).Msg("creating deletion dependency")
+			slog.ErrorContext(ctx, "creating deletion dependency", slog.String("error", err.Error()))
+			os.Exit(1)
 			return
 		}
 	}
@@ -345,8 +317,6 @@ func main() {
 			DB:            fileStorage,
 		},
 		Ascii:       &ascii.Dependencies{Bot: b},
-		Analytics:   analyticsDependency,
-		Badwords:    badwordsDependency,
 		UnderAttack: underAttackDependency,
 		Setir:       setirDependency,
 		Reminder:    reminderDependency,
@@ -354,19 +324,25 @@ func main() {
 	})
 	if err != nil {
 		sentry.CaptureException(err)
-		log.Fatal().Err(err).Msg("creating main program")
+		slog.ErrorContext(ctx, "creating main program", slog.String("error", err.Error()))
+		os.Exit(1)
 		return
 	}
 
 	var httpServer *http.Server
 	if configuration.FeatureFlag.HttpServer {
-		httpServer = server.New(server.Config{
-			DB:               db,
-			Memory:           cache,
-			Mongo:            mongoClient,
-			MongoDBName:      mongoDBName,
-			ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
 		})
+		httpServer = &http.Server{
+			Addr:              net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
+			Handler:           h,
+			ReadTimeout:       time.Minute,
+			ReadHeaderTimeout: time.Minute,
+			WriteTimeout:      time.Minute,
+			IdleTimeout:       time.Minute,
+		}
 	}
 
 	// This is basically just for health check.
@@ -404,9 +380,6 @@ func main() {
 	// Deletion (temporary feature)
 	b.Handle("/delete", program.DeletionHandler)
 
-	// Bad word handlers
-	b.Handle("/badwords", program.BadWordHandler)
-
 	// <redacted>
 	b.Handle("/setir", program.SetirHandler)
 
@@ -419,16 +392,17 @@ func main() {
 		}
 
 		// Start an HTTP server instance
-		log.Printf("Starting http server on %s", httpServer.Addr)
+		slog.InfoContext(ctx, "Starting http server", slog.String("address", httpServer.Addr))
 		err := httpServer.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("Listening HTTP server")
+			slog.ErrorContext(ctx, "Listening HTTP server", slog.String("error", err.Error()))
+			sentry.CaptureException(err)
 		}
 	}()
 
 	go func() {
 		<-exitSignal
-		log.Print("Shutdown signal received, exiting...")
+		slog.InfoContext(ctx, "Shutdown signal received, exiting...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer shutdownCancel()
@@ -438,12 +412,12 @@ func main() {
 		if httpServer != nil {
 			err := httpServer.Shutdown(shutdownCtx)
 			if err != nil {
-				log.Error().Err(err).Msg("Shutting down the http server")
+				slog.ErrorContext(ctx, "Shutting down the http server", slog.String("error", err.Error()))
 				sentry.CaptureException(err)
 			}
 		}
 
-		log.Debug().Msg("Starting a 10 second countdown until killing the application")
+		slog.InfoContext(ctx, "Starting a 10 second countdown until killing the application")
 		time.Sleep(time.Second * 10)
 		os.Exit(0)
 	}()
@@ -454,7 +428,7 @@ func main() {
 	}()
 
 	// Lesson learned: do not start bot on a goroutine
-	log.Print("Bot started!")
+	slog.InfoContext(ctx, "Bot started!")
 	b.Start()
-	log.Print("Application is shutting down...")
+	slog.InfoContext(ctx, "Application is shutting down...")
 }

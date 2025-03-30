@@ -26,7 +26,7 @@ func (d *Dependency) IncrementUserDB(ctx context.Context, member GroupMember) er
 		}
 	}(c)
 
-	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: false})
+	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
 		return err
 	}

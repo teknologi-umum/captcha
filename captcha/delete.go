@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -30,11 +31,13 @@ func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable
 						floodError.RetryAfter = 15
 					}
 
+					slog.WarnContext(ctx, "Received FloodError", slog.String("error", err.Error()), slog.Int("retry_after", floodError.RetryAfter))
 					time.Sleep(time.Second * time.Duration(floodError.RetryAfter))
 					continue
 				}
 
 				if strings.Contains(err.Error(), "Gateway Timeout (504)") {
+					slog.WarnContext(ctx, "Received Gateway Timeout, retrying in 10 seconds", slog.String("error", err.Error()))
 					time.Sleep(time.Second * 10)
 					continue
 				}
@@ -45,6 +48,7 @@ func (d *Dependencies) deleteMessage(ctx context.Context, messages []tb.Editable
 			break
 		}
 
+		slog.DebugContext(ctx, "Message successfully deleted", slog.Any("messages", messages))
 		c <- struct{}{}
 	})
 
@@ -80,5 +84,6 @@ func (d *Dependencies) deleteMessageBlocking(ctx context.Context, messages []tb.
 		break
 	}
 
+	slog.DebugContext(ctx, "Message successfully deleted", slog.Any("messages", messages))
 	return nil
 }

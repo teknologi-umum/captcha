@@ -2,9 +2,7 @@ package shared
 
 import (
 	"context"
-	"log"
 	"net/http"
-	"os"
 
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 
@@ -17,11 +15,6 @@ func HandleError(ctx context.Context, e error) {
 	if e == nil {
 		return
 	}
-
-	if os.Getenv("ENVIRONMENT") == "development" {
-		log.Println(e)
-	}
-
 	hub := sentry.GetHubFromContext(ctx)
 	if hub != nil {
 		hub.CaptureException(errors.WithStack(e))
@@ -38,10 +31,6 @@ func HandleError(ctx context.Context, e error) {
 func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 	if e == nil {
 		return
-	}
-
-	if os.Getenv("ENVIRONMENT") == "development" {
-		log.Println(e)
 	}
 
 	hub := sentry.GetHubFromContext(ctx)
@@ -80,10 +69,6 @@ func HandleBotError(ctx context.Context, e error, bot *tb.Bot, m *tb.Message) {
 func HandleHttpError(ctx context.Context, e error, r *http.Request) {
 	if e == nil {
 		return
-	}
-
-	if os.Getenv("ENVIRONMENT") == "development" {
-		log.Println(e)
 	}
 
 	hub := sentry.GetHubFromContext(ctx)

@@ -14,6 +14,10 @@ import (
 )
 
 func (d *Dependency) Handler(ctx context.Context, c tb.Context) error {
+	span := sentry.StartSpan(ctx, "bot.reminder_handler", sentry.WithDescription("Reminder Handler"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	input := strings.TrimPrefix(strings.TrimPrefix(c.Text(), "/remind@TeknumCaptchaBot"), "/remind")
 	if input == "" {
 		err := c.Reply(

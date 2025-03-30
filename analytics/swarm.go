@@ -83,7 +83,7 @@ func (d *Dependency) UpdateSwarm(user *tb.User, groupID int64, finishedCaptcha b
 	}
 	defer c.Close()
 
-	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadUncommitted, ReadOnly: false})
+	tx, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
 		shared.HandleError(ctx, fmt.Errorf("begin transaction: %w", err))
 		return

@@ -38,7 +38,7 @@ func (d *Dependency) NewUser(ctx context.Context, m *tb.Message, user *tb.User) 
 		}
 	}(c)
 
-	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: false})
+	t, err := c.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 	}

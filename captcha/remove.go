@@ -8,10 +8,15 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/getsentry/sentry-go"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 )
 
 func (d *Dependencies) removeUserFromGroup(ctx context.Context, chat *tb.Chat, sender *tb.User, captcha Captcha) error {
+	span := sentry.StartSpan(ctx, "captcha.remove_user_from_group")
+	ctx = span.Context()
+	defer span.Finish()
+
 BanRetry:
 	// Even if the keyword is Ban, it's just kicking them.
 	// If the RestrictedUntil value is below zero, it means

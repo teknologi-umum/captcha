@@ -3,18 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
+	"log/slog"
 	"time"
 
 	"github.com/teknologi-umum/captcha/deletion"
+	"github.com/teknologi-umum/captcha/internal/requestid"
 	"github.com/teknologi-umum/captcha/reminder"
 	"github.com/teknologi-umum/captcha/setir"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/teknologi-umum/captcha/analytics"
 	"github.com/teknologi-umum/captcha/ascii"
-	"github.com/teknologi-umum/captcha/badwords"
 	"github.com/teknologi-umum/captcha/captcha"
 	tb "github.com/teknologi-umum/captcha/internal/telebot"
 	"github.com/teknologi-umum/captcha/shared"
@@ -31,7 +30,6 @@ type Dependency struct {
 	Captcha     *captcha.Dependencies
 	Ascii       *ascii.Dependencies
 	Analytics   *analytics.Dependency
-	Badwords    *badwords.Dependency
 	UnderAttack *underattack.Dependency
 	Setir       *setir.Dependency
 	Reminder    *reminder.Dependency
@@ -55,10 +53,6 @@ func New(deps Dependency) (*Dependency, error) {
 		return nil, fmt.Errorf("analytics feature is enabled, but analytics dependency is nil")
 	}
 
-	if deps.FeatureFlag.BadwordsInsertion && deps.Badwords == nil {
-		return nil, fmt.Errorf("badwords insertion feature is enabled, but badwords dependency is nil")
-	}
-
 	if deps.FeatureFlag.Reminder && deps.Reminder == nil {
 		return nil, fmt.Errorf("reminder feature is enabled, but reminder dependency is nil")
 	}
@@ -68,7 +62,7 @@ func New(deps Dependency) (*Dependency, error) {
 
 // OnTextHandler handle any incoming text from the group
 func (d *Dependency) OnTextHandler(c tb.Context) error {
-	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
+	ctx := requestid.SetRequestIdOnContext(sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone()))
 
 	d.Captcha.WaitForAnswer(ctx, c.Message())
 
@@ -95,7 +89,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 	span := sentry.StartSpan(ctx, "bot.on_user_join_handler", sentry.WithTransactionSource(sentry.SourceTask),
 		sentry.WithTransactionName("Captcha OnUserJoinHandler"))
 	defer span.Finish()
-	ctx = span.Context()
+	ctx = requestid.SetRequestIdOnContext(span.Context())
 
 	if d.FeatureFlag.UnderAttack {
 		underAttack, err := d.UnderAttack.AreWe(ctx, c.Chat().ID)
@@ -104,6 +98,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		}
 
 		if underAttack {
+			slog.DebugContext(ctx, "State is on under attack mode, preventing a user to come through", requestid.GetSlogAttributesFromContext(ctx)...)
 			err := d.UnderAttack.Kicker(ctx, c)
 			if err != nil {
 				shared.HandleBotError(ctx, err, c.Bot(), c.Message())
@@ -123,6 +118,7 @@ func (d *Dependency) OnUserJoinHandler(c tb.Context) error {
 		go d.Analytics.NewUser(ctx, c.Message(), tempSender)
 	}
 
+	slog.DebugContext(ctx, "Presenting a captcha challenge to the user", slog.String("user_name", tempSender.Username), slog.Int64("user_id", tempSender.ID))
 	d.Captcha.CaptchaUserJoin(ctx, c.Message())
 
 	return nil
@@ -151,41 +147,6 @@ func (d *Dependency) OnUserLeftHandler(c tb.Context) error {
 	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 
 	d.Captcha.CaptchaUserLeave(ctx, c.Message())
-	return nil
-}
-
-// BadWordHandler handle the /badwords command.
-// This can only be accessed by some users on Telegram
-// and only valid for private chats.
-func (d *Dependency) BadWordHandler(c tb.Context) error {
-	if d.FeatureFlag.BadwordsInsertion {
-		return nil
-	}
-
-	if !c.Message().Private() {
-		return nil
-	}
-	ok := d.Badwords.Authenticate(strconv.FormatInt(c.Sender().ID, 10))
-	if !ok {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-	defer cancel()
-
-	ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
-
-	err := d.Badwords.AddBadWord(ctx, strings.TrimPrefix(c.Message().Text, "/badwords "))
-	if err != nil && !strings.Contains(err.Error(), "duplicate key error collection") {
-		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
-		return nil
-	}
-
-	_, err = c.Bot().Send(ctx, c.Sender(), "Terimakasih telah menambahkan kata yang tidak pantas.")
-	if err != nil {
-		shared.HandleBotError(ctx, err, c.Bot(), c.Message())
-	}
-
 	return nil
 }
 

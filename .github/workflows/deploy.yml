@@ -57,19 +57,6 @@ jobs:
           --health-interval 30s
           --health-timeout 20s
           --health-retries 5
-      mongo:
-        image: mongo:6
-        ports:
-          - 27017:27017
-        env:
-          MONGO_INITDB_ROOT_USERNAME: root
-          MONGO_INITDB_ROOT_PASSWORD: password
-          MONGO_INITDB_DATABASE: captcha
-        options: >-
-          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh mongodb://localhost:27017/test --quiet"
-          --health-interval 30s
-          --health-timeout 20s
-          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,8 +70,6 @@ jobs:
           ENVIRONMENT: development
           POSTGRES_URL: postgres://postgres:password@db:5432/captcha?sslmode=disable
           REDIS_URL: redis://@cache:6379/
-          MONGO_URL: mongodb://root:password@mongo:27017/captcha?useNewUrlParser=true&useUnifiedTopology=true&authSource=admin
-          MONGO_DBNAME: captcha
           TZ: UTC
 
       - uses: codecov/codecov-action@v3

@@ -2,19 +2,19 @@ package main
 
 import (
 	"errors"
+	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type FeatureFlag struct {
-	Analytics         bool `yaml:"analytics" json:"analytics" env:"FEATURE_FLAG_ANALYTICS" env-default:"false"`
-	BadwordsInsertion bool `yaml:"badwords_insertion" json:"badwords_insertion" env:"FEATURE_FLAG_BADWORDS_INSERTION" env-default:"false"`
-	Dukun             bool `yaml:"dukun" json:"dukun" env:"FEATURE_FLAG_DUKUN" env-default:"false"`
-	UnderAttack       bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
-	Reminder          bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER" env-default:"false"`
-	Deletion          bool `yaml:"deletion" json:"deletion" env:"FEATURE_FLAG_DELETION" env-default:"false"`
-	HttpServer        bool `yaml:"http_server" json:"http_server" env:"FEATURE_FLAG_HTTP_SERVER" env-default:"false"`
+	Analytics   bool `yaml:"analytics" json:"analytics" env:"FEATURE_FLAG_ANALYTICS" env-default:"false"`
+	UnderAttack bool `yaml:"under_attack" json:"under_attack" env:"FEATURE_FLAG_UNDER_ATTACK" env-default:"true"`
+	Reminder    bool `yaml:"reminder" json:"reminder" env:"FEATURE_FLAG_REMINDER" env-default:"false"`
+	Deletion    bool `yaml:"deletion" json:"deletion" env:"FEATURE_FLAG_DELETION" env-default:"false"`
+	HttpServer  bool `yaml:"http_server" json:"http_server" env:"FEATURE_FLAG_HTTP_SERVER" env-default:"false"`
 }
 
 type Configuration struct {
@@ -28,9 +28,9 @@ type Configuration struct {
 		SentrySampleRate       float64 `yaml:"sentry_sample_rate" json:"sentry_sample_rate" env:"SENTRY_SAMPLE_RATE" env-default:"1.0"`
 		SentryTracesSampleRate float64 `yaml:"sentry_traces_sample_rate" json:"sentry_traces_sample_rate" env:"SENTRY_TRACES_SAMPLE_RATE" env-default:"0.2"`
 	} `yaml:"sentry_config" json:"sentry_config"`
+	LogLevel string `yaml:"log_level" json:"log_level" env:"LOG_LEVEL" env-default:"info"`
 	Database struct {
 		PostgresUrl string `yaml:"postgres_url" json:"postgres_url" env:"POSTGRES_URL"`
-		MongoUrl    string `yaml:"mongo_url" json:"mongo_url" env:"MONGO_URL"`
 		BadgerPath  string `yaml:"badger_path" json:"badger_path" env:"BADGER_PATH"`
 	} `yaml:"database" json:"database"`
 	HTTPServer struct {
@@ -57,4 +57,19 @@ func ParseConfiguration(configurationFilePath string) (Configuration, error) {
 	}
 
 	return configuration, nil
+}
+
+func parseSlogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

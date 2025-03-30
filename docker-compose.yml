@@ -29,20 +29,4 @@ services:
       driver: local
       options:
         max-size: 10M
-  mongo:
-    image: mongo:6-focal
-    ports:
-      - 27017:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: captcha
-    healthcheck:
-      test: "echo 'db.runCommand(\"ping\").ok' | mongosh mongodb://localhost:27017/test --quiet"
-      interval: 30s
-      timeout: 20s
-      retries: 5
-    logging:
-      driver: local
-      options:
-        max-size: 10M
+
