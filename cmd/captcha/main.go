@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/teknologi-umum/captcha/analytics/server"
 	"github.com/teknologi-umum/captcha/ascii"
 	"github.com/teknologi-umum/captcha/captcha"
 	"github.com/teknologi-umum/captcha/deletion"
@@ -332,11 +331,18 @@ func main() {
 
 	var httpServer *http.Server
 	if configuration.FeatureFlag.HttpServer {
-		httpServer = server.New(server.Config{
-			DB:               db,
-			Memory:           cache,
-			ListeningAddress: net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
 		})
+		httpServer = &http.Server{
+			Addr:              net.JoinHostPort(configuration.HTTPServer.ListeningHost, configuration.HTTPServer.ListeningPort),
+			Handler:           h,
+			ReadTimeout:       time.Minute,
+			ReadHeaderTimeout: time.Minute,
+			WriteTimeout:      time.Minute,
+			IdleTimeout:       time.Minute,
+		}
 	}
 
 	// This is basically just for health check.
