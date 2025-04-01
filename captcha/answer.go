@@ -138,7 +138,7 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
+	err = d.removeUserFromCache(ctx, m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
@@ -201,7 +201,10 @@ func (d *Dependencies) WaitForAnswer(ctx context.Context, m *tb.Message) {
 }
 
 // It... remove the user from cache. What else do you expect?
-func (d *Dependencies) removeUserFromCache(userID int64, groupID int64) error {
+func (d *Dependencies) removeUserFromCache(ctx context.Context, userID int64, groupID int64) error {
+	span := sentry.StartSpan(ctx, "captcha.remove_user_from_cache")
+	defer span.Finish()
+
 	err := d.DB.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("captcha:users:" + strconv.FormatInt(groupID, 10)))
 		if err != nil {

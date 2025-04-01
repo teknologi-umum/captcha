@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 )
@@ -10,7 +10,7 @@ import (
 func GenerateRandomNumber() string {
 	var out strings.Builder
 	for i := 0; i < 3; i++ {
-		randomNumber := rand.Intn(14)
+		randomNumber := rand.IntN(14)
 		if randomNumber == 10 {
 			out.WriteString("V")
 		} else if randomNumber == 11 {

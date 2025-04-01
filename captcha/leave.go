@@ -80,7 +80,7 @@ func (d *Dependencies) CaptchaUserLeave(ctx context.Context, m *tb.Message) {
 		return
 	}
 
-	err = d.removeUserFromCache(m.Sender.ID, m.Chat.ID)
+	err = d.removeUserFromCache(ctx, m.Sender.ID, m.Chat.ID)
 	if err != nil {
 		shared.HandleBotError(ctx, err, d.Bot, m)
 		return
