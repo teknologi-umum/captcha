@@ -63,7 +63,7 @@ func (d *Dependencies) Cleanup() {
 					sentry.CaptureException(err)
 				}
 
-				err = d.removeUserFromCache(captcha.SenderID, captcha.ChatID)
+				err = d.removeUserFromCache(context.Background(), captcha.SenderID, captcha.ChatID)
 				if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 					sentry.CaptureException(err)
 				}

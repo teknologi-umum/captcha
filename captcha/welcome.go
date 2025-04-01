@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +67,7 @@ var regularWelcomeMessage = "Halo, {user}!\n\n" +
 // sendWelcomeMessage literally does what it's written.
 func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) error {
 	span := sentry.StartSpan(ctx, "captcha.send_welcome_message")
+	ctx = context.WithoutCancel(span.Context())
 	defer span.Finish()
 
 	var msgToSend string = regularWelcomeMessage
@@ -117,7 +118,6 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 			ctx,
 			[]tb.Editable{&tb.StoredMessage{MessageID: strconv.Itoa(msg.ID), ChatID: m.Chat.ID}},
 		)
-
 		break
 	}
 
@@ -125,5 +125,5 @@ func (d *Dependencies) sendWelcomeMessage(ctx context.Context, m *tb.Message) er
 }
 
 func randomNum() int {
-	return rand.Intn(len(currentWelcomeMessages))
+	return rand.IntN(len(currentWelcomeMessages))
 }
