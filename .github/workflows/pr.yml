@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -29,18 +29,18 @@ jobs:
     name: CI / ${{ matrix.arch.arch }}
     runs-on: ${{ matrix.arch.runs-on }}
     timeout-minutes: 20
-    container: golang:1
+    container: golang:1.27.1-trixie@sha256:9baa6b4187bbb98d240372a8a235ac0bb6b5ddd52bba1431dc2f7c0705862728
     strategy:
       fail-fast: true
       matrix:
         arch:
-          - runs-on: ubuntu-24.04
+          - runs-on: ubuntu-26.04
             arch: amd64
-          - runs-on: ubuntu-24.04-arm
+          - runs-on: ubuntu-26.04-arm
             arch: arm64
     services:
       db:
-        image: postgres:16
+        image: postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
         ports:
           - 5432:5432
         env:
@@ -53,7 +53,7 @@ jobs:
           --health-timeout 20s
           --health-retries 5
       cache:
-        image: redis:7
+        image: valkey/valkey:8.1.10-alpine3.24@sha256:d2e18f3410b6f616de1417f570fa55261af2898b9c5b2cfb6781ce2373ea43d1
         ports:
           - 6379:6379
         options: >-
@@ -63,7 +63,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build
         run: go build -buildvcs=false -o captcha-bot ./cmd/captcha
@@ -76,4 +76,4 @@ jobs:
           REDIS_URL: redis://@cache:6379/
           TZ: UTC
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
