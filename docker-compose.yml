@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2-alpine
     ports:
       - 5432:5432
     environment:
@@ -17,7 +17,7 @@ services:
       options:
         max-size: 10M
   cache:
-    image: redis:6-alpine
+    image: valkey/valkey:8.1.10-alpine3.24@sha256:d2e18f3410b6f616de1417f570fa55261af2898b9c5b2cfb6781ce2373ea43d1
     ports:
       - 6379:6379
     healthcheck:
